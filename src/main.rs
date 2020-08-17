@@ -1,5 +1,6 @@
 extern crate mmap;
 use std::mem;
+use std::rc::Rc;
 
 use mmap::{MapOption, MemoryMap};
 
@@ -22,6 +23,7 @@ macro_rules! get_rs2_addr {
     }
 }
 
+#[allow(unused_macros)]
 macro_rules! get_rs3_addr {
     ($inst:expr) => {
         ($inst >> 27) & 0x1f
@@ -35,15 +37,20 @@ macro_rules! get_rd_addr {
 }
 
 
-struct CPU {
+struct CPU<'a> {
     m_regs: [u64; 32],
+
+    m_inst_vec: Vec<u32>,
+    m_opcode_vec: Rc<Vec<&'a TCGOp<'a>>>,
 }
 
 
-impl CPU {
-    fn new() -> CPU {
+impl <'a> CPU<'a> {
+    fn new() -> CPU<'a> {
         CPU {
             m_regs: [2; 32],
+            m_inst_vec: Vec::new(),
+            m_opcode_vec: Rc::new(Vec::new()),
         }
     }
 
@@ -57,20 +64,44 @@ impl CPU {
         }
 
 
-        let x86_hostcode: [u8; 8] = [
-            0x48, 0x83, 0xc7, 0x0a,  // add 0xa, %rdi
-            0x48, 0x89, 0xf8,        // mov %rdi, %rax
-            0xc3];                   // retq
-        unsafe {
-            self.reflect(&x86_hostcode);
+        // let x86_hostcode: [u8; 8] = [
+        //     0x48, 0x83, 0xc7, 0x0a,  // add 0xa, %rdi
+        //     0x48, 0x89, 0xf8,        // mov %rdi, %rax
+        //     0xc3];                   // retq
+        // unsafe {
+        //     self.reflect(&x86_hostcode);
+        // }
+
+        for inst in &self.m_inst_vec {
+            let riscv_id = match decode_inst(*inst) {
+                Some(id) => id,
+                _ => panic!("Decode Failed"),
+            };
+
+            let tcg_inst = match riscv_id {
+                RiscvInstId::ADDI => self.tcg_gen_addi(inst),
+                RiscvInstId::SUB  => self.tcg_gen_sub (inst),
+                RiscvInstId::JALR => self.tcg_gen_jalr(inst),
+                _ => panic!("Not supported these instructions."),
+            };
+
+            // self.m_opcode_vec.push(&tcg_inst);
+
+            println!("riscv_id = {:?}, tcg_inst = {:?}", riscv_id, tcg_inst);
+
+            let raw_x = tcg_inst.arg0.value.unwrap() as *const u64;
+            println!("address0 = {:p}", raw_x);
+
+            let raw_x = tcg_inst.arg1.value.unwrap() as *const u64;
+            println!("address1 = {:p}", raw_x);
         }
     }
 
 
-    fn tcg_gen_addi (&mut self, inst: u32) -> Box<TCGOp> {
-        let rs1_addr:usize = get_rs1_addr!(inst) as usize;
-        let imm_const:u64 = (inst as u64) >> 20 & 0xfff;
-        let rd_addr:usize = get_rd_addr!(inst) as usize;
+    fn tcg_gen_addi (&'a self, inst: &u32) -> Box<TCGOp<'a>> {
+        let rs1_addr:usize = get_rs1_addr!(*inst) as usize;
+        let imm_const:u64 = (*inst as u64) >> 20 & 0xfff;
+        let rd_addr:usize = get_rd_addr!(*inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(&self.m_regs[rs1_addr]));
         let imm = Box::new(TCGv::new_imm(imm_const));
@@ -85,10 +116,10 @@ impl CPU {
     }
 
 
-    fn tcg_gen_sub (&mut self, inst: u32) -> Box<TCGOp> {
-        let rs1_addr:usize = get_rs1_addr!(inst) as usize;
-        let rs2_addr:usize = get_rs2_addr!(inst) as usize;
-        let rd_addr :usize = get_rd_addr! (inst) as usize;
+    fn tcg_gen_sub (&self, inst: &u32) -> Box<TCGOp> {
+        let rs1_addr:usize = get_rs1_addr!(*inst) as usize;
+        let rs2_addr:usize = get_rs2_addr!(*inst) as usize;
+        let rd_addr :usize = get_rd_addr! (*inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(&self.m_regs[rs1_addr]));
         let rs2 = Box::new(TCGv::new_reg(&self.m_regs[rs2_addr]));
@@ -100,10 +131,10 @@ impl CPU {
     }
 
 
-    fn tcg_gen_jalr (&mut self, inst: u32) -> Box<TCGOp> {
-        let rs1_addr:usize = get_rs1_addr!(inst) as usize;
-        let imm_const:u64 = (inst as u64) >> 20 & 0xfff;
-        let rd_addr:usize  = get_rd_addr! (inst) as usize;
+    fn tcg_gen_jalr (&self, inst: &u32) -> Box<TCGOp> {
+        let rs1_addr:usize = get_rs1_addr!(*inst) as usize;
+        let imm_const:u64 = (*inst as u64) >> 20 & 0xfff;
+        let rd_addr:usize  = get_rd_addr! (*inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(&self.m_regs[rs1_addr]));
         let imm = Box::new(TCGv::new_imm(imm_const));
@@ -154,7 +185,7 @@ impl CPU {
                 MapOption::MapExecutable,
                 // MapOption::MapNonStandardFlags(libc::MAP_ANON),
                 // MapOption::MapNonStandardFlags(libc::MAP_PRIVATE),
-            ],
+            ]
         ) {
             Ok(m) => m,
             Err(e) => panic!("Error: {}", e),
@@ -176,27 +207,10 @@ impl CPU {
 
             println!("inst = {:08x}", inst);
 
-            let riscv_id = match decode_inst(inst) {
-                Some(id) => id,
-                _ => panic!("Decode Failed"),
-            };
-
-            let tcg_inst = match riscv_id {
-                RiscvInstId::ADDI => self.tcg_gen_addi(inst),
-                RiscvInstId::SUB  => self.tcg_gen_sub(inst),
-                RiscvInstId::JALR => self.tcg_gen_jalr(inst),
-                _ => panic!("Not supported these instructions."),
-            };
-
-            println!("riscv_id = {:?}, tcg_inst = {:?}", riscv_id, tcg_inst);
-
-            let raw_x = tcg_inst.arg0.value.unwrap() as *const u64;
-            println!("address0 = {:p}", raw_x);
-
-            let raw_x = tcg_inst.arg1.value.unwrap() as *const u64;
-            println!("address1 = {:p}", raw_x);
+            self.m_inst_vec.push(inst);
         }
     }
+
 }
 
 
