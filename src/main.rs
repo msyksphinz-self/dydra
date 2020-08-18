@@ -1,4 +1,5 @@
 extern crate mmap;
+use std::cmp::PartialEq;
 use std::mem;
 use std::rc::Rc;
 
@@ -39,15 +40,17 @@ struct CPU {
     m_regs: [u64; 32],
 
     m_inst_vec: Vec<u32>,
-    m_opcode_vec: Vec<Box<TCGOp>>,
+    m_tcg_vec: Vec<Box<TCGOp>>,
+    m_tcg_raw_vec: Vec<u8>,
 }
 
 impl CPU {
     fn new() -> CPU {
         CPU {
             m_regs: [2; 32],
-            m_inst_vec: Vec::new(),
-            m_opcode_vec: Vec::new(),
+            m_inst_vec: vec![],
+            m_tcg_vec: vec![],
+            m_tcg_raw_vec: vec![],
         }
     }
 
@@ -81,7 +84,7 @@ impl CPU {
                 _ => panic!("Not supported these instructions."),
             };
 
-            self.m_opcode_vec.push(tcg_inst);
+            self.m_tcg_vec.push(tcg_inst);
 
             // println!("riscv_id = {:?}, tcg_inst = {:?}", riscv_id, tcg_inst);
             //
@@ -92,17 +95,69 @@ impl CPU {
             // println!("address1 = {:p}", raw_x);
         }
 
-        for op in &self.m_opcode_vec {
-            println!("tcg_inst = {:?}", op);
+        for tcg in self.m_tcg_vec {
+            println!("tcg_inst = {:?}", tcg);
 
-            let raw_x = op.arg0.value as *const u64;
+            let raw_x = tcg.arg0.value as *const u64;
             println!("address0 = {:p}", &raw_x);
 
-            let raw_x = op.arg1.value as *const u64;
+            let raw_x = tcg.arg1.value as *const u64;
             println!("address1 = {:p}", &raw_x);
 
-            // self.reflect(&op);
+            let (mc_raw, mc_byte) = Self::translate(&tcg);
+
+            for byte_idx in (0..mc_byte).rev() {
+                let b: u8 = ((mc_raw >> (byte_idx * 8)) & 0xff) as u8;
+                self.m_tcg_raw_vec.push(b);
+            }
         }
+
+        for b in &self.m_tcg_raw_vec {
+            print!("{:02x} ", b);
+        }
+        print!("\n");
+    }
+
+    fn translate(tcg: &TCGOp) -> (u64, usize) {
+        match tcg.op {
+            TCGOpcode::ADD => Self::translate_addi(tcg),
+            TCGOpcode::SUB => Self::translate_sub(tcg),
+            TCGOpcode::JMP => Self::translate_jmp(tcg),
+        }
+    }
+
+    fn translate_addi(tcg: &TCGOp) -> (u64, usize) {
+        assert_eq!(tcg.arg0.t, TCGvType::Register);
+        assert_eq!(tcg.arg1.t, TCGvType::Register);
+        assert_eq!(tcg.arg2.t, TCGvType::Immediate);
+
+        if tcg.arg0.value == 0 {
+            // if destination is x0, skip generate host machine code.
+            return (0, 0);
+        }
+        if tcg.arg1.value == 0 {
+            // if source register is x0, just generate immediate value.
+            let raw_mc: u64 = 0x48c74508_00000000 | tcg.arg2.value;
+            return (raw_mc, 64 / 8);
+        }
+        panic!("This code doesn't support now!");
+    }
+
+    fn translate_sub(tcg: &TCGOp) -> (u64, usize) {
+        panic!("This function is not supported!");
+    }
+
+    fn translate_jmp(tcg: &TCGOp) -> (u64, usize) {
+        assert_eq!(tcg.op, TCGOpcode::JMP);
+        if tcg.arg0.t == TCGvType::Register
+            && tcg.arg0.value == 0
+            && tcg.arg1.t == TCGvType::Register
+            && tcg.arg1.value == 1
+        {
+            let raw_mc: u64 = 0xc3;
+            return (raw_mc, 1);
+        }
+        panic!("This function is not supported!")
     }
 
     fn tcg_gen_addi(inst: &u32) -> Box<TCGOp> {
@@ -213,14 +268,14 @@ impl CPU {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum TCGOpcode {
     ADD = 0,
     SUB = 1,
     JMP = 2,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum TCGvType {
     Register = 0,
     Immediate = 1,
