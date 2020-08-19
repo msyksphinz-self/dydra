@@ -63,14 +63,6 @@ impl CPU {
             self.gen_tcg(&riscv_guestcode);
         }
 
-        // let x86_hostcode: [u8; 8] = [
-        //     0x48, 0x83, 0xc7, 0x0a,  // add 0xa, %rdi
-        //     0x48, 0x89, 0xf8,        // mov %rdi, %rax
-        //     0xc3];                   // retq
-        // unsafe {
-        //     self.reflect(&x86_hostcode);
-        // }
-
         for inst in &self.m_inst_vec {
             let riscv_id = match decode_inst(*inst) {
                 Some(id) => id,
@@ -87,10 +79,10 @@ impl CPU {
             self.m_tcg_vec.push(tcg_inst);
 
             // println!("riscv_id = {:?}, tcg_inst = {:?}", riscv_id, tcg_inst);
-            //
+
             // let raw_x = tcg_inst.arg0.value as *const u64;
             // println!("address0 = {:p}", raw_x);
-            //
+
             // let raw_x = tcg_inst.arg1.value as *const u64;
             // println!("address1 = {:p}", raw_x);
         }
@@ -106,16 +98,25 @@ impl CPU {
 
             let (mc_raw, mc_byte) = Self::translate(&tcg);
 
-            for byte_idx in (0..mc_byte).rev() {
-                let b: u8 = ((mc_raw >> (byte_idx * 8)) & 0xff) as u8;
-                self.m_tcg_raw_vec.push(b);
+            for (i, be) in mc_raw.to_be_bytes().iter().enumerate() {
+                if i < 8 - mc_byte {
+                    continue;
+                }
+                self.m_tcg_raw_vec.push(*be);
             }
         }
 
-        for b in &self.m_tcg_raw_vec {
-            print!("{:02x} ", b);
+        {
+            for b in &self.m_tcg_raw_vec {
+                print!("{:02x} ", b);
+            }
+            print!("\n");
         }
-        print!("\n");
+
+        unsafe {
+            let v = self.m_tcg_raw_vec.as_slice();
+            Self::reflect(v);
+        }
     }
 
     fn translate(tcg: &TCGOp) -> (u64, usize) {
@@ -137,8 +138,9 @@ impl CPU {
         }
         if tcg.arg1.value == 0 {
             // if source register is x0, just generate immediate value.
-            let raw_mc: u64 = 0x48c74508_00000000 | tcg.arg2.value;
-            return (raw_mc, 64 / 8);
+            let revert_bytes = (tcg.arg2.value as u32).swap_bytes();
+            let raw_mc: u64 = 0xb8000000_00 | (revert_bytes as u64);
+            return (raw_mc, 40 / 8);
         }
         panic!("This code doesn't support now!");
     }
@@ -202,8 +204,7 @@ impl CPU {
         tcg_inst
     }
 
-    // unsafe fn reflect(&mut self, instructions: &[u8]) {
-    unsafe fn reflect(&mut self, instructions: &[u8]) {
+    unsafe fn reflect(instructions: &[u8]) {
         let map = match MemoryMap::new(
             instructions.len(),
             &[
@@ -223,7 +224,7 @@ impl CPU {
 
         std::ptr::copy(instructions.as_ptr(), map.data(), instructions.len());
 
-        let func: unsafe extern "C" fn() -> u8 = mem::transmute(map.data());
+        let func: unsafe extern "C" fn() -> u32 = mem::transmute(map.data());
 
         let ans = func();
         println!("ans = {:x}", ans);
