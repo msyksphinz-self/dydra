@@ -1,7 +1,5 @@
 extern crate mmap;
-use std::cmp::PartialEq;
 use std::mem;
-use std::rc::Rc;
 
 use mmap::{MapOption, MemoryMap};
 
@@ -324,6 +322,6 @@ impl TCGv {
 }
 
 fn main() {
-    let mut cpu = CPU::new();
+    let cpu = CPU::new();
     cpu.run();
 }
