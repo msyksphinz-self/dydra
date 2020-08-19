@@ -165,7 +165,8 @@ impl CPU {
             // if source register is x0, just generate immediate value.
             let revert_bytes = (tcg.arg2.value as u32).swap_bytes();
             // movl   imm,reg_addr(%rbp)
-            let raw_mc: u64 = 0xc745_00_00000000 | (revert_bytes as u64) | (tcg.arg1.value << 32);
+            let raw_mc: u64 =
+                0xc745_00_00000000 | (revert_bytes as u64) | ((tcg.arg0.value * 8 as u64) << 32);
             return (raw_mc, 56 / 8);
         }
 
@@ -183,8 +184,8 @@ impl CPU {
             && tcg.arg1.t == TCGvType::Register
             && tcg.arg1.value == 1
         {
-            // mov reg_off(%rbp), eax
-            let raw_mc: u64 = 0x8b45_00 | tcg.arg0.value * 8;
+            // mov 0x50(%rbp), eax  0x50 is location of x10
+            let raw_mc: u64 = 0x8b45_50;
             return (raw_mc, 3);
         }
         panic!("This function is not supported!")
