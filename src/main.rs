@@ -1,65 +1,101 @@
 extern crate mmap;
+use mmap::{MapOption, MemoryMap};
+use std::env;
 use std::mem;
 
-use mmap::{MapOption, MemoryMap};
-
+pub mod elf_loader;
+pub mod riscv;
 pub mod riscv_decoder;
 pub mod riscv_inst_id;
+pub mod tcg;
+pub mod x86;
 
-use crate::riscv_decoder::decode_inst;
-use crate::riscv_inst_id::RiscvInstId;
+use elf_loader::ELFLoader;
+use elf_loader::ProgramHeader;
+use elf_loader::SectionHeader;
 
-macro_rules! get_rs1_addr {
-    ($inst:expr) => {
-        ($inst >> 15) & 0x1f
-    };
-}
+use riscv_inst_id::RiscvInstId;
 
-macro_rules! get_rs2_addr {
-    ($inst:expr) => {
-        ($inst >> 20) & 0x1f
-    };
-}
+use riscv_decoder::decode_inst;
 
-#[allow(unused_macros)]
-macro_rules! get_rs3_addr {
-    ($inst:expr) => {
-        ($inst >> 27) & 0x1f
-    };
-}
-
-macro_rules! get_rd_addr {
-    ($inst:expr) => {
-        ($inst >> 7) & 0x1f
-    };
-}
+use riscv::TranslateRiscv;
+use tcg::*;
+use x86::TCGX86;
 
 struct CPU {
     m_regs: [u64; 32],
 
     m_inst_vec: Vec<u32>,
-    m_tcg_vec: Vec<Box<TCGOp>>,
+    m_tcg_vec: Vec<Box<tcg::TCGOp>>,
     m_tcg_raw_vec: Vec<u8>,
 }
 
 impl CPU {
     fn new() -> CPU {
         CPU {
-            m_regs: [
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-                23, 24, 25, 26, 27, 28, 29, 30, 31,
-            ],
+            m_regs: [0; 32],
             m_inst_vec: vec![],
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
         }
     }
 
-    pub fn run(mut self) {
-        let riscv_guestcode: [u8; 8] = [
-            0x13, 0x05, 0x40, 0x06, // addi a0,zero,100
-            0x67, 0x80, 0x00, 0x00, // ret
-        ];
+    fn dump_gpr(self) {
+        for (i, reg) in self.m_regs.iter().enumerate() {
+            print!("x{:02} = {:016x}  ", i, reg);
+            if i % 4 == 3 {
+                print!("\n");
+            }
+        }
+    }
+
+    pub fn run(mut self, filename: &String) {
+        let loader = match ELFLoader::new(filename) {
+            Ok(loader) => loader,
+            Err(error) => panic!("There was a problem opening the file: {:?}", error),
+        };
+
+        // let elf_header = loader.get_elf_header();
+
+        let elf_header = loader.get_elf_header();
+        elf_header.dump();
+
+        let mut ph_headers = Vec::new();
+        for ph_idx in 0..elf_header.e_phnum {
+            let phdr: ProgramHeader = loader.get_program_header(
+                &elf_header,
+                elf_header.e_phoff,
+                elf_header.e_phentsize,
+                ph_idx.into(),
+            );
+            ph_headers.push(phdr);
+        }
+
+        let mut sh_headers = Vec::new();
+        for sh_idx in 0..elf_header.e_shnum {
+            let shdr: SectionHeader = loader.get_section_header(
+                &elf_header,
+                elf_header.e_shoff,
+                elf_header.e_shentsize,
+                sh_idx.into(),
+            );
+            sh_headers.push(shdr);
+        }
+
+        let mut riscv_guestcode: Vec<u8> = Vec::new();
+
+        // Dump All Section Headers
+        for sh_header in sh_headers {
+            if sh_header.sh_flags != 0 {
+                sh_header.dump();
+                loader.load_section(&mut riscv_guestcode, sh_header.sh_offset, sh_header.sh_size);
+            }
+        }
+
+        // let riscv_guestcode: [u8; 8] = [
+        //     0x13, 0x05, 0x40, 0x06, // addi a0,zero,100
+        //     0x67, 0x80, 0x00, 0x00, // ret
+        // ];
         let host_prologue = [
             0x55, // pushq %rbp
             0x54, // pushq %rbx
@@ -84,21 +120,18 @@ impl CPU {
             };
 
             let tcg_inst = match riscv_id {
-                RiscvInstId::ADDI => Self::tcg_gen_addi(inst),
-                RiscvInstId::SUB => Self::tcg_gen_sub(inst),
-                RiscvInstId::JALR => Self::tcg_gen_jalr(inst),
-                _ => panic!("Not supported these instructions."),
+                RiscvInstId::ADDI => TranslateRiscv::translate_addi(inst),
+                RiscvInstId::ADD => TranslateRiscv::translate_add(inst),
+                RiscvInstId::SUB => TranslateRiscv::translate_sub(inst),
+                RiscvInstId::AND => TranslateRiscv::translate_and(inst),
+                RiscvInstId::OR => TranslateRiscv::translate_or(inst),
+                RiscvInstId::XOR => TranslateRiscv::translate_xor(inst),
+                RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
+                RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
+                other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
             };
 
             self.m_tcg_vec.push(tcg_inst);
-
-            // println!("riscv_id = {:?}, tcg_inst = {:?}", riscv_id, tcg_inst);
-
-            // let raw_x = tcg_inst.arg0.value as *const u64;
-            // println!("address0 = {:p}", raw_x);
-
-            // let raw_x = tcg_inst.arg1.value as *const u64;
-            // println!("address1 = {:p}", raw_x);
         }
 
         // Emit Prologue
@@ -106,22 +139,13 @@ impl CPU {
             self.m_tcg_raw_vec.push(*b);
         }
 
-        for tcg in self.m_tcg_vec {
+        for tcg in &self.m_tcg_vec {
             println!("tcg_inst = {:?}", tcg);
-
-            let raw_x = tcg.arg0.value as *const u64;
-            println!("address0 = {:p}", &raw_x);
-
-            let raw_x = tcg.arg1.value as *const u64;
-            println!("address1 = {:p}", &raw_x);
-
-            let (mc_raw, mc_byte) = Self::translate(&tcg);
-
-            for (i, be) in mc_raw.to_be_bytes().iter().enumerate() {
-                if i < 8 - mc_byte {
-                    continue;
-                }
-                self.m_tcg_raw_vec.push(*be);
+            let mut mc_byte = vec![];
+            Self::tcg_gen(&tcg, &mut mc_byte);
+            for be in &mc_byte {
+                let be_data = *be;
+                self.m_tcg_raw_vec.push(be_data);
             }
         }
 
@@ -131,8 +155,11 @@ impl CPU {
         }
 
         {
-            for b in &self.m_tcg_raw_vec {
+            for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
                 print!("{:02x} ", b);
+                if i % 16 == 15 {
+                    print!("\n");
+                }
             }
             print!("\n");
         }
@@ -142,95 +169,19 @@ impl CPU {
             let reg_ptr: *const [u64; 32] = &self.m_regs;
             Self::reflect(v, reg_ptr);
         }
+
+        self.dump_gpr();
     }
 
-    fn translate(tcg: &TCGOp) -> (u64, usize) {
+    fn tcg_gen(tcg: &TCGOp, mc: &mut Vec<u8>) {
         match tcg.op {
-            TCGOpcode::ADD => Self::translate_addi(tcg),
-            TCGOpcode::SUB => Self::translate_sub(tcg),
-            TCGOpcode::JMP => Self::translate_ret(tcg),
+            TCGOpcode::ADD => TCGX86::tcg_gen_addi(tcg, mc),
+            TCGOpcode::SUB => TCGX86::tcg_gen_sub(tcg, mc),
+            TCGOpcode::AND => TCGX86::tcg_gen_and(tcg, mc),
+            TCGOpcode::OR => TCGX86::tcg_gen_or(tcg, mc),
+            TCGOpcode::XOR => TCGX86::tcg_gen_xor(tcg, mc),
+            TCGOpcode::JMP => TCGX86::tcg_gen_ret(tcg, mc),
         }
-    }
-
-    fn translate_addi(tcg: &TCGOp) -> (u64, usize) {
-        assert_eq!(tcg.arg0.t, TCGvType::Register);
-        assert_eq!(tcg.arg1.t, TCGvType::Register);
-        assert_eq!(tcg.arg2.t, TCGvType::Immediate);
-
-        if tcg.arg0.value == 0 {
-            // if destination is x0, skip generate host machine code.
-            return (0, 0);
-        }
-        if tcg.arg1.value == 0 {
-            // if source register is x0, just generate immediate value.
-            let revert_bytes = (tcg.arg2.value as u32).swap_bytes();
-            // movl   imm,reg_addr(%rbp)
-            let raw_mc: u64 =
-                0xc745_00_00000000 | (revert_bytes as u64) | ((tcg.arg0.value * 8 as u64) << 32);
-            return (raw_mc, 56 / 8);
-        }
-
-        panic!("This function is not supported!");
-    }
-
-    fn translate_sub(tcg: &TCGOp) -> (u64, usize) {
-        panic!("This function is not supported!");
-    }
-
-    fn translate_ret(tcg: &TCGOp) -> (u64, usize) {
-        assert_eq!(tcg.op, TCGOpcode::JMP);
-        if tcg.arg0.t == TCGvType::Register
-            && tcg.arg0.value == 0
-            && tcg.arg1.t == TCGvType::Register
-            && tcg.arg1.value == 1
-        {
-            // mov 0x50(%rbp), eax  0x50 is location of x10
-            let raw_mc: u64 = 0x8b45_50;
-            return (raw_mc, 3);
-        }
-        panic!("This function is not supported!")
-    }
-
-    fn tcg_gen_addi(inst: &u32) -> Box<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
-        let imm_const: u64 = (*inst as u64) >> 20 & 0xfff;
-        let rd_addr: usize = get_rd_addr!(*inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::ADD, *rd, *rs1, *imm));
-
-        tcg_inst
-    }
-
-    fn tcg_gen_sub(inst: &u32) -> Box<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
-        let rs2_addr: usize = get_rs2_addr!(*inst) as usize;
-        let rd_addr: usize = get_rd_addr!(*inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::SUB, *rd, *rs1, *rs2));
-
-        tcg_inst
-    }
-
-    fn tcg_gen_jalr(inst: &u32) -> Box<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
-        let imm_const: u64 = (*inst as u64) >> 20 & 0xfff;
-        let rd_addr: usize = get_rd_addr!(*inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::JMP, *rd, *rs1, *imm));
-
-        tcg_inst
     }
 
     unsafe fn reflect(instructions: &[u8], gpr_base: *const [u64; 32]) {
@@ -256,8 +207,7 @@ impl CPU {
         let func: unsafe extern "C" fn(gpr_base: *const [u64; 32]) -> u32 =
             mem::transmute(map.data());
 
-        let ans = func(gpr_base);
-        println!("ans = {:}", ans);
+        let _ans = func(gpr_base);
     }
 
     unsafe fn gen_tcg(&mut self, instructions: &[u8]) {
@@ -299,63 +249,12 @@ impl CPU {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-enum TCGOpcode {
-    ADD = 0,
-    SUB = 1,
-    JMP = 2,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-enum TCGvType {
-    Register = 0,
-    Immediate = 1,
-}
-
-#[derive(Debug, Copy, Clone)]
-struct TCGOp {
-    op: TCGOpcode,
-    arg0: TCGv,
-    arg1: TCGv,
-    arg2: TCGv,
-}
-
-impl TCGOp {
-    pub fn new(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
-        TCGOp {
-            op: opcode,
-            arg0: a1,
-            arg1: a2,
-            arg2: a3,
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-struct TCGv {
-    t: TCGvType,
-    value: u64,
-}
-
-impl TCGv {
-    pub fn new_reg(val: u64) -> TCGv {
-        TCGv {
-            t: TCGvType::Register,
-            value: val,
-        }
-    }
-
-    pub fn new_imm(val: u64) -> TCGv {
-        TCGv {
-            t: TCGvType::Immediate,
-            value: val,
-        }
-    }
-}
-
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let filename = &args[1];
+
     let cpu = CPU::new();
-    cpu.run();
+    cpu.run(&filename);
 
     return;
 }

@@ -1,0 +1,101 @@
+use super::tcg::{TCGOp, TCGOpcode, TCGv};
+
+macro_rules! get_rs1_addr {
+    ($inst:expr) => {
+        ($inst >> 15) & 0x1f
+    };
+}
+
+macro_rules! get_rs2_addr {
+    ($inst:expr) => {
+        ($inst >> 20) & 0x1f
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! get_rs3_addr {
+    ($inst:expr) => {
+        ($inst >> 27) & 0x1f
+    };
+}
+
+macro_rules! get_rd_addr {
+    ($inst:expr) => {
+        ($inst >> 7) & 0x1f
+    };
+}
+
+pub struct TranslateRiscv;
+
+impl TranslateRiscv {
+    pub fn translate_addi(inst: &u32) -> Box<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
+        let imm_const: u64 = (*inst as u64) >> 20 & 0xfff;
+        let rd_addr: usize = get_rd_addr!(*inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::ADD, *rd, *rs1, *imm));
+
+        tcg_inst
+    }
+
+    pub fn translate_jalr(inst: &u32) -> Box<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
+        let imm_const: u64 = (*inst as u64) >> 20 & 0xfff;
+        let rd_addr: usize = get_rd_addr!(*inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::JMP, *rd, *rs1, *imm));
+
+        tcg_inst
+    }
+
+    pub fn translate_lui(inst: &u32) -> Box<TCGOp> {
+        let imm_const: u64 = (*inst as u64) & !0xfff;
+        let rd_addr: usize = get_rd_addr!(*inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(0));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::ADD, *rd, *rs1, *imm));
+
+        tcg_inst
+    }
+
+    fn translate_rrr(op: TCGOpcode, inst: &u32) -> Box<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(*inst) as usize;
+        let rd_addr: usize = get_rd_addr!(*inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = Box::new(TCGOp::new(op, *rd, *rs1, *rs2));
+
+        tcg_inst
+    }
+
+    pub fn translate_add(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rrr(TCGOpcode::ADD, inst)
+    }
+    pub fn translate_sub(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SUB, inst)
+    }
+    pub fn translate_and(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rrr(TCGOpcode::AND, inst)
+    }
+    pub fn translate_or(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rrr(TCGOpcode::OR, inst)
+    }
+    pub fn translate_xor(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rrr(TCGOpcode::XOR, inst)
+    }
+}
