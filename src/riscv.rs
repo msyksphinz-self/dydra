@@ -28,20 +28,6 @@ macro_rules! get_rd_addr {
 pub struct TranslateRiscv;
 
 impl TranslateRiscv {
-    pub fn translate_addi(inst: &u32) -> Box<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
-        let imm_const: u64 = (*inst as u64) >> 20 & 0xfff;
-        let rd_addr: usize = get_rd_addr!(*inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::ADD, *rd, *rs1, *imm));
-
-        tcg_inst
-    }
-
     pub fn translate_jalr(inst: &u32) -> Box<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
         let imm_const: u64 = (*inst as u64) >> 20 & 0xfff;
@@ -83,6 +69,20 @@ impl TranslateRiscv {
         tcg_inst
     }
 
+    fn translate_rri(op: TCGOpcode, inst: &u32) -> Box<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
+        let imm_const: u64 = (*inst >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(*inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = Box::new(TCGOp::new(op, *rd, *rs1, *imm));
+
+        tcg_inst
+    }
+
     pub fn translate_add(inst: &u32) -> Box<TCGOp> {
         Self::translate_rrr(TCGOpcode::ADD, inst)
     }
@@ -97,5 +97,18 @@ impl TranslateRiscv {
     }
     pub fn translate_xor(inst: &u32) -> Box<TCGOp> {
         Self::translate_rrr(TCGOpcode::XOR, inst)
+    }
+
+    pub fn translate_addi(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rri(TCGOpcode::ADD, inst)
+    }
+    pub fn translate_andi(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rri(TCGOpcode::AND, inst)
+    }
+    pub fn translate_ori(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rri(TCGOpcode::OR, inst)
+    }
+    pub fn translate_xori(inst: &u32) -> Box<TCGOp> {
+        Self::translate_rri(TCGOpcode::XOR, inst)
     }
 }

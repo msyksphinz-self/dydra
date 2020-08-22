@@ -14,6 +14,9 @@ enum X86Opcode {
     AND_GV_EV = 0x23,
     OR_GV_EV = 0x0b,
     XOR_GV_EV = 0x33,
+    AND_EAX_IV = 0x25,
+    OR_EAX_IV = 0x0d,
+    XOR_EAX_IV = 0x35,
 }
 
 #[derive(PartialEq, Debug)]
@@ -35,7 +38,7 @@ pub struct TCGX86;
 
 impl TCGX86 {
     fn tcg_modrm_out(op: X86Opcode, modrm: X86ModRM, mc: &mut Vec<u8>) {
-        Self::tcg_out((op as u32) | (modrm as u32) << 8, 2, mc);
+        Self::tcg_out(((modrm as u32) << 16) | (op as u32) << 8 | 0x48, 3, mc);
     }
 
     fn tcg_gen_rrr(op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) {
@@ -50,6 +53,24 @@ impl TCGX86 {
         // add    reg_offset(%rbp),%eax
         Self::tcg_modrm_out(op, X86ModRM::MOD_10, mc);
         Self::tcg_out(conv_gpr_offset!(tcg.arg2.value), 4, mc);
+
+        // mov    %eax,reg_offset(%rbp)
+        Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+        Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+    }
+
+    fn tcg_gen_rri(op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) {
+        assert_eq!(tcg.arg0.t, TCGvType::Register);
+        assert_eq!(tcg.arg1.t, TCGvType::Register);
+        assert_eq!(tcg.arg2.t, TCGvType::Immediate);
+
+        // mov    reg_offset(%rbp),%eax
+        Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10, mc);
+        Self::tcg_out(conv_gpr_offset!(tcg.arg1.value), 4, mc);
+
+        // add    imm16,%eax
+        Self::tcg_out(op as u32, 1, mc);
+        Self::tcg_out(tcg.arg2.value as u32, 4, mc);
 
         // mov    %eax,reg_offset(%rbp)
         Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
@@ -86,19 +107,7 @@ impl TCG for TCGX86 {
                 return;
             }
 
-            // mov    reg_offset(%rbp),%eax
-            Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10, mc);
-            Self::tcg_out(conv_gpr_offset!(tcg.arg1.value), 4, mc);
-
-            // add    imm16,%eax
-            // Self::tcg_modrm_out(X86Opcode::ADD_EV_IV, X86ModRM::MOD_11, mc);
-            Self::tcg_out(X86Opcode::ADD_EAX_IV as u32, 1, mc);
-            Self::tcg_out(tcg.arg2.value as u32, 4, mc);
-
-            // mov    %eax,reg_offset(%rbp)
-            Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
-            Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
-
+            Self::tcg_gen_rri(X86Opcode::ADD_EAX_IV, tcg, mc);
             return;
         } else {
             if tcg.arg1.value == 0 {
@@ -129,8 +138,32 @@ impl TCG for TCGX86 {
             // if destination is x0, skip generate host machine code.
             return;
         }
+        if tcg.arg2.t == tcg::TCGvType::Immediate {
+            if tcg.arg1.value == 0 {
+                // if source register is x0, just generate immediate value.
+                // movl   imm,reg_addr(%rbp)
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+                Self::tcg_out(tcg.arg2.value as u32, 4, mc);
+                return;
+            }
 
-        Self::tcg_gen_rrr(X86Opcode::AND_GV_EV, tcg, mc);
+            Self::tcg_gen_rri(X86Opcode::AND_EAX_IV, tcg, mc);
+            return;
+        } else {
+            if tcg.arg1.value == 0 {
+                // if source register is x0, just mov gpr value.
+                // movl   reg_addr(%rbp),%eax
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg2.value), 4, mc);
+                // movl   %eax,reg_addr(%rbp)
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+                return;
+            }
+            Self::tcg_gen_rrr(X86Opcode::AND_GV_EV, tcg, mc);
+            return;
+        }
     }
 
     fn tcg_gen_or(tcg: &TCGOp, mc: &mut Vec<u8>) {
@@ -138,8 +171,32 @@ impl TCG for TCGX86 {
             // if destination is x0, skip generate host machine code.
             return;
         }
+        if tcg.arg2.t == tcg::TCGvType::Immediate {
+            if tcg.arg1.value == 0 {
+                // if source register is x0, just generate immediate value.
+                // movl   imm,reg_addr(%rbp)
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+                Self::tcg_out(tcg.arg2.value as u32, 4, mc);
+                return;
+            }
 
-        Self::tcg_gen_rrr(X86Opcode::OR_GV_EV, tcg, mc);
+            Self::tcg_gen_rri(X86Opcode::OR_EAX_IV, tcg, mc);
+            return;
+        } else {
+            if tcg.arg1.value == 0 {
+                // if source register is x0, just mov gpr value.
+                // movl   reg_addr(%rbp),%eax
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg2.value), 4, mc);
+                // movl   %eax,reg_addr(%rbp)
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+                return;
+            }
+            Self::tcg_gen_rrr(X86Opcode::OR_GV_EV, tcg, mc);
+            return;
+        }
     }
 
     fn tcg_gen_xor(tcg: &TCGOp, mc: &mut Vec<u8>) {
@@ -147,8 +204,32 @@ impl TCG for TCGX86 {
             // if destination is x0, skip generate host machine code.
             return;
         }
+        if tcg.arg2.t == tcg::TCGvType::Immediate {
+            if tcg.arg1.value == 0 {
+                // if source register is x0, just generate immediate value.
+                // movl   imm,reg_addr(%rbp)
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+                Self::tcg_out(tcg.arg2.value as u32, 4, mc);
+                return;
+            }
 
-        Self::tcg_gen_rrr(X86Opcode::XOR_GV_EV, tcg, mc);
+            Self::tcg_gen_rri(X86Opcode::XOR_EAX_IV, tcg, mc);
+            return;
+        } else {
+            if tcg.arg1.value == 0 {
+                // if source register is x0, just mov gpr value.
+                // movl   reg_addr(%rbp),%eax
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg2.value), 4, mc);
+                // movl   %eax,reg_addr(%rbp)
+                Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
+                Self::tcg_out(conv_gpr_offset!(tcg.arg0.value), 4, mc);
+                return;
+            }
+            Self::tcg_gen_rrr(X86Opcode::XOR_GV_EV, tcg, mc);
+            return;
+        }
     }
 
     fn tcg_gen_ret(tcg: &TCGOp, mc: &mut Vec<u8>) {
