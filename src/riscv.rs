@@ -1,4 +1,4 @@
-use super::tcg::{TCGOp, TCGOpcode, TCGv};
+use super::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGv};
 
 macro_rules! get_rs1_addr {
     ($inst:expr) => {
@@ -25,6 +25,12 @@ macro_rules! get_rd_addr {
     };
 }
 
+macro_rules! get_imm12 {
+    ($inst:expr) => {
+        ($inst >> 20) as u64
+    };
+}
+
 pub struct TranslateRiscv;
 
 impl TranslateRiscv {
@@ -37,7 +43,7 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::JMP, *rd, *rs1, *imm));
+        let tcg_inst = Box::new(TCGOp::new_3op(TCGOpcode::JMP, *rd, *rs1, *imm));
 
         tcg_inst
     }
@@ -50,7 +56,7 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = Box::new(TCGOp::new(TCGOpcode::ADD, *rd, *rs1, *imm));
+        let tcg_inst = Box::new(TCGOp::new_3op(TCGOpcode::ADD, *rd, *rs1, *imm));
 
         tcg_inst
     }
@@ -64,7 +70,7 @@ impl TranslateRiscv {
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = Box::new(TCGOp::new(op, *rd, *rs1, *rs2));
+        let tcg_inst = Box::new(TCGOp::new_3op(op, *rd, *rs1, *rs2));
 
         tcg_inst
     }
@@ -78,7 +84,27 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = Box::new(TCGOp::new(op, *rd, *rs1, *imm));
+        let tcg_inst = Box::new(TCGOp::new_3op(op, *rd, *rs1, *imm));
+
+        tcg_inst
+    }
+
+    fn translate_branch(op: TCGOpcode, inst: &u32) -> Box<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(*inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(*inst) as usize;
+        let rd_addr: usize = get_rd_addr!(*inst) as usize;
+        let imm: u64 = get_imm12!(*inst);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+
+        let label = Box::new(TCGLabel::new());
+
+        let tcg_inst = Box::new(TCGOp::new_4op(op, *rs1, *rs2, *label));
+        let tcg_true_tb = Box::new(TCGOp::new_goto_tb(TCGv::new_imm(4)));
+        let tcg_set_label = Box::new(TCGOp::new_label(*label));
+
+        let tcg_false_tb = Box::new(TCGOp::new_goto_tb(TCGv::new_imm(imm)));
 
         tcg_inst
     }
@@ -110,5 +136,9 @@ impl TranslateRiscv {
     }
     pub fn translate_xori(inst: &u32) -> Box<TCGOp> {
         Self::translate_rri(TCGOpcode::XOR, inst)
+    }
+
+    pub fn translate_beq(inst: &u32) -> Box<TCGOp> {
+        Self::translate_branch(TCGOpcode::EQ, inst)
     }
 }

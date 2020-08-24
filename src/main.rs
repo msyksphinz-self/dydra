@@ -131,6 +131,7 @@ impl CPU {
                 RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
                 RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
                 RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
+                RiscvInstId::BEQ => TranslateRiscv::translate_beq(inst),
                 other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
             };
 
@@ -177,13 +178,16 @@ impl CPU {
     }
 
     fn tcg_gen(tcg: &TCGOp, mc: &mut Vec<u8>) {
-        match tcg.op {
+        let op = tcg.op.unwrap();
+        println!("op = {:?}", op);
+        match op {
             TCGOpcode::ADD => TCGX86::tcg_gen_addi(tcg, mc),
             TCGOpcode::SUB => TCGX86::tcg_gen_sub(tcg, mc),
             TCGOpcode::AND => TCGX86::tcg_gen_and(tcg, mc),
             TCGOpcode::OR => TCGX86::tcg_gen_or(tcg, mc),
             TCGOpcode::XOR => TCGX86::tcg_gen_xor(tcg, mc),
             TCGOpcode::JMP => TCGX86::tcg_gen_ret(tcg, mc),
+            _ => panic!("Not supported now"),
         }
     }
 

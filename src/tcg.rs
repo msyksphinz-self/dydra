@@ -1,34 +1,75 @@
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TCGOpcode {
-    ADD = 0,
-    SUB = 1,
-    AND = 2,
-    OR = 3,
-    XOR = 4,
-    JMP = 5,
+    MOV,
+    ADD,
+    SUB, 
+    AND, 
+    OR, 
+    XOR, 
+    JMP, 
+    EQ ,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TCGvType {
-    Register = 0,
-    Immediate = 1,
+    Register,
+    Immediate,
+    ProgramCounter,
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct TCGOp {
-    pub op: TCGOpcode,
-    pub arg0: TCGv,
-    pub arg1: TCGv,
-    pub arg2: TCGv,
+    pub op: Option<TCGOpcode>,
+    pub arg0: Option<TCGv>,
+    pub arg1: Option<TCGv>,
+    pub arg2: Option<TCGv>,
+    pub label: Option<TCGLabel>,
 }
 
 impl TCGOp {
-    pub fn new(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
+    pub fn new_2op(opcode: TCGOpcode, a1: TCGv, a2: TCGv) -> TCGOp {
         TCGOp {
-            op: opcode,
-            arg0: a1,
-            arg1: a2,
-            arg2: a3,
+            op: Some(opcode),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: None,
+            label: None,
+        }
+    }
+
+    pub fn new_3op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
+        TCGOp {
+            op: Some(opcode),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: Some(a3),
+            label: None,
+        }
+    }
+
+    pub fn new_4op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, label: TCGLabel) -> TCGOp {
+        TCGOp {
+            op: Some(opcode),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: None,
+            label: Some(label),
+        }
+    }
+
+    pub fn new_goto_tb(addr: TCGv) -> TCGOp {
+        assert_eq!(addr.t, TCGvType::Immediate);
+
+        Self::new_2op(TCGOpcode::MOV, TCGv::new_pc(), addr)
+    }
+
+    pub fn new_label(label: TCGLabel) -> TCGOp {
+        TCGOp {
+            op: None,
+            arg0: None,
+            arg1: None,
+            arg2: None,
+            label: Some(label),
         }
     }
 }
@@ -52,6 +93,22 @@ impl TCGv {
             t: TCGvType::Immediate,
             value: val,
         }
+    }
+
+    pub fn new_pc() -> TCGv {
+        TCGv {
+            t: TCGvType::ProgramCounter,
+            value: 0,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct TCGLabel;
+
+impl TCGLabel {
+    pub fn new() -> TCGLabel {
+        TCGLabel {}
     }
 }
 
