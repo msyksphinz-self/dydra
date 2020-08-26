@@ -24,19 +24,24 @@ use x86::TCGX86;
 
 struct CPU {
     m_regs: [u64; 32],
+    m_pc: u64,
 
     m_inst_vec: Vec<u32>,
-    m_tcg_vec: Vec<Box<tcg::TCGOp>>,
+    // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
+    m_tcg_vec: Vec<tcg::TCGOp>,
     m_tcg_raw_vec: Vec<u8>,
+    m_tcg_tb_vec: Vec<u8>,
 }
 
 impl CPU {
     fn new() -> CPU {
         CPU {
             m_regs: [0; 32],
+            m_pc: 0x0,
             m_inst_vec: vec![],
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
+            m_tcg_tb_vec: vec![],
         }
     }
 
@@ -47,6 +52,7 @@ impl CPU {
                 print!("\n");
             }
         }
+        print!("PC = {:016x}\n", self.m_pc);
     }
 
     pub fn run(mut self, filename: &String) {
@@ -98,12 +104,18 @@ impl CPU {
         // ];
         let host_prologue = [
             0x55, // pushq %rbp
-            0x54, // pushq %rbx
+            0x54, // pushq %rsp
             0x48, 0x8b, 0xef, // movq     %rdi, %rbp
-            0x48, 0x81, 0xc4, 0x78, 0xfb, 0xff, 0xff, // addq     $-0x488, %rsp
+            0x48, 0x81, 0xc4, 0x80, 0xfb, 0xff, 0xff, // addq     $-0x480, %rsp
+            0x48, 0x89, 0x75, 0x00, //  mov    %rsi,0x0(%rbp)
+            0x48, 0x8b, 0x06, // mov    (%rsi),%rax
+            0x48, 0x89, 0x45, 0x08, //  mov    %rax,0x8(%rbp)
+            0x48, 0x8b, 0x06, // mov    (%rsi),%rax
+            0x48, 0x89, 0x65, 0x10, //  mov    %rsp,0x10(%rbp)
+            0xff, 0xe6, //  jmpq     *%rsi
         ];
         let host_epilogue = [
-            0x48, 0x81, 0xc4, 0x88, 0x04, 0x00, 0x00, // addq     $0x488, %rsp
+            0x48, 0x81, 0xc4, 0x80, 0x04, 0x00, 0x00, // addq     $0x480, %rsp
             0x5b, // popq     %rbx
             0x5d, // popq     %rbp
             0xc3, // retq
@@ -119,7 +131,7 @@ impl CPU {
                 _ => panic!("Decode Failed"),
             };
 
-            let tcg_inst = match riscv_id {
+            let mut tcg_inst = match riscv_id {
                 RiscvInstId::ADDI => TranslateRiscv::translate_addi(inst),
                 RiscvInstId::ADD => TranslateRiscv::translate_add(inst),
                 RiscvInstId::SUB => TranslateRiscv::translate_sub(inst),
@@ -135,22 +147,12 @@ impl CPU {
                 other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
             };
 
-            self.m_tcg_vec.push(tcg_inst);
+            self.m_tcg_vec.append(&mut tcg_inst);
         }
 
         // Emit Prologue
         for b in &host_prologue {
             self.m_tcg_raw_vec.push(*b);
-        }
-
-        for tcg in &self.m_tcg_vec {
-            println!("tcg_inst = {:?}", tcg);
-            let mut mc_byte = vec![];
-            Self::tcg_gen(&tcg, &mut mc_byte);
-            for be in &mc_byte {
-                let be_data = *be;
-                self.m_tcg_raw_vec.push(be_data);
-            }
         }
 
         // Emit Epilogue
@@ -168,32 +170,62 @@ impl CPU {
             print!("\n");
         }
 
-        unsafe {
+        let pe_map = {
             let v = self.m_tcg_raw_vec.as_slice();
-            let reg_ptr: *const [u64; 32] = &self.m_regs;
-            Self::reflect(v, reg_ptr);
+            Self::reflect(v)
+        };
+
+        // Make tb instruction region (temporary 1024byte)
+        let tb_map = match MemoryMap::new(
+            1024,
+            &[
+                MapOption::MapReadable,
+                MapOption::MapWritable,
+                MapOption::MapExecutable,
+            ],
+        ) {
+            Ok(m) => m,
+            Err(e) => panic!("Error: {}", e),
+        };
+
+        let mut pc_address = 0;
+
+        for tcg in &self.m_tcg_vec {
+            println!("tcg_inst = {:?}", tcg);
+            let mut mc_byte = vec![];
+            TCGX86::tcg_gen(pc_address, &tcg, &mut mc_byte, &pe_map, &tb_map);
+            for be in &mc_byte {
+                let be_data = *be;
+                self.m_tcg_tb_vec.push(be_data);
+                // self.m_tcg_raw_vec.push(be_data);
+            }
+            pc_address += mc_byte.len() as u64;
         }
 
+        unsafe {
+            std::ptr::copy(
+                self.m_tcg_tb_vec.as_ptr(),
+                tb_map.data(),
+                self.m_tcg_tb_vec.len(),
+            );
+        }
+
+        let reg_ptr: *const [u64; 32] = &self.m_regs;
+
+        unsafe {
+            let func: unsafe extern "C" fn(gpr_base: *const [u64; 32], tb_map: *mut u8) -> u32 =
+                mem::transmute(pe_map.data());
+
+            let tb_data = tb_map.data();
+            println!("reflect tb address = {:p}", tb_data);
+            let _ans = func(reg_ptr, tb_data);
+        }
         self.dump_gpr();
     }
 
-    fn tcg_gen(tcg: &TCGOp, mc: &mut Vec<u8>) {
-        let op = tcg.op.unwrap();
-        println!("op = {:?}", op);
-        match op {
-            TCGOpcode::ADD => TCGX86::tcg_gen_addi(tcg, mc),
-            TCGOpcode::SUB => TCGX86::tcg_gen_sub(tcg, mc),
-            TCGOpcode::AND => TCGX86::tcg_gen_and(tcg, mc),
-            TCGOpcode::OR => TCGX86::tcg_gen_or(tcg, mc),
-            TCGOpcode::XOR => TCGX86::tcg_gen_xor(tcg, mc),
-            TCGOpcode::JMP => TCGX86::tcg_gen_ret(tcg, mc),
-            _ => panic!("Not supported now"),
-        }
-    }
-
-    unsafe fn reflect(instructions: &[u8], gpr_base: *const [u64; 32]) {
-        let map = match MemoryMap::new(
-            instructions.len(),
+    fn reflect(prologue_epilogue: &[u8]) -> mmap::MemoryMap {
+        let pe_map = match MemoryMap::new(
+            prologue_epilogue.len(),
             &[
                 // MapOption::MapAddr(0 as *mut u8),
                 // MapOption::MapOffset(0),
@@ -209,12 +241,15 @@ impl CPU {
             Err(e) => panic!("Error: {}", e),
         };
 
-        std::ptr::copy(instructions.as_ptr(), map.data(), instructions.len());
+        unsafe {
+            std::ptr::copy(
+                prologue_epilogue.as_ptr(),
+                pe_map.data(),
+                prologue_epilogue.len(),
+            );
+        }
 
-        let func: unsafe extern "C" fn(gpr_base: *const [u64; 32]) -> u32 =
-            mem::transmute(map.data());
-
-        let _ans = func(gpr_base);
+        return pe_map;
     }
 
     unsafe fn gen_tcg(&mut self, instructions: &[u8]) {

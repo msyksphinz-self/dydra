@@ -1,13 +1,15 @@
+extern crate mmap;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TCGOpcode {
     MOV,
     ADD,
-    SUB, 
-    AND, 
-    OR, 
-    XOR, 
-    JMP, 
-    EQ ,
+    SUB,
+    AND,
+    OR,
+    XOR,
+    JMP,
+    EQ,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -104,19 +106,37 @@ impl TCGv {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct TCGLabel;
+pub struct TCGLabel {
+    pub offset: u64,
+}
 
 impl TCGLabel {
     pub fn new() -> TCGLabel {
-        TCGLabel {}
+        TCGLabel { offset: 0 }
     }
 }
 
 pub trait TCG {
-    fn tcg_gen_addi(tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_sub(tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_and(tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_or(tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_xor(tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_ret(tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen(
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+        pe_map: &mmap::MemoryMap,
+        tb_map: &mmap::MemoryMap,
+    );
+
+    fn tcg_gen_addi(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_sub(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_and(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_or(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_xor(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_ret(
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+        pe_map: &mmap::MemoryMap,
+        tb_map: &mmap::MemoryMap,
+    );
+    fn tcg_gen_eq(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_mov(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
 }
