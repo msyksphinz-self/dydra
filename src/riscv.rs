@@ -25,6 +25,7 @@ macro_rules! get_rd_addr {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! get_imm12 {
     ($inst:expr) => {
         ($inst >> 20) as u64
@@ -106,10 +107,11 @@ impl TranslateRiscv {
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let addr = Box::new(TCGv::new_imm(target));
 
         let label = Box::new(TCGLabel::new());
 
-        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *label);
+        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, *label);
         let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(4));
         let tcg_set_label = TCGOp::new_label(*label);
 

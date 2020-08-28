@@ -92,7 +92,7 @@ impl CPU {
 
         // Dump All Section Headers
         for sh_header in sh_headers {
-            if sh_header.sh_flags != 0 {
+            if sh_header.sh_flags == 6 {
                 sh_header.dump();
                 loader.load_section(&mut riscv_guestcode, sh_header.sh_offset, sh_header.sh_size);
             }
@@ -106,7 +106,7 @@ impl CPU {
             0x55, // pushq %rbp
             0x54, // pushq %rsp
             0x48, 0x8b, 0xef, // movq     %rdi, %rbp
-            0x48, 0x81, 0xc4, 0x80, 0xfb, 0xff, 0xff, // addq     $-0x480, %rsp
+            0x48, 0x81, 0xc4, 0x80, 0xfb, 0xff, 0xff, // addq     $-0x488, %rsp
             0x48, 0x89, 0x75, 0x00, //  mov    %rsi,0x0(%rbp)
             0x48, 0x8b, 0x06, // mov    (%rsi),%rax
             0x48, 0x89, 0x45, 0x08, //  mov    %rax,0x8(%rbp)
@@ -115,7 +115,7 @@ impl CPU {
             0xff, 0xe6, //  jmpq     *%rsi
         ];
         let host_epilogue = [
-            0x48, 0x81, 0xc4, 0x80, 0x04, 0x00, 0x00, // addq     $0x480, %rsp
+            0x48, 0x81, 0xc4, 0x80, 0x04, 0x00, 0x00, // addq     $0x488, %rsp
             0x5b, // popq     %rbx
             0x5d, // popq     %rbp
             0xc3, // retq
@@ -190,14 +190,24 @@ impl CPU {
 
         let mut pc_address = 0;
 
+        let tb_map_ptr = tb_map.data() as *const u64;
+        let pe_map_ptr = pe_map.data() as *const u64;
+
+        println!("tb_address = {:?}", tb_map_ptr);
+        println!("pe_address = {:?}", pe_map_ptr);
+
         for tcg in &self.m_tcg_vec {
             println!("tcg_inst = {:?}", tcg);
+
+            let mut diff_from_epilogue = unsafe { pe_map_ptr.offset_from(tb_map_ptr) };
+            diff_from_epilogue *= 8;
+            diff_from_epilogue += 32;
+
             let mut mc_byte = vec![];
-            TCGX86::tcg_gen(pc_address, &tcg, &mut mc_byte, &pe_map, &tb_map);
+            TCGX86::tcg_gen(diff_from_epilogue, pc_address, &tcg, &mut mc_byte);
             for be in &mc_byte {
                 let be_data = *be;
                 self.m_tcg_tb_vec.push(be_data);
-                // self.m_tcg_raw_vec.push(be_data);
             }
             pc_address += mc_byte.len() as u64;
         }
@@ -218,7 +228,8 @@ impl CPU {
 
             let tb_data = tb_map.data();
             println!("reflect tb address = {:p}", tb_data);
-            let _ans = func(reg_ptr, tb_data);
+            let ans = func(reg_ptr, tb_data);
+            println!("ans = {:x}", ans);
         }
         self.dump_gpr();
     }

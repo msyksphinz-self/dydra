@@ -49,12 +49,12 @@ impl TCGOp {
         }
     }
 
-    pub fn new_4op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, label: TCGLabel) -> TCGOp {
+    pub fn new_4op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv, label: TCGLabel) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
             arg1: Some(a2),
-            arg2: None,
+            arg2: Some(a3),
             label: Some(label),
         }
     }
@@ -117,26 +117,14 @@ impl TCGLabel {
 }
 
 pub trait TCG {
-    fn tcg_gen(
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-        pe_map: &mmap::MemoryMap,
-        tb_map: &mmap::MemoryMap,
-    );
+    fn tcg_gen (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_addi(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_sub(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_and(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_or(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_xor(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_ret(
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-        pe_map: &mmap::MemoryMap,
-        tb_map: &mmap::MemoryMap,
-    );
-    fn tcg_gen_eq(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
-    fn tcg_gen_mov(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>);
+    fn tcg_gen_addi(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sub (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_and (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_or  (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_xor (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_ret (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_eq  (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_mov (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 }
