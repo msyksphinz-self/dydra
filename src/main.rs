@@ -4,6 +4,7 @@ use std::env;
 use std::mem;
 
 pub mod elf_loader;
+pub mod instr_info;
 pub mod riscv;
 pub mod riscv_decoder;
 pub mod riscv_inst_id;
@@ -22,11 +23,13 @@ use riscv::TranslateRiscv;
 use tcg::*;
 use x86::TCGX86;
 
+use instr_info::InstrInfo;
+
 struct CPU {
     m_regs: [u64; 32],
     m_pc: u64,
 
-    m_inst_vec: Vec<u32>,
+    m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
     m_tcg_vec: Vec<tcg::TCGOp>,
     m_tcg_raw_vec: Vec<u8>,
@@ -126,7 +129,7 @@ impl CPU {
         }
 
         for inst in &self.m_inst_vec {
-            let riscv_id = match decode_inst(*inst) {
+            let riscv_id = match decode_inst(inst.inst) {
                 Some(id) => id,
                 _ => panic!("Decode Failed"),
             };
@@ -144,6 +147,12 @@ impl CPU {
                 RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
                 RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
                 RiscvInstId::BEQ => TranslateRiscv::translate_beq(inst),
+                RiscvInstId::BNE => TranslateRiscv::translate_bne(inst),
+                RiscvInstId::BLT => TranslateRiscv::translate_blt(inst),
+                RiscvInstId::BGE => TranslateRiscv::translate_bge(inst),
+                RiscvInstId::BLTU => TranslateRiscv::translate_bltu(inst),
+                RiscvInstId::BGEU => TranslateRiscv::translate_bgeu(inst),
+
                 other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
             };
 
@@ -329,8 +338,11 @@ impl CPU {
                 | ((*map_data.offset(byte_idx as isize + 3) as u32) << 24);
 
             println!("inst = {:08x}", inst);
-
-            self.m_inst_vec.push(inst);
+            let inst_info = Box::new(InstrInfo {
+                inst: inst,
+                addr: byte_idx as u64,
+            });
+            self.m_inst_vec.push(*inst_info);
         }
     }
 }

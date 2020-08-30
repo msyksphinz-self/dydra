@@ -12,6 +12,11 @@ pub enum TCGOpcode {
     XOR,
     JMP,
     EQ,
+    NE,
+    LT,
+    GE,
+    LTU,
+    GEU,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -173,6 +178,36 @@ pub trait TCG {
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_eq(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_ne(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_lt(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_ge(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_ltu(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_geu(
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &mut TCGOp,

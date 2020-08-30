@@ -28,6 +28,37 @@ enum X86Opcode {
     MOV_EAX_IV = 0xb8,
     RETN = 0xc3,
     JMP_JZ = 0xe9,
+    JA_rel16_32 = 0x87_0f, // JA rel16/32	CF=0 and ZF=0	より上の場合ニアジャンプします
+    JAE_rel16_32 = 0x83_0f, // JAE rel16/32	CF=0	より上か等しい場合ニアジャンプします
+    JB_rel16_32 = 0x82_0f, // JB rel16/32	CF=1	より下の場合ニアジャンプします
+    JBE_rel16_32 = 0x86_0f, // JBE rel16/32	CF=1 or ZF=1	より下か等しい場合ニアジャンプします
+    // JC_rel16_32 = 0x82_0f,  // JC rel16/32	CF=1	キャリーがある場合ニアジャンプします
+    JE_rel16_32 = 0x84_0f, // JE rel16/32	ZF=1	等しい場合ニアジャンプします
+    // JZ_rel16_32 = 0x84_0f,  // JZ rel16/32	ZF=1	ゼロの場合ニアジャンプします
+    JG_rel16_32 = 0x8F_0f, // JG_rel16_32	ZF=0 or SF=OF	より大きい場合ニアジャンプします
+    JGE_rel16_32 = 0x8D_0f, // JGE_rel16_32	SF=OF	より大きいか等しい場合ニアジャンプします
+    JL_rel16_32 = 0x8C_0f, // JL_rel16_32	SF< > OF	より小さい場合ニアジャンプします
+    JLE_rel16_32 = 0x8E_0f, // JLE_rel16_32	ZF=1 or SF< > OF	より小さいか等しい場合ニアジャンプします
+    // JNA_rel16_32 = 0x86_0f, // JNA_rel16_32	CF=1 or ZF=1	より上でない場合ニアジャンプします
+    // JNAE_rel16_32 = 0x82_0f, // JNAE_rel16_32	CF=1	より上でなく等しくない場合ニアジャンプします
+    // JNB_rel16_32 = 0x83_0f, // JNB_rel16_32	CF=0	より下でない場合ニアジャンプします
+    // JNBE_rel16_32 = 0x87_0f, // JNBE_rel16_32	CF=0 and ZF=0	より下でなく等しくない場合ニアジャンプします
+    // JNC_rel16_32 = 0x83_0f,  // JNC_rel16_32	CF=0	キャリーがない場合ニアジャンプします
+    JNE_rel16_32 = 0x85_0f, // JNE_rel16_32	ZF=0	等しくない場合ニアジャンプします
+                            // JNG_rel16_32 = 0x8E_0f,  // JNG_rel16_32	ZF=1 or SF< > OF	より大きくない場合ニアジャンプします
+                            // JNGE_rel16_32 = 0x8C_0f, // JNGE_rel16_32	SF< > OF	より大きくなく等しくない場合ニアジャンプします
+                            // JNL_rel16_32 = 0x8D_0f,  // JNL_rel16_32	SF=OF	より小さくない場合ニアジャンプします
+                            // JNLE_rel16_32 = 0x8F_0f, // JNLE_rel16_32	ZF=0 and SF=OF	より小さくなく等しくない場合ニアジャンプします
+                            // JNO_rel16_32 = 0x81_0f,  // JNO_rel16_32	OF=0	オーバーフローがない場合ニアジャンプします
+                            // JNP_rel16_32 = 0x8B_0f,  // JNP_rel16_32	PF=0	パリティがない場合ニアジャンプします
+                            // JNS_rel16_32 = 0x89_0f,  // JNS_rel16_32	SF=0	符号がない場合ニアジャンプします
+                            // JNZ_rel16_32 = 0x85_0f,  // JNZ_rel16_32	ZF=0	ゼロでない場合ニアジャンプします
+                            // JO_rel16_32 = 0x80_0f,   // JO_rel16_32	OF=1	オーバーフローがある場合ニアジャンプします
+                            // JP_rel16_32 = 0x8A_0f,   // JP_rel16_32	PF=1	パリティがある場合ニアジャンプします
+                            // JPE_rel16_32 = 0x8A_0f,  // JPE_rel16_32	PF=1	パリティが偶数の場合ニアジャンプします
+                            // JPO_rel16_32 = 0x8B_0f,  // JPO_rel16_32	PF=0	パリティが奇数の場合ニアジャンプします
+                            // JS_rel16_32 = 0x88_0f,   // JS_rel16_32	SF=1	符号がある場合ニアジャンプします
+                            // JZ_rel16_32 = 0x84_0f,   // JZ_rel16_32	ZF=1	ゼロの場合ニアジャンプします
 }
 
 enum X86_2Wd_Opcode {}
@@ -116,6 +147,55 @@ impl TCGX86 {
         }
         return byte_len;
     }
+
+    fn tcg_gen_jcc(
+        gen_size: usize,
+        x86_op: X86Opcode,
+        mc: &mut Vec<u8>,
+        label: &mut Rc<RefCell<tcg::TCGLabel>>,
+    ) -> usize {
+        let mut gen_size = gen_size;
+
+        gen_size += Self::tcg_out(x86_op as u32, 2, mc);
+        gen_size += Self::tcg_out(10 as u32, 4, mc);
+        gen_size += Self::tcg_out_reloc(gen_size - 4, label);
+
+        return gen_size;
+    }
+
+    fn tcg_gen_cmp_branch(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        x86_op: X86Opcode,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+        let arg2 = tcg.arg2.unwrap();
+        let mut label = match &mut tcg.label {
+            Some(l) => l,
+            None => panic!("Label is not defined."),
+        };
+
+        let mut gen_size: usize = pc_address as usize;
+
+        // mov    reg_offset(%rbp),%eax
+        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10, mc);
+        gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
+
+        // cmp    reg_offset(%rbp),%eax
+        gen_size += Self::tcg_modrm_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_10, mc);
+        gen_size += Self::tcg_out(conv_gpr_offset!(arg1.value), 4, mc);
+
+        gen_size = Self::tcg_gen_jcc(gen_size, x86_op, mc, label);
+        // // je     label
+        // gen_size += Self::tcg_out(x86_op as u32, 2, mc);
+        // gen_size += Self::tcg_out(0 as u32, 4, mc);
+        // gen_size += Self::tcg_out_reloc(gen_size - 4, label);
+
+        return gen_size;
+    }
 }
 
 impl TCG for TCGX86 {
@@ -135,6 +215,12 @@ impl TCG for TCGX86 {
                     TCGOpcode::XOR => TCGX86::tcg_gen_xor(diff_from_epilogue, pc_address, tcg, mc),
                     TCGOpcode::JMP => TCGX86::tcg_gen_ret(diff_from_epilogue, pc_address, tcg, mc),
                     TCGOpcode::EQ => TCGX86::tcg_gen_eq(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::NE => TCGX86::tcg_gen_ne(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::LT => TCGX86::tcg_gen_lt(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::GE => TCGX86::tcg_gen_ge(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::LTU => TCGX86::tcg_gen_ltu(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::GEU => TCGX86::tcg_gen_geu(diff_from_epilogue, pc_address, tcg, mc),
+
                     TCGOpcode::MOV => TCGX86::tcg_gen_mov(diff_from_epilogue, pc_address, tcg, mc),
                     other => panic!("{:?} : Not supported now", other),
                 };
@@ -389,44 +475,88 @@ impl TCG for TCGX86 {
         tcg: &mut TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
-        // let mut label = tcg.label.unwrap();
-        let mut label = match &mut tcg.label {
-            Some(l) => l,
-            None => panic!("Label is not defined."),
-        };
+        return Self::tcg_gen_cmp_branch(
+            diff_from_epilogue,
+            pc_address,
+            X86Opcode::JE_rel16_32,
+            tcg,
+            mc,
+        );
+    }
 
-        let mut gen_size: usize = pc_address as usize;
+    fn tcg_gen_ne(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        return Self::tcg_gen_cmp_branch(
+            diff_from_epilogue,
+            pc_address,
+            X86Opcode::JNE_rel16_32,
+            tcg,
+            mc,
+        );
+    }
 
-        // mov    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10, mc);
-        gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
+    fn tcg_gen_lt(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        return Self::tcg_gen_cmp_branch(
+            diff_from_epilogue,
+            pc_address,
+            X86Opcode::JL_rel16_32,
+            tcg,
+            mc,
+        );
+    }
 
-        // cmp    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_10, mc);
-        gen_size += Self::tcg_out(conv_gpr_offset!(arg1.value), 4, mc);
+    fn tcg_gen_ge(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        return Self::tcg_gen_cmp_branch(
+            diff_from_epilogue,
+            pc_address,
+            X86Opcode::JGE_rel16_32,
+            tcg,
+            mc,
+        );
+    }
 
-        // je     label
-        gen_size += Self::tcg_out(0x84_0f, 2, mc);
-        gen_size += Self::tcg_out(10 as u32, 4, mc);
-        gen_size += Self::tcg_out_reloc(gen_size - 4, label);
+    fn tcg_gen_ltu(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        return Self::tcg_gen_cmp_branch(
+            diff_from_epilogue,
+            pc_address,
+            X86Opcode::JB_rel16_32,
+            tcg,
+            mc,
+        );
+    }
 
-        //
-        // // mov    pc_address + 4,%eax
-        // gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
-        // gen_size += Self::tcg_out((pc_address + 4) as u32, 4, mc);
-        //
-        // // jmp    epilogue
-        // gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
-        // gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
-        //
-        // // mov
-        // gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
-        // gen_size += Self::tcg_out((pc_address + arg2.value) as u32, 4, mc);
-
-        return gen_size;
+    fn tcg_gen_geu(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        return Self::tcg_gen_cmp_branch(
+            diff_from_epilogue,
+            pc_address,
+            X86Opcode::JAE_rel16_32,
+            tcg,
+            mc,
+        );
     }
 
     fn tcg_gen_mov(
