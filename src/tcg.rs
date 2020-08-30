@@ -1,4 +1,6 @@
 extern crate mmap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TCGOpcode {
@@ -19,13 +21,13 @@ pub enum TCGvType {
     ProgramCounter,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct TCGOp {
     pub op: Option<TCGOpcode>,
     pub arg0: Option<TCGv>,
     pub arg1: Option<TCGv>,
     pub arg2: Option<TCGv>,
-    pub label: Option<TCGLabel>,
+    pub label: Option<Rc<RefCell<TCGLabel>>>,
 }
 
 impl TCGOp {
@@ -49,7 +51,13 @@ impl TCGOp {
         }
     }
 
-    pub fn new_4op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv, label: TCGLabel) -> TCGOp {
+    pub fn new_4op(
+        opcode: TCGOpcode,
+        a1: TCGv,
+        a2: TCGv,
+        a3: TCGv,
+        label: Rc<RefCell<TCGLabel>>,
+    ) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -65,7 +73,7 @@ impl TCGOp {
         Self::new_2op(TCGOpcode::MOV, TCGv::new_pc(), addr)
     }
 
-    pub fn new_label(label: TCGLabel) -> TCGOp {
+    pub fn new_label(label: Rc<RefCell<TCGLabel>>) -> TCGOp {
         TCGOp {
             op: None,
             arg0: None,
@@ -105,26 +113,79 @@ impl TCGv {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct TCGLabel {
     pub offset: u64,
+    pub code_ptr_vec: Vec<usize>,
 }
 
 impl TCGLabel {
     pub fn new() -> TCGLabel {
-        TCGLabel { offset: 0 }
+        TCGLabel {
+            offset: 0,
+            code_ptr_vec: vec![],
+        }
     }
 }
 
 pub trait TCG {
-    fn tcg_gen (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
 
-    fn tcg_gen_addi(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_sub (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_and (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_or  (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_xor (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_ret (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_eq  (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_mov (diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_addi(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_sub(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_and(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_or(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_xor(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_ret(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_eq(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_mov(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+
+    fn tcg_out_reloc(host_code_ptr: usize, label: &mut Rc<RefCell<TCGLabel>>) -> usize;
+
+    fn tcg_gen_label(pc_address: u64, tcg: &mut TCGOp, mc: &mut Vec<u8>) -> usize;
 }

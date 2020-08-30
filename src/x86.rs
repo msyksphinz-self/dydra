@@ -1,8 +1,10 @@
 #![feature(ptr_offset_from)]
 
-use self::tcg::{TCGOp, TCGOpcode, TCGvType, TCG};
+use self::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGvType, TCG};
 use super::tcg;
+use std::cell::RefCell;
 use std::mem;
+use std::rc::Rc;
 
 extern crate mmap;
 
@@ -108,7 +110,7 @@ impl TCGX86 {
     fn tcg_out(inst: u32, byte_len: usize, v: &mut Vec<u8>) -> usize {
         for (i, be) in inst.to_le_bytes().iter().enumerate() {
             if i < byte_len {
-                println!("register = {:02x}", &be);
+                // println!("register = {:02x}", &be);
                 v.push(*be);
             }
         }
@@ -117,7 +119,12 @@ impl TCGX86 {
 }
 
 impl TCG for TCGX86 {
-    fn tcg_gen(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         match tcg.op {
             Some(op) => {
                 return match op {
@@ -132,11 +139,19 @@ impl TCG for TCGX86 {
                     other => panic!("{:?} : Not supported now", other),
                 };
             }
-            None => { return 0 },
+            None => match &mut tcg.label {
+                Some(_l) => TCGX86::tcg_gen_label(pc_address, tcg, mc),
+                None => panic!("Illegal Condition"),
+            },
         }
     }
 
-    fn tcg_gen_addi(diff_from_epilogue: isize, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_addi(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &tcg::TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -144,7 +159,7 @@ impl TCG for TCGX86 {
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         if arg0.value == 0 {
             // if destination is x0, skip generate host machine code.
@@ -179,10 +194,15 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_sub(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_sub(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let arg0 = tcg.arg0.unwrap();
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         if arg0.value == 0 {
             // if destination is x0, skip generate host machine code.
@@ -192,7 +212,12 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_and(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_and(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -200,7 +225,7 @@ impl TCG for TCGX86 {
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         if arg0.value == 0 {
             // if destination is x0, skip generate host machine code.
@@ -234,7 +259,12 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_or(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_or(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -242,7 +272,7 @@ impl TCG for TCGX86 {
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         if arg0.value == 0 {
             // if destination is x0, skip generate host machine code.
@@ -276,7 +306,12 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_xor(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>,) -> usize {
+    fn tcg_gen_xor(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -284,7 +319,7 @@ impl TCG for TCGX86 {
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         if arg0.value == 0 {
             // if destination is x0, skip generate host machine code.
@@ -319,8 +354,12 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_ret(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-
+    fn tcg_gen_ret(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let op = tcg.op.unwrap();
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -329,7 +368,7 @@ impl TCG for TCGX86 {
         assert_eq!(arg1.t, TCGvType::Register);
         assert_eq!(op, TCGOpcode::JMP);
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         if arg0.t == tcg::TCGvType::Register
             && arg0.value == 0
@@ -339,16 +378,25 @@ impl TCG for TCGX86 {
             gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
             gen_size += Self::tcg_out(diff_from_epilogue as u32, 4, mc);
 
-           return gen_size;
+            return gen_size;
         }
         panic!("This function is not supported!")
     }
 
-    fn tcg_gen_eq(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_eq(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &mut TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
-        let label = tcg.label.unwrap();
+        // let mut label = tcg.label.unwrap();
+        let mut label = match &mut tcg.label {
+            Some(l) => l,
+            None => panic!("Label is not defined."),
+        };
 
         let mut gen_size: usize = pc_address as usize;
 
@@ -363,27 +411,30 @@ impl TCG for TCGX86 {
         // je     label
         gen_size += Self::tcg_out(0x84_0f, 2, mc);
         gen_size += Self::tcg_out(10 as u32, 4, mc);
+        gen_size += Self::tcg_out_reloc(gen_size - 4, label);
 
-        // mov    pc_address + 4,%eax
-        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
-        gen_size += Self::tcg_out((pc_address + 4) as u32, 4, mc);
-
-        // jmp    epilogue
-        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
-        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
-
-        // mov 
-        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
-        gen_size += Self::tcg_out((pc_address + arg2.value) as u32, 4, mc);
-
-        // jmp    epilogue
-        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
-        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
+        //
+        // // mov    pc_address + 4,%eax
+        // gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
+        // gen_size += Self::tcg_out((pc_address + 4) as u32, 4, mc);
+        //
+        // // jmp    epilogue
+        // gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+        // gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
+        //
+        // // mov
+        // gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
+        // gen_size += Self::tcg_out((pc_address + arg2.value) as u32, 4, mc);
 
         return gen_size;
     }
 
-    fn tcg_gen_mov(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_mov(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         let op = tcg.op.unwrap();
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -391,7 +442,7 @@ impl TCG for TCGX86 {
         assert_eq!(op, TCGOpcode::MOV);
         assert_eq!(arg0.t, TCGvType::ProgramCounter);
 
-        let mut gen_size: usize = 0;
+        let mut gen_size: usize = pc_address as usize;
 
         gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
         gen_size += Self::tcg_out(arg1.value as u32, 4, mc);
@@ -399,6 +450,28 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10, mc);
         gen_size += Self::tcg_out(8 * 32, 4, mc); // Set Program Counter
 
+        // jmp    epilogue
+        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
         return gen_size;
+    }
+
+    fn tcg_out_reloc(host_code_ptr: usize, label: &mut Rc<RefCell<TCGLabel>>) -> usize {
+        let mut l = &mut *label.borrow_mut();
+        l.code_ptr_vec.push(host_code_ptr);
+        println!("Added offset. code_ptr = {:x}", host_code_ptr);
+        return 0;
+    }
+
+    fn tcg_gen_label(pc_address: u64, tcg: &mut TCGOp, mc: &mut Vec<u8>) -> usize {
+        match &mut tcg.label {
+            Some(label) => {
+                let mut l = &mut *label.borrow_mut();
+                l.offset = pc_address;
+                println!("Offset is set {:x}", l.offset);
+            }
+            None => panic!("Unknown behavior"),
+        }
+        return 0;
     }
 }

@@ -196,7 +196,7 @@ impl CPU {
         println!("tb_address = {:?}", tb_map_ptr);
         println!("pe_address = {:?}", pe_map_ptr);
 
-        for tcg in &self.m_tcg_vec {
+        for tcg in &mut self.m_tcg_vec {
             println!("tcg_inst = {:?}", tcg);
 
             let mut diff_from_epilogue = unsafe { pe_map_ptr.offset_from(tb_map_ptr) };
@@ -204,7 +204,7 @@ impl CPU {
             diff_from_epilogue += 32;
 
             let mut mc_byte = vec![];
-            TCGX86::tcg_gen(diff_from_epilogue, pc_address, &tcg, &mut mc_byte);
+            TCGX86::tcg_gen(diff_from_epilogue, pc_address, tcg, &mut mc_byte);
             for be in &mc_byte {
                 let be_data = *be;
                 self.m_tcg_tb_vec.push(be_data);
@@ -218,6 +218,43 @@ impl CPU {
                 tb_map.data(),
                 self.m_tcg_tb_vec.len(),
             );
+        }
+
+        for tcg in &self.m_tcg_vec {
+            match tcg.op {
+                Some(_) => {}
+                None => {
+                    println!("label found 2");
+                    match &tcg.label {
+                        Some(l) => {
+                            let mut l = &mut *l.borrow_mut();
+                            println!("label found. offset = {:x}", l.offset);
+                            for v_off in &l.code_ptr_vec {
+                                let diff = l.offset as usize - v_off - 4;
+                                println!("replacement target is {:x}, data = {:x}", v_off, diff);
+                                let s = tb_map.data();
+                                unsafe {
+                                    *s.offset(*v_off as isize) = (diff & 0xff) as u8;
+                                };
+                            }
+                        }
+                        None => {}
+                    }
+                }
+            }
+        }
+
+        let s = tb_map.data();
+        for byte_idx in 0..tb_map.len() {
+            if byte_idx % 16 == 0 {
+                print!("{:08x} : ", byte_idx);
+            }
+            unsafe {
+                print!("{:02x} ", *s.offset(byte_idx as isize) as u8);
+            }
+            if byte_idx % 16 == 15 {
+                print!("\n");
+            }
         }
 
         let reg_ptr: *const [u64; 32] = &self.m_regs;
@@ -285,10 +322,6 @@ impl CPU {
 
         for byte_idx in (0..instructions.len()).step_by(4) {
             let map_data = map.data();
-            // let map_raw = match map_data {
-            //     Some(m) => m,
-            //     _ => panic!("Decode Failed"),
-            // };
 
             let inst = ((*map_data.offset(byte_idx as isize + 0) as u32) << 0)
                 | ((*map_data.offset(byte_idx as isize + 1) as u32) << 8)

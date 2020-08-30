@@ -1,4 +1,6 @@
 use super::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGv};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 macro_rules! get_rs1_addr {
     ($inst:expr) => {
@@ -109,12 +111,11 @@ impl TranslateRiscv {
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
         let addr = Box::new(TCGv::new_imm(target));
 
-        let label = Box::new(TCGLabel::new());
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
 
-        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, *label);
+        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, Rc::clone(&label));
         let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(4));
-        let tcg_set_label = TCGOp::new_label(*label);
-
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
         let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target));
 
         vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
