@@ -30,6 +30,7 @@ pub enum TCGOpcode {
     SB,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MemOpType {
     LOAD_64BIT,
     LOAD_32BIT,

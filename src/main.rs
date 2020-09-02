@@ -215,9 +215,11 @@ impl CPU {
 
         let tb_map_ptr = tb_map.data() as *const u64;
         let pe_map_ptr = pe_map.data() as *const u64;
+        let rv_cod_ptr = riscv_guestcode.as_ptr();
 
-        println!("tb_address = {:?}", tb_map_ptr);
-        println!("pe_address = {:?}", pe_map_ptr);
+        println!("tb_address      = {:?}", tb_map_ptr);
+        println!("pe_address      = {:?}", pe_map_ptr);
+        println!("riscv_guestcode = {:?}", rv_cod_ptr);
 
         for tcg in &mut self.m_tcg_vec {
             println!("tcg_inst = {:?}", tcg);
@@ -283,12 +285,18 @@ impl CPU {
         let reg_ptr: *const [u64; 32] = &self.m_regs;
 
         unsafe {
-            let func: unsafe extern "C" fn(gpr_base: *const [u64; 32], tb_map: *mut u8) -> u32 =
-                mem::transmute(pe_map.data());
+            let func: unsafe extern "C" fn(
+                gpr_base: *const [u64; 32],
+                tb_map: *mut u8,
+                riscv_guestcode: *const u8,
+            ) -> u32 = mem::transmute(pe_map.data());
 
-            let tb_data = tb_map.data();
-            println!("reflect tb address = {:p}", tb_data);
-            let ans = func(reg_ptr, tb_data);
+            let tb_host_data = tb_map.data();
+            let riscv_guestcode_ptr = riscv_guestcode.as_ptr();
+            println!("reflect tb address = {:p}", tb_host_data);
+            println!("reflect tb address = {:?}", riscv_guestcode.as_ptr());
+
+            let ans = func(reg_ptr, tb_host_data, riscv_guestcode_ptr);
             println!("ans = {:x}", ans);
         }
         self.dump_gpr();

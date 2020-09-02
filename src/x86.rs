@@ -60,6 +60,11 @@ enum X86Opcode {
     // JS_rel16_32 = 0x88_0f,   // JS_rel16_32	SF=1	符号がある場合ニアジャンプします
     // JZ_rel16_32 = 0x84_0f,   // JZ_rel16_32	ZF=1	ゼロの場合ニアジャンプします
     ADD_EV_GV = 0x01,
+    MOV_GV_EV_32BIT = 0x63,
+    MOV_GV_EV_S_16BIT = 0xbf0f,
+    MOV_GV_EV_S_8BIT = 0xbe0f,
+    MOV_GV_EV_U_16BIT = 0xb70f,
+    MOV_GV_EV_U_8BIT = 0xb60f,
 }
 
 enum X86_2Wd_Opcode {}
@@ -75,6 +80,7 @@ enum X86ModRM {
     MOD_00_DISP_RSI = 0x00,
     MOD_10_DISP_RAX = 0x80,
     MOD_11_DISP_RSI = 0xf0,
+    MOD_11_DISP_RDX = 0xd0,
 }
 
 macro_rules! conv_gpr_offset {
@@ -86,8 +92,23 @@ macro_rules! conv_gpr_offset {
 pub struct TCGX86;
 
 impl TCGX86 {
-    fn tcg_modrm_out(op: X86Opcode, modrm: X86ModRM, mc: &mut Vec<u8>) -> usize {
+    fn tcg_modrm_64bit_out(op: X86Opcode, modrm: X86ModRM, mc: &mut Vec<u8>) -> usize {
         Self::tcg_out(((modrm as u32) << 16) | (op as u32) << 8 | 0x48, 3, mc);
+        return 3;
+    }
+
+    fn tcg_modrm_2byte_64bit_out(op: X86Opcode, modrm: X86ModRM, mc: &mut Vec<u8>) -> usize {
+        Self::tcg_out(((modrm as u32) << 24) | (op as u32) << 8 | 0x48, 4, mc);
+        return 4;
+    }
+
+    fn tcg_modrm_32bit_out(op: X86Opcode, modrm: X86ModRM, mc: &mut Vec<u8>) -> usize {
+        Self::tcg_out(((modrm as u32) << 8) | (op as u32) << 0, 2, mc);
+        return 2;
+    }
+
+    fn tcg_modrm_2byte_32bit_out(op: X86Opcode, modrm: X86ModRM, mc: &mut Vec<u8>) -> usize {
+        Self::tcg_out(((modrm as u32) << 16) | (op as u32) << 0, 3, mc);
         return 3;
     }
 
@@ -103,15 +124,15 @@ impl TCGX86 {
         let mut gen_size: usize = 0;
 
         // mov    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg1.value), 4, mc);
 
         // add    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(op, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(op, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg2.value), 4, mc);
 
         // mov    %eax,reg_offset(%rbp)
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
 
         return gen_size;
@@ -129,7 +150,7 @@ impl TCGX86 {
         let mut gen_size: usize = 0;
 
         // mov    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg1.value), 4, mc);
 
         // add    imm16,%eax
@@ -137,7 +158,7 @@ impl TCGX86 {
         gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
 
         // mov    %eax,reg_offset(%rbp)
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
 
         return gen_size;
@@ -186,11 +207,11 @@ impl TCGX86 {
         let mut gen_size: usize = pc_address as usize;
 
         // mov    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
 
         // cmp    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg1.value), 4, mc);
 
         gen_size = Self::tcg_gen_jcc(gen_size, x86_op, mc, label);
@@ -229,13 +250,16 @@ impl TCG for TCGX86 {
                         mc,
                         MemOpType::LOAD_64BIT,
                     ),
-                    TCGOpcode::LW => TCGX86::tcg_gen_load(
-                        diff_from_epilogue,
-                        pc_address,
-                        tcg,
-                        mc,
-                        MemOpType::LOAD_32BIT,
-                    ),
+                    TCGOpcode::LW => {
+                        println!("Load LW");
+                        TCGX86::tcg_gen_load(
+                            diff_from_epilogue,
+                            pc_address,
+                            tcg,
+                            mc,
+                            MemOpType::LOAD_32BIT,
+                        )
+                    }
                     TCGOpcode::LH => TCGX86::tcg_gen_load(
                         diff_from_epilogue,
                         pc_address,
@@ -336,7 +360,7 @@ impl TCG for TCGX86 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
                 return gen_size;
@@ -349,11 +373,11 @@ impl TCG for TCGX86 {
                 // if source register is x0, just mov gpr value.
                 // movl   reg_addr(%rbp),%eax
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg2.value), 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 return gen_size;
             }
@@ -404,7 +428,7 @@ impl TCG for TCGX86 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
                 return gen_size;
@@ -417,11 +441,11 @@ impl TCG for TCGX86 {
                 // if source register is x0, just mov gpr value.
                 // movl   reg_addr(%rbp),%eax
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg2.value), 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 return gen_size;
             }
@@ -454,7 +478,7 @@ impl TCG for TCGX86 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
                 return gen_size;
@@ -467,11 +491,11 @@ impl TCG for TCGX86 {
                 // if source register is x0, just mov gpr value.
                 // movl   reg_addr(%rbp),%eax
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg2.value), 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 return gen_size;
             }
@@ -505,7 +529,7 @@ impl TCG for TCGX86 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_IV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
                 return gen_size;
@@ -518,11 +542,11 @@ impl TCG for TCGX86 {
                 // if source register is x0, just mov gpr value.
                 // movl   reg_addr(%rbp),%eax
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg2.value), 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size +=
-                    Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
                 gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
                 return gen_size;
             }
@@ -669,7 +693,7 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
         gen_size += Self::tcg_out(arg1.value as u32, 4, mc);
 
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(8 * 32, 4, mc); // Set Program Counter
 
         // jmp    epilogue
@@ -716,23 +740,82 @@ impl TCG for TCGX86 {
         assert_eq!(arg2.t, TCGvType::Immediate);
 
         // Load value from rs1
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg1.value), 4, mc);
 
         // Execute Load
         // GPR value + Memory Head Address
-        gen_size += Self::tcg_modrm_out(X86Opcode::ADD_EV_GV, X86ModRM::MOD_11_DISP_RSI, mc); // ADD RSI+EAX=EAX
-                                                                                              // gen_size += Self::tcg_out(0 as u32, 1, mc);
+        Self::tcg_modrm_64bit_out(X86Opcode::ADD_EV_GV, X86ModRM::MOD_11_DISP_RDX, mc); // ADD RSI+EAX=EAX
+        gen_size += match mem_size {
+            MemOpType::LOAD_64BIT => {
+                let mut gen_size = 0;
+                gen_size +=
+                    Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RAX, mc);
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            MemOpType::LOAD_32BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_64bit_out(
+                    X86Opcode::MOV_GV_EV_32BIT,
+                    X86ModRM::MOD_10_DISP_RAX,
+                    mc,
+                );
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            MemOpType::LOAD_16BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_2byte_64bit_out(
+                    X86Opcode::MOV_GV_EV_S_16BIT,
+                    X86ModRM::MOD_10_DISP_RAX,
+                    mc,
+                );
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            MemOpType::LOAD_8BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_2byte_64bit_out(
+                    X86Opcode::MOV_GV_EV_S_8BIT,
+                    X86ModRM::MOD_10_DISP_RAX,
+                    mc,
+                );
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            MemOpType::LOAD_U_32BIT => {
+                let mut gen_size = 0;
+                gen_size +=
+                    Self::tcg_modrm_32bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RAX, mc);
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            MemOpType::LOAD_U_16BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_2byte_32bit_out(
+                    X86Opcode::MOV_GV_EV_U_16BIT,
+                    X86ModRM::MOD_10_DISP_RAX,
+                    mc,
+                );
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            MemOpType::LOAD_U_8BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_2byte_32bit_out(
+                    X86Opcode::MOV_GV_EV_U_8BIT,
+                    X86ModRM::MOD_10_DISP_RAX,
+                    mc,
+                );
+                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size
+            }
+            _ => panic!("Not supported load instruction."),
+        };
 
         // Store Loaded value into destination register.
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
-        gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value - 1), 4, mc);
-
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RAX, mc);
-        gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
-
-        // Store Loaded value into destination register.
-        gen_size += Self::tcg_modrm_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, mc);
         gen_size += Self::tcg_out(conv_gpr_offset!(arg0.value), 4, mc);
 
         return gen_size;

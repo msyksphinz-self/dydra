@@ -95,17 +95,6 @@ impl TranslateRiscv {
         let mut imm_const: u64 = (inst.inst >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
-        imm_const = match op {
-            TCGOpcode::LD => imm_const << 3,
-            TCGOpcode::LW => imm_const << 2,
-            TCGOpcode::LH => imm_const << 1,
-            TCGOpcode::LB => imm_const << 0,
-            TCGOpcode::LWU => imm_const << 2,
-            TCGOpcode::LHU => imm_const << 1,
-            TCGOpcode::LBU => imm_const << 0,
-            _ => imm_const,
-        };
-
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
