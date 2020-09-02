@@ -17,6 +17,31 @@ pub enum TCGOpcode {
     GE,
     LTU,
     GEU,
+    LD,
+    LW,
+    LH,
+    LB,
+    LWU,
+    LHU,
+    LBU,
+    SD,
+    SW,
+    SH,
+    SB,
+}
+
+pub enum MemOpType {
+    LOAD_64BIT,
+    LOAD_32BIT,
+    LOAD_16BIT,
+    LOAD_8BIT,
+    LOAD_U_32BIT,
+    LOAD_U_16BIT,
+    LOAD_U_8BIT,
+    STORE_64BIT,
+    STORE_32BIT,
+    STORE_16BIT,
+    STORE_8BIT,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -220,6 +245,24 @@ pub trait TCG {
         mc: &mut Vec<u8>,
     ) -> usize;
 
+    /* Memory Access */
+    fn tcg_gen_load(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+        mem_size: MemOpType,
+    ) -> usize;
+
+    fn tcg_gen_store(
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+        mem_size: MemOpType,
+    ) -> usize;
+
+    /* Label Relocation */
     fn tcg_out_reloc(host_code_ptr: usize, label: &mut Rc<RefCell<TCGLabel>>) -> usize;
 
     fn tcg_gen_label(pc_address: u64, tcg: &mut TCGOp, mc: &mut Vec<u8>) -> usize;

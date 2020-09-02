@@ -144,7 +144,7 @@ impl CPU {
                 RiscvInstId::ANDI => TranslateRiscv::translate_andi(inst),
                 RiscvInstId::ORI => TranslateRiscv::translate_ori(inst),
                 RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
-                RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
+
                 RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
                 RiscvInstId::BEQ => TranslateRiscv::translate_beq(inst),
                 RiscvInstId::BNE => TranslateRiscv::translate_bne(inst),
@@ -152,6 +152,20 @@ impl CPU {
                 RiscvInstId::BGE => TranslateRiscv::translate_bge(inst),
                 RiscvInstId::BLTU => TranslateRiscv::translate_bltu(inst),
                 RiscvInstId::BGEU => TranslateRiscv::translate_bgeu(inst),
+                RiscvInstId::LD => TranslateRiscv::translate_ld(inst),
+                RiscvInstId::LW => TranslateRiscv::translate_lw(inst),
+                RiscvInstId::LH => TranslateRiscv::translate_lh(inst),
+                RiscvInstId::LB => TranslateRiscv::translate_lb(inst),
+                RiscvInstId::LWU => TranslateRiscv::translate_lwu(inst),
+                RiscvInstId::LHU => TranslateRiscv::translate_lhu(inst),
+                RiscvInstId::LBU => TranslateRiscv::translate_lbu(inst),
+                RiscvInstId::SD => TranslateRiscv::translate_sd(inst),
+                RiscvInstId::SW => TranslateRiscv::translate_sw(inst),
+                RiscvInstId::SH => TranslateRiscv::translate_sh(inst),
+                RiscvInstId::SB => TranslateRiscv::translate_sb(inst),
+
+                RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
+                RiscvInstId::JAL => TranslateRiscv::translate_jalr(inst), // xxx: Temporary Implementation
 
                 other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
             };

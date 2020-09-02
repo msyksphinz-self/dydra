@@ -92,8 +92,19 @@ impl TranslateRiscv {
 
     fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let imm_const: u64 = (inst.inst >> 20) as u64;
+        let mut imm_const: u64 = (inst.inst >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        imm_const = match op {
+            TCGOpcode::LD => imm_const << 3,
+            TCGOpcode::LW => imm_const << 2,
+            TCGOpcode::LH => imm_const << 1,
+            TCGOpcode::LB => imm_const << 0,
+            TCGOpcode::LWU => imm_const << 2,
+            TCGOpcode::LHU => imm_const << 1,
+            TCGOpcode::LBU => imm_const << 0,
+            _ => imm_const,
+        };
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const));
@@ -169,5 +180,40 @@ impl TranslateRiscv {
     }
     pub fn translate_bgeu(inst: &InstrInfo) -> Vec<TCGOp> {
         Self::translate_branch(TCGOpcode::GEU, inst)
+    }
+
+    pub fn translate_ld(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LD, inst)
+    }
+    pub fn translate_lw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LW, inst)
+    }
+    pub fn translate_lh(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LH, inst)
+    }
+    pub fn translate_lb(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LB, inst)
+    }
+    pub fn translate_lwu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LWU, inst)
+    }
+    pub fn translate_lhu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LHU, inst)
+    }
+    pub fn translate_lbu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::LBU, inst)
+    }
+
+    pub fn translate_sd(inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Memory Access not supported!");
+    }
+    pub fn translate_sw(inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Memory Access not supported!");
+    }
+    pub fn translate_sh(inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Memory Access not supported!");
+    }
+    pub fn translate_sb(inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Memory Access not supported!");
     }
 }
