@@ -274,6 +274,7 @@ impl TCGX86 {
     }
 
     fn tcg_gen_cmp_branch(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         x86_op: X86Opcode,
@@ -316,23 +317,54 @@ impl TCGX86 {
 }
 
 impl TCG for TCGX86 {
-    fn tcg_gen(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen(
+        emu: &EmuEnv,
+        diff_from_epilogue: isize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
         match tcg.op {
             Some(op) => {
                 return match op {
-                    TCGOpcode::ADD => TCGX86::tcg_gen_addi(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::SUB => TCGX86::tcg_gen_sub(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::AND => TCGX86::tcg_gen_and(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::OR => TCGX86::tcg_gen_or(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::XOR => TCGX86::tcg_gen_xor(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::JMP => TCGX86::tcg_gen_ret(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::EQ => TCGX86::tcg_gen_eq(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::NE => TCGX86::tcg_gen_ne(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::LT => TCGX86::tcg_gen_lt(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::GE => TCGX86::tcg_gen_ge(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::LTU => TCGX86::tcg_gen_ltu(diff_from_epilogue, pc_address, tcg, mc),
-                    TCGOpcode::GEU => TCGX86::tcg_gen_geu(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::ADD => {
+                        TCGX86::tcg_gen_addi(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::SUB => {
+                        TCGX86::tcg_gen_sub(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::AND => {
+                        TCGX86::tcg_gen_and(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::OR => {
+                        TCGX86::tcg_gen_or(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::XOR => {
+                        TCGX86::tcg_gen_xor(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::JMP => {
+                        TCGX86::tcg_gen_ret(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::EQ => {
+                        TCGX86::tcg_gen_eq(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::NE => {
+                        TCGX86::tcg_gen_ne(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::LT => {
+                        TCGX86::tcg_gen_lt(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::GE => {
+                        TCGX86::tcg_gen_ge(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::LTU => {
+                        TCGX86::tcg_gen_ltu(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::GEU => {
+                        TCGX86::tcg_gen_geu(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
                     TCGOpcode::LD => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -340,6 +372,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_64BIT,
                     ),
                     TCGOpcode::LW => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -347,6 +380,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_32BIT,
                     ),
                     TCGOpcode::LH => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -354,6 +388,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_16BIT,
                     ),
                     TCGOpcode::LB => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -361,6 +396,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_8BIT,
                     ),
                     TCGOpcode::LWU => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -368,6 +404,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_U_32BIT,
                     ),
                     TCGOpcode::LHU => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -375,6 +412,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_U_16BIT,
                     ),
                     TCGOpcode::LBU => TCGX86::tcg_gen_load(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -382,6 +420,7 @@ impl TCG for TCGX86 {
                         MemOpType::LOAD_U_8BIT,
                     ),
                     TCGOpcode::SD => TCGX86::tcg_gen_store(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -389,6 +428,7 @@ impl TCG for TCGX86 {
                         MemOpType::STORE_64BIT,
                     ),
                     TCGOpcode::SW => TCGX86::tcg_gen_store(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -396,6 +436,7 @@ impl TCG for TCGX86 {
                         MemOpType::STORE_32BIT,
                     ),
                     TCGOpcode::SH => TCGX86::tcg_gen_store(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -403,6 +444,7 @@ impl TCG for TCGX86 {
                         MemOpType::STORE_16BIT,
                     ),
                     TCGOpcode::SB => TCGX86::tcg_gen_store(
+                        emu,
                         diff_from_epilogue,
                         pc_address,
                         tcg,
@@ -410,7 +452,9 @@ impl TCG for TCGX86 {
                         MemOpType::STORE_8BIT,
                     ),
 
-                    TCGOpcode::MOV => TCGX86::tcg_gen_mov(diff_from_epilogue, pc_address, tcg, mc),
+                    TCGOpcode::MOV => {
+                        TCGX86::tcg_gen_mov(emu, diff_from_epilogue, pc_address, tcg, mc)
+                    }
                     other => panic!("{:?} : Not supported now", other),
                 };
             }
@@ -422,6 +466,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_addi(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &tcg::TCGOp,
@@ -485,6 +530,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sub(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -503,6 +549,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_and(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -565,6 +612,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_or(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -627,6 +675,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_xor(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -690,6 +739,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_ret(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -711,6 +761,7 @@ impl TCG for TCGX86 {
             && arg1.value == 1
         {
             gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+            let diff_from_epilogue = emu.calc_epilogue_address();
             gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
 
             return gen_size;
@@ -720,12 +771,14 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_eq(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
+            emu,
             diff_from_epilogue,
             pc_address,
             X86Opcode::JE_rel16_32,
@@ -735,12 +788,14 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_ne(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
+            emu,
             diff_from_epilogue,
             pc_address,
             X86Opcode::JNE_rel16_32,
@@ -750,12 +805,14 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_lt(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
+            emu,
             diff_from_epilogue,
             pc_address,
             X86Opcode::JL_rel16_32,
@@ -765,12 +822,14 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_ge(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
+            emu,
             diff_from_epilogue,
             pc_address,
             X86Opcode::JGE_rel16_32,
@@ -780,12 +839,14 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_ltu(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
+            emu,
             diff_from_epilogue,
             pc_address,
             X86Opcode::JB_rel16_32,
@@ -795,12 +856,14 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_geu(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
+            emu,
             diff_from_epilogue,
             pc_address,
             X86Opcode::JAE_rel16_32,
@@ -810,6 +873,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_mov(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -836,7 +900,9 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(8 * 32, 4, mc); // Set Program Counter
 
         // jmp    epilogue
+
         gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+        let diff_from_epilogue = emu.calc_epilogue_address();
         gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
         return gen_size;
     }
@@ -863,6 +929,7 @@ impl TCG for TCGX86 {
 
     /* Memory Access : Load */
     fn tcg_gen_load(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -991,6 +1058,7 @@ impl TCG for TCGX86 {
 
     /* Memory Access : Store */
     fn tcg_gen_store(
+        emu: &EmuEnv,
         diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,

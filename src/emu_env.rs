@@ -23,6 +23,12 @@ pub struct EmuEnv {
     m_tcg_vec: Vec<TCGOp>,
     m_tcg_raw_vec: Vec<u8>,
     m_tcg_tb_vec: Vec<u8>,
+
+    pub m_prologue_epilogue_mem: MemoryMap,
+    pub m_tb_mem: MemoryMap,
+
+    pub m_host_prologue: [u8; 15],
+    pub m_host_epilogue: [u8; 11],
 }
 
 impl EmuEnv {
@@ -34,6 +40,29 @@ impl EmuEnv {
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
             m_tcg_tb_vec: vec![],
+            m_prologue_epilogue_mem: match MemoryMap::new(1, &[]) {
+                Ok(m) => m,
+                Err(e) => panic!("Error: {}", e),
+            },
+            m_tb_mem: match MemoryMap::new(1, &[]) {
+                Ok(m) => m,
+                Err(e) => panic!("Error: {}", e),
+            },
+            m_host_prologue: [
+                0x55, // pushq %rbp
+                0x54, // pushq %rsp
+                0x51, // pushq %rcx
+                0x48, 0x8b, 0xef, // movq     %rdi, %rbp
+                0x48, 0x81, 0xc4, 0x80, 0xfb, 0xff, 0xff, // addq     $-0x488, %rsp
+                0xff, 0xe6, //  jmpq     *%rsi
+            ],
+            m_host_epilogue: [
+                0x48, 0x81, 0xc4, 0x80, 0x04, 0x00, 0x00, // addq     $0x488, %rsp
+                0x59, // popq     %rcx
+                0x5b, // popq     %rbx
+                0x5d, // popq     %rbp
+                0xc3, // retq
+            ],
         }
     }
 
@@ -90,26 +119,6 @@ impl EmuEnv {
             }
         }
 
-        // let riscv_guestcode: [u8; 8] = [
-        //     0x13, 0x05, 0x40, 0x06, // addi a0,zero,100
-        //     0x67, 0x80, 0x00, 0x00, // ret
-        // ];
-        let host_prologue = [
-            0x55, // pushq %rbp
-            0x54, // pushq %rsp
-            0x51, // pushq %rcx
-            0x48, 0x8b, 0xef, // movq     %rdi, %rbp
-            0x48, 0x81, 0xc4, 0x80, 0xfb, 0xff, 0xff, // addq     $-0x488, %rsp
-            0xff, 0xe6, //  jmpq     *%rsi
-        ];
-        let host_epilogue = [
-            0x48, 0x81, 0xc4, 0x80, 0x04, 0x00, 0x00, // addq     $0x488, %rsp
-            0x59, // popq     %rcx
-            0x5b, // popq     %rbx
-            0x5d, // popq     %rbp
-            0xc3, // retq
-        ];
-
         unsafe {
             self.gen_tcg(&riscv_guestcode);
         }
@@ -124,12 +133,12 @@ impl EmuEnv {
         }
 
         // Emit Prologue
-        for b in &host_prologue {
+        for b in &self.m_host_prologue {
             self.m_tcg_raw_vec.push(*b);
         }
 
         // Emit Epilogue
-        for b in &host_epilogue {
+        for b in &self.m_host_epilogue {
             self.m_tcg_raw_vec.push(*b);
         }
 
@@ -143,13 +152,13 @@ impl EmuEnv {
             print!("\n");
         }
 
-        let pe_map = {
+        self.m_prologue_epilogue_mem = {
             let v = self.m_tcg_raw_vec.as_slice();
             Self::reflect(v)
         };
 
         // Make tb instruction region (temporary 1024byte)
-        let tb_map = match MemoryMap::new(
+        self.m_tb_mem = match MemoryMap::new(
             1024,
             &[
                 MapOption::MapReadable,
@@ -163,8 +172,8 @@ impl EmuEnv {
 
         let mut pc_address = 0;
 
-        let tb_map_ptr = tb_map.data() as *const u64;
-        let pe_map_ptr = pe_map.data() as *const u64;
+        let tb_map_ptr = self.m_tb_mem.data() as *const u64;
+        let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
         let rv_cod_ptr = riscv_guestcode.as_ptr();
 
         println!("tb_address      = {:?}", tb_map_ptr);
@@ -176,10 +185,10 @@ impl EmuEnv {
 
             let mut diff_from_epilogue = unsafe { pe_map_ptr.offset_from(tb_map_ptr) };
             diff_from_epilogue *= 8;
-            diff_from_epilogue += host_prologue.len() as isize;
+            diff_from_epilogue += self.m_host_prologue.len() as isize;
 
             let mut mc_byte = vec![];
-            TCGX86::tcg_gen(diff_from_epilogue, pc_address, tcg, &mut mc_byte);
+            TCGX86::tcg_gen(&self, diff_from_epilogue, pc_address, tcg, &mut mc_byte);
             for be in &mc_byte {
                 let be_data = *be;
                 self.m_tcg_tb_vec.push(be_data);
@@ -190,7 +199,7 @@ impl EmuEnv {
         unsafe {
             std::ptr::copy(
                 self.m_tcg_tb_vec.as_ptr(),
-                tb_map.data(),
+                self.m_tb_mem.data(),
                 self.m_tcg_tb_vec.len(),
             );
         }
@@ -207,7 +216,7 @@ impl EmuEnv {
                             for v_off in &l.code_ptr_vec {
                                 let diff = l.offset as usize - v_off - 4;
                                 println!("replacement target is {:x}, data = {:x}", v_off, diff);
-                                let s = tb_map.data();
+                                let s = self.m_tb_mem.data();
                                 unsafe {
                                     *s.offset(*v_off as isize) = (diff & 0xff) as u8;
                                 };
@@ -219,8 +228,8 @@ impl EmuEnv {
             }
         }
 
-        let s = tb_map.data();
-        for byte_idx in 0..tb_map.len() {
+        let s = self.m_tb_mem.data();
+        for byte_idx in 0..self.m_tb_mem.len() {
             if byte_idx % 16 == 0 {
                 print!("{:08x} : ", byte_idx);
             }
@@ -239,9 +248,9 @@ impl EmuEnv {
                 gpr_base: *const [u64; 32],
                 tb_map: *mut u8,
                 riscv_guestcode: *const u8,
-            ) -> u32 = mem::transmute(pe_map.data());
+            ) -> u32 = mem::transmute(self.m_prologue_epilogue_mem.data());
 
-            let tb_host_data = tb_map.data();
+            let tb_host_data = self.m_tb_mem.data();
             let riscv_guestcode_ptr = riscv_guestcode.as_ptr();
             println!("reflect tb address = {:p}", tb_host_data);
             println!("reflect tb address = {:?}", riscv_guestcode.as_ptr());
@@ -316,5 +325,14 @@ impl EmuEnv {
             });
             self.m_inst_vec.push(*inst_info);
         }
+    }
+
+    pub fn calc_epilogue_address(&self) -> isize {
+        let prologue_epilogue_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
+        let tb_ptr = self.m_tb_mem.data() as *const u64;
+        let mut diff_from_epilogue = unsafe { prologue_epilogue_ptr.offset_from(tb_ptr) };
+        diff_from_epilogue *= 8;
+        diff_from_epilogue += self.m_host_prologue.len() as isize;
+        diff_from_epilogue
     }
 }
