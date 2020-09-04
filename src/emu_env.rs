@@ -171,8 +171,8 @@ impl EmuEnv {
         println!("pe_address      = {:?}", pe_map_ptr);
         println!("riscv_guestcode = {:?}", rv_cod_ptr);
 
-        for tcg in &mut self.m_tcg_vec {
-            println!("tcg_inst = {:?}", tcg);
+        for tcg in &self.m_tcg_vec {
+            println!("tcg_inst = {:?}", &tcg);
 
             let mut diff_from_epilogue = unsafe { pe_map_ptr.offset_from(tb_map_ptr) };
             diff_from_epilogue *= 8;
@@ -202,7 +202,7 @@ impl EmuEnv {
                     println!("label found 2");
                     match &tcg.label {
                         Some(l) => {
-                            let mut l = &mut *l.borrow_mut();
+                            let l = &mut *l.borrow_mut();
                             println!("label found. offset = {:x}", l.offset);
                             for v_off in &l.code_ptr_vec {
                                 let diff = l.offset as usize - v_off - 4;

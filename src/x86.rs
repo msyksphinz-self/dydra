@@ -3,8 +3,9 @@
 use self::tcg::{MemOpType, TCGLabel, TCGOp, TCGOpcode, TCGvType, TCG};
 use super::tcg;
 use std::cell::RefCell;
-use std::mem;
 use std::rc::Rc;
+
+use crate::emu_env::EmuEnv;
 
 extern crate mmap;
 
@@ -261,7 +262,7 @@ impl TCGX86 {
         gen_size: usize,
         x86_op: X86Opcode,
         mc: &mut Vec<u8>,
-        label: &mut Rc<RefCell<tcg::TCGLabel>>,
+        label: &Rc<RefCell<tcg::TCGLabel>>,
     ) -> usize {
         let mut gen_size = gen_size;
 
@@ -276,13 +277,13 @@ impl TCGX86 {
         diff_from_epilogue: isize,
         pc_address: u64,
         x86_op: X86Opcode,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
-        let mut label = match &mut tcg.label {
+        let label = match &tcg.label {
             Some(l) => l,
             None => panic!("Label is not defined."),
         };
@@ -315,12 +316,7 @@ impl TCGX86 {
 }
 
 impl TCG for TCGX86 {
-    fn tcg_gen(
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &mut TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         match tcg.op {
             Some(op) => {
                 return match op {
@@ -418,7 +414,7 @@ impl TCG for TCGX86 {
                     other => panic!("{:?} : Not supported now", other),
                 };
             }
-            None => match &mut tcg.label {
+            None => match &tcg.label {
                 Some(_l) => TCGX86::tcg_gen_label(pc_address, tcg, mc),
                 None => panic!("Illegal Condition"),
             },
@@ -726,7 +722,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_eq(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
@@ -741,7 +737,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_ne(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
@@ -756,7 +752,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_lt(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
@@ -771,7 +767,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_ge(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
@@ -786,7 +782,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_ltu(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
@@ -801,7 +797,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_geu(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
         return Self::tcg_gen_cmp_branch(
@@ -845,15 +841,16 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_out_reloc(host_code_ptr: usize, label: &mut Rc<RefCell<TCGLabel>>) -> usize {
-        let mut l = &mut *label.borrow_mut();
-        l.code_ptr_vec.push(host_code_ptr);
+    fn tcg_out_reloc(host_code_ptr: usize, label: &Rc<RefCell<TCGLabel>>) -> usize {
+        // let mut l = &mut *label.borrow_mut();
+        let l2 = &mut *label.borrow_mut();
+        l2.code_ptr_vec.push(host_code_ptr);
         println!("Added offset. code_ptr = {:x}", host_code_ptr);
         return 0;
     }
 
-    fn tcg_gen_label(pc_address: u64, tcg: &mut TCGOp, mc: &mut Vec<u8>) -> usize {
-        match &mut tcg.label {
+    fn tcg_gen_label(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        match &tcg.label {
             Some(label) => {
                 let mut l = &mut *label.borrow_mut();
                 l.offset = pc_address;

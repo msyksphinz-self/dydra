@@ -2,6 +2,8 @@ extern crate mmap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::emu_env::EmuEnv;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TCGOpcode {
     MOV,
@@ -161,12 +163,7 @@ impl TCGLabel {
 }
 
 pub trait TCG {
-    fn tcg_gen(
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &mut TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
+    fn tcg_gen(diff_from_epilogue: isize, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_addi(
         diff_from_epilogue: isize,
@@ -207,37 +204,37 @@ pub trait TCG {
     fn tcg_gen_eq(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_ne(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_lt(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_ge(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_ltu(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_geu(
         diff_from_epilogue: isize,
         pc_address: u64,
-        tcg: &mut TCGOp,
+        tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_mov(
@@ -265,7 +262,7 @@ pub trait TCG {
     ) -> usize;
 
     /* Label Relocation */
-    fn tcg_out_reloc(host_code_ptr: usize, label: &mut Rc<RefCell<TCGLabel>>) -> usize;
+    fn tcg_out_reloc(host_code_ptr: usize, label: &Rc<RefCell<TCGLabel>>) -> usize;
 
-    fn tcg_gen_label(pc_address: u64, tcg: &mut TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_label(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 }
