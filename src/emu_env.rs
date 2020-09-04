@@ -20,6 +20,8 @@ pub struct EmuEnv {
     m_regs: [u64; 32],
     m_pc: u64,
 
+    pub m_guestcode: Vec<u8>,
+
     m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
     m_tcg_vec: Vec<TCGOp>,
@@ -66,6 +68,7 @@ impl EmuEnv {
                 0x5d, // popq     %rbp
                 0xc3, // retq
             ],
+            m_guestcode: vec![],
         }
     }
 
@@ -112,18 +115,20 @@ impl EmuEnv {
             sh_headers.push(shdr);
         }
 
-        let mut riscv_guestcode: Vec<u8> = Vec::new();
-
         // Dump All Section Headers
         for sh_header in sh_headers {
             if sh_header.sh_flags == 6 {
                 sh_header.dump();
-                loader.load_section(&mut riscv_guestcode, sh_header.sh_offset, sh_header.sh_size);
+                loader.load_section(
+                    &mut self.m_guestcode,
+                    sh_header.sh_offset,
+                    sh_header.sh_size,
+                );
             }
         }
 
         unsafe {
-            self.gen_tcg(&riscv_guestcode);
+            self.gen_tcg();
         }
 
         for inst in &self.m_inst_vec {
@@ -177,11 +182,11 @@ impl EmuEnv {
 
         let tb_map_ptr = self.m_tb_mem.data() as *const u64;
         let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
-        let rv_cod_ptr = riscv_guestcode.as_ptr();
+        let host_cod_ptr = self.m_guestcode.as_ptr();
 
-        println!("tb_address      = {:?}", tb_map_ptr);
-        println!("pe_address      = {:?}", pe_map_ptr);
-        println!("riscv_guestcode = {:?}", rv_cod_ptr);
+        println!("tb_address  = {:?}", tb_map_ptr);
+        println!("pe_address  = {:?}", pe_map_ptr);
+        println!("self.m_guestcode = {:?}", host_cod_ptr);
 
         for tcg in &self.m_tcg_vec {
             println!("tcg_inst = {:?}", &tcg);
@@ -246,15 +251,15 @@ impl EmuEnv {
             let func: unsafe extern "C" fn(
                 emu_head: *const [u64; 1],
                 tb_map: *mut u8,
-                riscv_guestcode: *const u8,
+                guestcode: *const u8,
             ) -> u32 = mem::transmute(self.m_prologue_epilogue_mem.data());
 
             let tb_host_data = self.m_tb_mem.data();
-            let riscv_guestcode_ptr = riscv_guestcode.as_ptr();
+            let m_guestcode_ptr = self.m_guestcode.as_ptr();
             println!("reflect tb address = {:p}", tb_host_data);
-            println!("reflect tb address = {:?}", riscv_guestcode.as_ptr());
+            println!("reflect tb address = {:?}", self.m_guestcode.as_ptr());
 
-            let ans = func(emu_ptr, tb_host_data, riscv_guestcode_ptr);
+            let ans = func(emu_ptr, tb_host_data, m_guestcode_ptr);
             println!("ans = {:x}", ans);
         }
         self.dump_gpr();
@@ -289,7 +294,8 @@ impl EmuEnv {
         return pe_map;
     }
 
-    unsafe fn gen_tcg(&mut self, instructions: &[u8]) {
+    unsafe fn gen_tcg(&mut self) {
+        let instructions = &self.m_guestcode;
         let map = match MemoryMap::new(
             instructions.len(),
             &[
@@ -336,14 +342,18 @@ impl EmuEnv {
     }
 
     pub fn calc_gpr_relat_address(&self, gpr_addr: u64) -> isize {
-        let gpr_ptr = self.m_regs.as_ptr() as *const u8;
+        let guestcode_ptr = self.m_regs.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
-        let mut diff = unsafe { gpr_ptr.offset_from(self_ptr) };
+        let mut diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
         diff += gpr_addr as isize * mem::size_of::<u64>() as isize;
-        println!(
-            "calc_gpr_relat_address = {:x}, {:p}, {:p}",
-            diff, gpr_ptr, self_ptr
-        );
+        diff
+    }
+
+    pub fn calc_guestcode_relat_address(&self) -> isize {
+        let guestcode_ptr = self.m_guestcode.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
+        println!("guestcode_ptr = {:p}, {:p}", guestcode_ptr, self_ptr);
         diff
     }
 }

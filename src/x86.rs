@@ -67,6 +67,7 @@ enum X86Opcode {
     MOV_GV_EV_S_8BIT = 0xbe0f,
     MOV_GV_EV_U_16BIT = 0xb70f,
     MOV_GV_EV_U_8BIT = 0xb60f,
+    MOV,
 }
 
 enum X86_2Wd_Opcode {}
@@ -83,6 +84,7 @@ enum X86ModRM {
     MOD_10_DISP_RAX = 0x80,
     MOD_11_DISP_RSI = 0xf0,
     MOD_11_DISP_RDX = 0xd0,
+    MOD_11_DISP_RAX = 0xc0,
 }
 
 #[derive(PartialEq, Debug)]
@@ -748,7 +750,8 @@ impl TCG for TCGX86 {
             X86ModRM::MOD_11_DISP_RDX,
             X86TargetRM::RAX,
             mc,
-        ); // ADD RSI+EAX=EAX
+        ); // ADD RDX+EAX=EAX
+
         gen_size += match mem_size {
             MemOpType::LOAD_64BIT => {
                 let mut gen_size = 0;
