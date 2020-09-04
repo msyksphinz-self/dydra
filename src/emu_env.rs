@@ -15,6 +15,8 @@ use crate::tcg::{TCGOp, TCG};
 use crate::instr_info::InstrInfo;
 
 pub struct EmuEnv {
+    head: [u64; 1], // pointer of this struct. Do not move.
+
     m_regs: [u64; 32],
     m_pc: u64,
 
@@ -34,6 +36,7 @@ pub struct EmuEnv {
 impl EmuEnv {
     pub fn new() -> EmuEnv {
         EmuEnv {
+            head: [0xdeadbeef; 1],
             m_regs: [0; 32],
             m_pc: 0x0,
             m_inst_vec: vec![],
@@ -237,11 +240,11 @@ impl EmuEnv {
             }
         }
 
-        let reg_ptr: *const [u64; 32] = &self.m_regs;
+        let emu_ptr: *const [u64; 1] = &self.head;
 
         unsafe {
             let func: unsafe extern "C" fn(
-                gpr_base: *const [u64; 32],
+                emu_head: *const [u64; 1],
                 tb_map: *mut u8,
                 riscv_guestcode: *const u8,
             ) -> u32 = mem::transmute(self.m_prologue_epilogue_mem.data());
@@ -251,7 +254,7 @@ impl EmuEnv {
             println!("reflect tb address = {:p}", tb_host_data);
             println!("reflect tb address = {:?}", riscv_guestcode.as_ptr());
 
-            let ans = func(reg_ptr, tb_host_data, riscv_guestcode_ptr);
+            let ans = func(emu_ptr, tb_host_data, riscv_guestcode_ptr);
             println!("ans = {:x}", ans);
         }
         self.dump_gpr();
@@ -330,5 +333,17 @@ impl EmuEnv {
         diff_from_epilogue *= 8;
         diff_from_epilogue += self.m_host_prologue.len() as isize;
         diff_from_epilogue
+    }
+
+    pub fn calc_gpr_relat_address(&self, gpr_addr: u64) -> isize {
+        let gpr_ptr = self.m_regs.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let mut diff = unsafe { gpr_ptr.offset_from(self_ptr) };
+        diff += gpr_addr as isize * mem::size_of::<u64>() as isize;
+        println!(
+            "calc_gpr_relat_address = {:x}, {:p}, {:p}",
+            diff, gpr_ptr, self_ptr
+        );
+        diff
     }
 }
