@@ -31,6 +31,7 @@ pub enum TCGOpcode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum MemOpType {
     LOAD_64BIT,
     LOAD_32BIT,

@@ -1,6 +1,5 @@
 use memmap::Mmap;
 use num::traits::FromPrimitive;
-use std::env;
 use std::fs::File;
 
 // pub mod riscv_decoder;

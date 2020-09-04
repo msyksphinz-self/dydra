@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::instr_info::InstrInfo;
+use super::riscv_inst_id::RiscvInstId;
 
 macro_rules! get_rs1_addr {
     ($inst:expr) => {
@@ -54,6 +55,44 @@ macro_rules! get_s_imm_field {
 pub struct TranslateRiscv;
 
 impl TranslateRiscv {
+    pub fn translate(id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
+        return match id {
+            RiscvInstId::ADDI => TranslateRiscv::translate_addi(inst),
+            RiscvInstId::ADD => TranslateRiscv::translate_add(inst),
+            RiscvInstId::SUB => TranslateRiscv::translate_sub(inst),
+            RiscvInstId::AND => TranslateRiscv::translate_and(inst),
+            RiscvInstId::OR => TranslateRiscv::translate_or(inst),
+            RiscvInstId::XOR => TranslateRiscv::translate_xor(inst),
+            RiscvInstId::ANDI => TranslateRiscv::translate_andi(inst),
+            RiscvInstId::ORI => TranslateRiscv::translate_ori(inst),
+            RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
+
+            RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
+            RiscvInstId::BEQ => TranslateRiscv::translate_beq(inst),
+            RiscvInstId::BNE => TranslateRiscv::translate_bne(inst),
+            RiscvInstId::BLT => TranslateRiscv::translate_blt(inst),
+            RiscvInstId::BGE => TranslateRiscv::translate_bge(inst),
+            RiscvInstId::BLTU => TranslateRiscv::translate_bltu(inst),
+            RiscvInstId::BGEU => TranslateRiscv::translate_bgeu(inst),
+            RiscvInstId::LD => TranslateRiscv::translate_ld(inst),
+            RiscvInstId::LW => TranslateRiscv::translate_lw(inst),
+            RiscvInstId::LH => TranslateRiscv::translate_lh(inst),
+            RiscvInstId::LB => TranslateRiscv::translate_lb(inst),
+            RiscvInstId::LWU => TranslateRiscv::translate_lwu(inst),
+            RiscvInstId::LHU => TranslateRiscv::translate_lhu(inst),
+            RiscvInstId::LBU => TranslateRiscv::translate_lbu(inst),
+            RiscvInstId::SD => TranslateRiscv::translate_sd(inst),
+            RiscvInstId::SW => TranslateRiscv::translate_sw(inst),
+            RiscvInstId::SH => TranslateRiscv::translate_sh(inst),
+            RiscvInstId::SB => TranslateRiscv::translate_sb(inst),
+
+            RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
+            RiscvInstId::JAL => TranslateRiscv::translate_jalr(inst), // xxx: Temporary Implementation
+
+            other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
+        };
+    }
+
     pub fn translate_jalr(inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = (inst.inst as u64) >> 20 & 0xfff;
@@ -98,7 +137,7 @@ impl TranslateRiscv {
 
     fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let mut imm_const: u64 = (inst.inst >> 20) as u64;
+        let imm_const: u64 = (inst.inst >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
@@ -112,7 +151,7 @@ impl TranslateRiscv {
 
     fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let mut imm_const: u64 = get_s_imm_field!(inst.inst);
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
