@@ -108,17 +108,14 @@ impl CPU {
         let host_prologue = [
             0x55, // pushq %rbp
             0x54, // pushq %rsp
+            0x51, // pushq %rcx
             0x48, 0x8b, 0xef, // movq     %rdi, %rbp
             0x48, 0x81, 0xc4, 0x80, 0xfb, 0xff, 0xff, // addq     $-0x488, %rsp
-            0x48, 0x89, 0x75, 0x00, //  mov    %rsi,0x0(%rbp)
-            0x48, 0x8b, 0x06, // mov    (%rsi),%rax
-            0x48, 0x89, 0x45, 0x08, //  mov    %rax,0x8(%rbp)
-            0x48, 0x8b, 0x06, // mov    (%rsi),%rax
-            0x48, 0x89, 0x65, 0x10, //  mov    %rsp,0x10(%rbp)
             0xff, 0xe6, //  jmpq     *%rsi
         ];
         let host_epilogue = [
             0x48, 0x81, 0xc4, 0x80, 0x04, 0x00, 0x00, // addq     $0x488, %rsp
+            0x59, // popq     %rcx
             0x5b, // popq     %rbx
             0x5d, // popq     %rbp
             0xc3, // retq
@@ -226,7 +223,7 @@ impl CPU {
 
             let mut diff_from_epilogue = unsafe { pe_map_ptr.offset_from(tb_map_ptr) };
             diff_from_epilogue *= 8;
-            diff_from_epilogue += 32;
+            diff_from_epilogue += host_prologue.len() as isize;
 
             let mut mc_byte = vec![];
             TCGX86::tcg_gen(diff_from_epilogue, pc_address, tcg, &mut mc_byte);

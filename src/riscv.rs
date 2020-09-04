@@ -45,6 +45,12 @@ macro_rules! get_sb_field {
     };
 }
 
+macro_rules! get_s_imm_field {
+    ($inst:expr) => {
+        ((($inst as u64 >> 25) & 0x7f) << 5) | ($inst as u64 >> 7 & 0x1f) as u64
+    };
+}
+
 pub struct TranslateRiscv;
 
 impl TranslateRiscv {
@@ -100,6 +106,20 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
         let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
+
+        vec![tcg_inst]
+    }
+
+    fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let mut imm_const: u64 = get_s_imm_field!(inst.inst);
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, *rs1, *rs2, *imm);
 
         vec![tcg_inst]
     }
@@ -194,15 +214,15 @@ impl TranslateRiscv {
     }
 
     pub fn translate_sd(inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Memory Access not supported!");
+        Self::translate_store(TCGOpcode::SD, inst)
     }
     pub fn translate_sw(inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Memory Access not supported!");
+        Self::translate_store(TCGOpcode::SW, inst)
     }
     pub fn translate_sh(inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Memory Access not supported!");
+        Self::translate_store(TCGOpcode::SH, inst)
     }
     pub fn translate_sb(inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Memory Access not supported!");
+        Self::translate_store(TCGOpcode::SB, inst)
     }
 }
