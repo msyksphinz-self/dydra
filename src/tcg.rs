@@ -163,110 +163,25 @@ impl TCGLabel {
 }
 
 pub trait TCG {
-    fn tcg_gen(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
+    fn tcg_gen(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_addi(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_sub(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_and(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_or(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_xor(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_ret(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_eq(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_ne(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_lt(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_ge(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_ltu(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_geu(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_mov(
-        emu: &EmuEnv,
-        diff_from_epilogue: isize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
+    fn tcg_gen_addi(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sub(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_and(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_or(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_xor(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_ret(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_eq(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_ne(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_lt(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_ge(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_ltu(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_geu(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_mov(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     /* Memory Access */
     fn tcg_gen_load(
         emu: &EmuEnv,
-        diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
@@ -275,7 +190,6 @@ pub trait TCG {
 
     fn tcg_gen_store(
         emu: &EmuEnv,
-        diff_from_epilogue: isize,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,

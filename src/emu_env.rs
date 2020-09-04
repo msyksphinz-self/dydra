@@ -183,12 +183,8 @@ impl EmuEnv {
         for tcg in &self.m_tcg_vec {
             println!("tcg_inst = {:?}", &tcg);
 
-            let mut diff_from_epilogue = unsafe { pe_map_ptr.offset_from(tb_map_ptr) };
-            diff_from_epilogue *= 8;
-            diff_from_epilogue += self.m_host_prologue.len() as isize;
-
             let mut mc_byte = vec![];
-            TCGX86::tcg_gen(&self, diff_from_epilogue, pc_address, tcg, &mut mc_byte);
+            TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
             for be in &mc_byte {
                 let be_data = *be;
                 self.m_tcg_tb_vec.push(be_data);
