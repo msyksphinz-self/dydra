@@ -248,18 +248,13 @@ impl EmuEnv {
         let emu_ptr: *const [u64; 1] = &self.head;
 
         unsafe {
-            let func: unsafe extern "C" fn(
-                emu_head: *const [u64; 1],
-                tb_map: *mut u8,
-                guestcode: *const u8,
-            ) -> u32 = mem::transmute(self.m_prologue_epilogue_mem.data());
+            let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
+                mem::transmute(self.m_prologue_epilogue_mem.data());
 
             let tb_host_data = self.m_tb_mem.data();
-            let m_guestcode_ptr = self.m_guestcode.as_ptr();
             println!("reflect tb address = {:p}", tb_host_data);
-            println!("reflect tb address = {:?}", self.m_guestcode.as_ptr());
 
-            let ans = func(emu_ptr, tb_host_data, m_guestcode_ptr);
+            let ans = func(emu_ptr, tb_host_data);
             println!("ans = {:x}", ans);
         }
         self.dump_gpr();
