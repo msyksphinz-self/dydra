@@ -349,11 +349,9 @@ impl EmuEnv {
         diff
     }
 
-    pub fn calc_guestcode_relat_address(&self) -> isize {
-        let guestcode_ptr = self.m_guestcode.as_ptr() as *const u8;
-        let self_ptr = self.head.as_ptr() as *const u8;
-        let diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
-        println!("guestcode_ptr = {:p}, {:p}", guestcode_ptr, self_ptr);
-        diff
+    pub fn calc_guestcode_address(&self) -> usize {
+        let guestcode_ptr = self.m_guestcode.as_ptr();
+        println!("guestcode_ptr = {:p}", guestcode_ptr);
+        return guestcode_ptr as usize;
     }
 }

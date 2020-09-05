@@ -67,7 +67,6 @@ enum X86Opcode {
     MOV_GV_EV_S_8BIT = 0xbe0f,
     MOV_GV_EV_U_16BIT = 0xb70f,
     MOV_GV_EV_U_8BIT = 0xb60f,
-    MOV,
 }
 
 enum X86_2Wd_Opcode {}
@@ -83,7 +82,8 @@ enum X86ModRM {
     MOD_00_DISP_RSI = 0x00,
     MOD_10_DISP_RAX = 0x80,
     MOD_11_DISP_RSI = 0xf0,
-    MOD_11_DISP_RDX = 0xd0,
+    MOD_11_DISP_RDX = 0xc2,
+    MOD_11_DISP_RCX = 0xc1,
     MOD_11_DISP_RAX = 0xc0,
 }
 
@@ -734,6 +734,25 @@ impl TCG for TCGX86 {
         assert_eq!(arg1.t, TCGvType::Register);
         assert_eq!(arg2.t, TCGvType::Immediate);
 
+        // Load Guest Memory Head into EAX
+        gen_size += Self::tcg_out(0x48, 1, mc);
+        gen_size += Self::tcg_out(
+            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RAX as u32,
+            1,
+            mc,
+        );
+        let guestcode_addr = emu.calc_guestcode_address();
+        gen_size += Self::tcg_out((guestcode_addr & 0xffff_ffff) as u32, 4, mc);
+        gen_size += Self::tcg_out(((guestcode_addr >> 32) & 0xffff_ffff) as u32, 4, mc);
+
+        // Move Guest Memory from EAX to ECX
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_GV_EV,
+            X86ModRM::MOD_11_DISP_RAX,
+            X86TargetRM::RCX,
+            mc,
+        );
+
         // Load value from rs1
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::MOV_GV_EV,
@@ -746,11 +765,20 @@ impl TCG for TCGX86 {
         // Execute Load
         // GPR value + Memory Head Address
         Self::tcg_modrm_64bit_out(
-            X86Opcode::ADD_EV_GV,
-            X86ModRM::MOD_11_DISP_RDX,
+            X86Opcode::ADD_GV_EV,
+            X86ModRM::MOD_11_DISP_RCX,
             X86TargetRM::RAX,
             mc,
-        ); // ADD RDX+EAX=EAX
+        );
+
+        // // Execute Load
+        // // GPR value + Memory Head Address
+        // Self::tcg_modrm_64bit_out(
+        //     X86Opcode::ADD_GV_EV,
+        //     X86ModRM::MOD_11_DISP_RDX,
+        //     X86TargetRM::RAX,
+        //     mc,
+        // ); // ADD RDX+EAX=EAX
 
         gen_size += match mem_size {
             MemOpType::LOAD_64BIT => {
@@ -863,6 +891,25 @@ impl TCG for TCGX86 {
         assert_eq!(arg1.t, TCGvType::Register);
         assert_eq!(arg2.t, TCGvType::Immediate);
 
+        // Load Guest Memory Head into EAX
+        gen_size += Self::tcg_out(0x48, 1, mc);
+        gen_size += Self::tcg_out(
+            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RAX as u32,
+            1,
+            mc,
+        );
+        let guestcode_addr = emu.calc_guestcode_address();
+        gen_size += Self::tcg_out((guestcode_addr & 0xffff_ffff) as u32, 4, mc);
+        gen_size += Self::tcg_out(((guestcode_addr >> 32) & 0xffff_ffff) as u32, 4, mc);
+
+        // Move Guest Memory from EAX to ECX
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_GV_EV,
+            X86ModRM::MOD_11_DISP_RAX,
+            X86TargetRM::RCX,
+            mc,
+        );
+
         // Load value from rs1(addr)
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::MOV_GV_EV,
@@ -873,8 +920,8 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
         // Address Calculation (EAX)
         Self::tcg_modrm_64bit_out(
-            X86Opcode::ADD_EV_GV,
-            X86ModRM::MOD_11_DISP_RDX,
+            X86Opcode::ADD_GV_EV,
+            X86ModRM::MOD_11_DISP_RCX,
             X86TargetRM::RAX,
             mc,
         );
