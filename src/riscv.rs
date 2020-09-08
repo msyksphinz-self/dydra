@@ -46,6 +46,15 @@ macro_rules! get_sb_field {
     };
 }
 
+macro_rules! extract_j_field {
+    ($inst:expr) => {
+        ((($inst as u64 >> 21) & 0x3ff) << 1)
+            | ((($inst as u64 >> 20) & 0x001) << 11)
+            | ((($inst as u64 >> 12) & 0x0ff) << 12)
+            | ((($inst as u64 >> 31) & 0x001) << 20) as u64
+    };
+}
+
 macro_rules! get_s_imm_field {
     ($inst:expr) => {
         ((($inst as u64 >> 25) & 0x7f) << 5) | ($inst as u64 >> 7 & 0x1f) as u64
@@ -68,6 +77,8 @@ impl TranslateRiscv {
             RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
 
             RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
+            RiscvInstId::AUIPC => TranslateRiscv::translate_auipc(inst),
+
             RiscvInstId::BEQ => TranslateRiscv::translate_beq(inst),
             RiscvInstId::BNE => TranslateRiscv::translate_bne(inst),
             RiscvInstId::BLT => TranslateRiscv::translate_blt(inst),
@@ -86,8 +97,25 @@ impl TranslateRiscv {
             RiscvInstId::SH => TranslateRiscv::translate_sh(inst),
             RiscvInstId::SB => TranslateRiscv::translate_sb(inst),
 
+            RiscvInstId::SLLI => TranslateRiscv::translate_slli(inst),
+            RiscvInstId::SRLI => TranslateRiscv::translate_srli(inst),
+            RiscvInstId::SRAI => TranslateRiscv::translate_srai(inst),
+            RiscvInstId::SRL => TranslateRiscv::translate_srl(inst),
+            RiscvInstId::SRA => TranslateRiscv::translate_sra(inst),
+
             RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
-            RiscvInstId::JAL => TranslateRiscv::translate_jalr(inst), // xxx: Temporary Implementation
+            RiscvInstId::JAL => TranslateRiscv::translate_jal(inst),
+
+            RiscvInstId::CSRRS => TranslateRiscv::translate_csrrs(inst),
+            RiscvInstId::CSRRW => TranslateRiscv::translate_csrrw(inst),
+            RiscvInstId::CSRRC => TranslateRiscv::translate_csrrc(inst),
+            RiscvInstId::CSRRSI => TranslateRiscv::translate_csrrsi(inst),
+            RiscvInstId::CSRRWI => TranslateRiscv::translate_csrrwi(inst),
+            RiscvInstId::CSRRCI => TranslateRiscv::translate_csrrci(inst),
+
+            RiscvInstId::FENCE => TranslateRiscv::translate_fence(inst),
+            RiscvInstId::MRET => TranslateRiscv::translate_mret(inst),
+            RiscvInstId::ECALL => TranslateRiscv::translate_ecall(inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
@@ -102,8 +130,19 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        // let tcg_inst = TCGOp::new_3op(TCGOpcode::JMP, *rd, *rs1, *imm));
-        let tcg_inst = TCGOp::new_3op(TCGOpcode::JMP, *rd, *rs1, *imm);
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::JMPR, *rd, *rs1, *imm);
+
+        vec![tcg_inst]
+    }
+
+    pub fn translate_jal(inst: &InstrInfo) -> Vec<TCGOp> {
+        let imm_const: u64 = extract_j_field!(inst.inst);
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = TCGOp::new_2op(TCGOpcode::JMPIM, *rd, *imm);
 
         vec![tcg_inst]
     }
@@ -113,6 +152,19 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(0));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD, *rd, *rs1, *imm);
+
+        vec![tcg_inst]
+    }
+
+    pub fn translate_auipc(inst: &InstrInfo) -> Vec<TCGOp> {
+        let imm_const: u64 = (inst.inst as u64) & !0xfff;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_pc());
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
@@ -264,4 +316,44 @@ impl TranslateRiscv {
     pub fn translate_sb(inst: &InstrInfo) -> Vec<TCGOp> {
         Self::translate_store(TCGOpcode::SB, inst)
     }
+
+    pub fn translate_csrrw(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_csrrs(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_csrrc(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_csrrwi(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_csrrsi(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_csrrci(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+
+    pub fn translate_slli(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_srli(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_srai(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_srl (inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_sra (inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+
+    pub fn translate_fence (inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_mret (inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_ecall (inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+
 }

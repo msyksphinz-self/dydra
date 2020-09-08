@@ -321,7 +321,9 @@ impl TCG for TCGX86 {
                     TCGOpcode::AND => TCGX86::tcg_gen_and(emu, pc_address, tcg, mc),
                     TCGOpcode::OR => TCGX86::tcg_gen_or(emu, pc_address, tcg, mc),
                     TCGOpcode::XOR => TCGX86::tcg_gen_xor(emu, pc_address, tcg, mc),
-                    TCGOpcode::JMP => TCGX86::tcg_gen_ret(emu, pc_address, tcg, mc),
+
+                    TCGOpcode::JMPR => TCGX86::tcg_gen_jmpr(emu, pc_address, tcg, mc),
+                    TCGOpcode::JMPIM => TCGX86::tcg_gen_jmpim(emu, pc_address, tcg, mc),
                     TCGOpcode::EQ => TCGX86::tcg_gen_eq(emu, pc_address, tcg, mc),
                     TCGOpcode::NE => TCGX86::tcg_gen_ne(emu, pc_address, tcg, mc),
                     TCGOpcode::LT => TCGX86::tcg_gen_lt(emu, pc_address, tcg, mc),
@@ -617,14 +619,14 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_ret(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_jmpr(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
-        assert_eq!(op, TCGOpcode::JMP);
+        assert_eq!(op, TCGOpcode::JMPR);
 
         let mut gen_size: usize = pc_address as usize;
 
@@ -639,8 +641,55 @@ impl TCG for TCGX86 {
 
             return gen_size;
         }
-        // xxx : panic!("This function is not supported!")
-        return 0;
+        panic!("This function is not supported!");
+    }
+
+    fn tcg_gen_jmpim(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let op = tcg.op.unwrap();
+        let arg0 = tcg.arg0.unwrap();
+        let imm = tcg.arg1.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(imm.t, TCGvType::Immediate);
+        assert_eq!(op, TCGOpcode::JMPIM);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        if arg0.value != 0 {
+            gen_size += Self::tcg_out(0x48, 1, mc);
+            gen_size += Self::tcg_out(
+                X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RAX as u32,
+                1,
+                mc,
+            );
+            gen_size += Self::tcg_out((pc_address & 0xffff_ffff) as u32, 4, mc);
+            gen_size += Self::tcg_out(((pc_address >> 32) & 0xffff_ffff) as u32, 4, mc);
+
+            gen_size += Self::tcg_modrm_64bit_out(
+                X86Opcode::MOV_EV_GV,
+                X86ModRM::MOD_10_DISP_RBP,
+                X86TargetRM::RAX,
+                mc,
+            );
+            gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        }
+
+        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
+        gen_size += Self::tcg_out(imm.value as u32, 4, mc);
+
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_pc_address() as u32, 4, mc); // Set Program Counter
+
+        // Jump epilogue
+        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+        let diff_from_epilogue = emu.calc_epilogue_address();
+        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
+        return gen_size;
     }
 
     fn tcg_gen_eq(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {

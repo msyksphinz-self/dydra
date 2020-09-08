@@ -14,11 +14,13 @@ use crate::tcg::{TCGOp, TCG};
 
 use crate::instr_info::InstrInfo;
 
+use crate::riscv_inst_id::RiscvInstId;
+
 pub struct EmuEnv {
     head: [u64; 1], // pointer of this struct. Do not move.
 
     m_regs: [u64; 32],
-    m_pc: u64,
+    m_pc: [u64; 1],
 
     pub m_guestcode: Vec<u8>,
 
@@ -40,7 +42,7 @@ impl EmuEnv {
         EmuEnv {
             head: [0xdeadbeef; 1],
             m_regs: [0; 32],
-            m_pc: 0x0,
+            m_pc: [0x0; 1],
             m_inst_vec: vec![],
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
@@ -72,14 +74,14 @@ impl EmuEnv {
         }
     }
 
-    fn dump_gpr(self) {
+    fn dump_gpr(&self) {
         for (i, reg) in self.m_regs.iter().enumerate() {
             print!("x{:02} = {:016x}  ", i, reg);
             if i % 4 == 3 {
                 print!("\n");
             }
         }
-        print!("PC = {:016x}\n", self.m_pc);
+        print!("PC = {:016x}\n", self.m_pc[0]);
     }
 
     pub fn run(mut self, filename: &String) {
@@ -131,133 +133,162 @@ impl EmuEnv {
             self.gen_tcg();
         }
 
-        for inst in &self.m_inst_vec {
-            let id = match decode_inst(inst.inst) {
-                Some(id) => id,
-                _ => panic!("Decode Failed"),
-            };
-            let mut tcg_inst = TranslateRiscv::translate(id, inst);
-            self.m_tcg_vec.append(&mut tcg_inst);
-        }
-
-        // Emit Prologue
-        for b in &self.m_host_prologue {
-            self.m_tcg_raw_vec.push(*b);
-        }
-
-        // Emit Epilogue
-        for b in &self.m_host_epilogue {
-            self.m_tcg_raw_vec.push(*b);
-        }
-
-        {
-            for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
-                print!("{:02x} ", b);
-                if i % 16 == 15 {
-                    print!("\n");
+        for _loop_idx in 0..10 {
+            let mut start_idx = 0;
+            for inst in &self.m_inst_vec {
+                if inst.addr == self.m_pc[0] {
+                    break;
                 }
+                start_idx += 1;
             }
-            print!("\n");
-        }
 
-        self.m_prologue_epilogue_mem = {
-            let v = self.m_tcg_raw_vec.as_slice();
-            Self::reflect(v)
-        };
-
-        // Make tb instruction region (temporary 1024byte)
-        self.m_tb_mem = match MemoryMap::new(
-            1024,
-            &[
-                MapOption::MapReadable,
-                MapOption::MapWritable,
-                MapOption::MapExecutable,
-            ],
-        ) {
-            Ok(m) => m,
-            Err(e) => panic!("Error: {}", e),
-        };
-
-        let mut pc_address = 0;
-
-        let tb_map_ptr = self.m_tb_mem.data() as *const u64;
-        let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
-        let host_cod_ptr = self.m_guestcode.as_ptr();
-
-        println!("tb_address  = {:?}", tb_map_ptr);
-        println!("pe_address  = {:?}", pe_map_ptr);
-        println!("self.m_guestcode = {:?}", host_cod_ptr);
-
-        for tcg in &self.m_tcg_vec {
-            println!("tcg_inst = {:?}", &tcg);
-
-            let mut mc_byte = vec![];
-            TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
-            for be in &mc_byte {
-                let be_data = *be;
-                self.m_tcg_tb_vec.push(be_data);
-            }
-            pc_address += mc_byte.len() as u64;
-        }
-
-        unsafe {
-            std::ptr::copy(
-                self.m_tcg_tb_vec.as_ptr(),
-                self.m_tb_mem.data(),
-                self.m_tcg_tb_vec.len(),
+            print!(
+                "start_idx = {}. m_inst_vec.len = {}\n",
+                start_idx,
+                &self.m_inst_vec.len(),
             );
-        }
+            let mut inst_idx = 0;
+            for inst in &self.m_inst_vec {
+                if inst_idx < start_idx {
+                    inst_idx += 1;
+                    continue;
+                }
+                let id = match decode_inst(inst.inst) {
+                    Some(id) => id,
+                    _ => panic!("Decode Failed"),
+                };
+                let mut tcg_inst = TranslateRiscv::translate(id, &inst);
+                self.m_tcg_vec.append(&mut tcg_inst);
+                print!("Address = {:08x} : {:08x}\n", inst.addr, inst.inst);
+                if id == RiscvInstId::JALR || id == RiscvInstId::JAL {
+                    break;
+                }
+                inst_idx += 1;
+            }
 
-        for tcg in &self.m_tcg_vec {
-            match tcg.op {
-                Some(_) => {}
-                None => {
-                    println!("label found 2");
-                    match &tcg.label {
-                        Some(l) => {
-                            let l = &mut *l.borrow_mut();
-                            println!("label found. offset = {:x}", l.offset);
-                            for v_off in &l.code_ptr_vec {
-                                let diff = l.offset as usize - v_off - 4;
-                                println!("replacement target is {:x}, data = {:x}", v_off, diff);
-                                let s = self.m_tb_mem.data();
-                                unsafe {
-                                    *s.offset(*v_off as isize) = (diff & 0xff) as u8;
-                                };
+            // Emit Prologue
+            for b in &self.m_host_prologue {
+                self.m_tcg_raw_vec.push(*b);
+            }
+
+            // Emit Epilogue
+            for b in &self.m_host_epilogue {
+                self.m_tcg_raw_vec.push(*b);
+            }
+
+            {
+                for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
+                    print!("{:02x} ", b);
+                    if i % 16 == 15 {
+                        print!("\n");
+                    }
+                }
+                print!("\n");
+            }
+
+            self.m_prologue_epilogue_mem = {
+                let v = self.m_tcg_raw_vec.as_slice();
+                Self::reflect(v)
+            };
+
+            // Make tb instruction region (temporary 1024byte)
+            self.m_tb_mem = match MemoryMap::new(
+                256,
+                &[
+                    MapOption::MapReadable,
+                    MapOption::MapWritable,
+                    MapOption::MapExecutable,
+                ],
+            ) {
+                Ok(m) => m,
+                Err(e) => panic!("Error: {}", e),
+            };
+
+            let mut pc_address = 0;
+
+            let tb_map_ptr = self.m_tb_mem.data() as *const u64;
+            let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
+            let host_cod_ptr = self.m_guestcode.as_ptr();
+
+            println!("tb_address  = {:?}", tb_map_ptr);
+            println!("pe_address  = {:?}", pe_map_ptr);
+            println!("self.m_guestcode = {:?}", host_cod_ptr);
+
+            for tcg in &self.m_tcg_vec {
+                println!("tcg_inst = {:?}", &tcg);
+
+                let mut mc_byte = vec![];
+                TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
+                for be in &mc_byte {
+                    let be_data = *be;
+                    self.m_tcg_tb_vec.push(be_data);
+                }
+                pc_address += mc_byte.len() as u64;
+            }
+
+            unsafe {
+                std::ptr::copy(
+                    self.m_tcg_tb_vec.as_ptr(),
+                    self.m_tb_mem.data(),
+                    self.m_tcg_tb_vec.len(),
+                );
+            }
+
+            for tcg in &self.m_tcg_vec {
+                match tcg.op {
+                    Some(_) => {}
+                    None => {
+                        println!("label found 2");
+                        match &tcg.label {
+                            Some(l) => {
+                                let l = &mut *l.borrow_mut();
+                                println!("label found. offset = {:x}", l.offset);
+                                for v_off in &l.code_ptr_vec {
+                                    let diff = l.offset as usize - v_off - 4;
+                                    println!(
+                                        "replacement target is {:x}, data = {:x}",
+                                        v_off, diff
+                                    );
+                                    let s = self.m_tb_mem.data();
+                                    unsafe {
+                                        *s.offset(*v_off as isize) = (diff & 0xff) as u8;
+                                    };
+                                }
                             }
+                            None => {}
                         }
-                        None => {}
                     }
                 }
             }
-        }
 
-        let s = self.m_tb_mem.data();
-        for byte_idx in 0..self.m_tb_mem.len() {
-            if byte_idx % 16 == 0 {
-                print!("{:08x} : ", byte_idx);
+            let s = self.m_tb_mem.data();
+            // for byte_idx in 0..self.m_tb_mem.len() {
+            for byte_idx in 0..256 {
+                if byte_idx % 16 == 0 {
+                    print!("{:08x} : ", byte_idx);
+                }
+                unsafe {
+                    print!("{:02x} ", *s.offset(byte_idx as isize) as u8);
+                }
+                if byte_idx % 16 == 15 {
+                    print!("\n");
+                }
             }
+
+            let emu_ptr: *const [u64; 1] = &self.head;
+
             unsafe {
-                print!("{:02x} ", *s.offset(byte_idx as isize) as u8);
+                let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
+                    mem::transmute(self.m_prologue_epilogue_mem.data());
+
+                let tb_host_data = self.m_tb_mem.data();
+                println!("reflect tb address = {:p}", tb_host_data);
+
+                let ans = func(emu_ptr, tb_host_data);
+                println!("ans = {:x}", ans);
             }
-            if byte_idx % 16 == 15 {
-                print!("\n");
-            }
+            self.dump_gpr();
         }
-
-        let emu_ptr: *const [u64; 1] = &self.head;
-
-        unsafe {
-            let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
-                mem::transmute(self.m_prologue_epilogue_mem.data());
-
-            let tb_host_data = self.m_tb_mem.data();
-            println!("reflect tb address = {:p}", tb_host_data);
-
-            let ans = func(emu_ptr, tb_host_data);
-            println!("ans = {:x}", ans);
-        }
-        self.dump_gpr();
     }
 
     fn reflect(prologue_epilogue: &[u8]) -> mmap::MemoryMap {
@@ -318,13 +349,17 @@ impl EmuEnv {
                 | ((*map_data.offset(byte_idx as isize + 2) as u32) << 16)
                 | ((*map_data.offset(byte_idx as isize + 3) as u32) << 24);
 
-            println!("inst = {:08x}", inst);
+            print!("{:08x} ", inst);
+            if byte_idx % 32 == 32 - 4 {
+                print!("\n");
+            }
             let inst_info = Box::new(InstrInfo {
                 inst: inst,
                 addr: byte_idx as u64,
             });
             self.m_inst_vec.push(*inst_info);
         }
+        print!("\n");
     }
 
     pub fn calc_epilogue_address(&self) -> isize {
@@ -341,6 +376,13 @@ impl EmuEnv {
         let self_ptr = self.head.as_ptr() as *const u8;
         let mut diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
         diff += gpr_addr as isize * mem::size_of::<u64>() as isize;
+        diff
+    }
+
+    pub fn calc_pc_address(&self) -> isize {
+        let guestcode_ptr = self.m_pc.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let mut diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
         diff
     }
 
