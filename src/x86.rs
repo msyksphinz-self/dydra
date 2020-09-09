@@ -735,10 +735,9 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(8 * 32, 4, mc); // Set Program Counter
+        gen_size += Self::tcg_out(emu.calc_pc_address() as u32, 4, mc); // Set Program Counter
 
         // jmp    epilogue
-
         gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
         let diff_from_epilogue = emu.calc_epilogue_address();
         gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);

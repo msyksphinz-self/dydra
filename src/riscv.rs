@@ -318,7 +318,20 @@ impl TranslateRiscv {
     }
 
     pub fn translate_csrrw(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let csr_const: u64 = get_s_imm_field!(inst.inst);
+
+        let tmp = Box::new(TCGv::new_reg(31 as u64));
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let csr = Box::new(TCGv::new_imm(csr_const));
+
+        let csr_load = TCGOp::new_2op(TCGOpcode::CSR_LOAD, *tmp, *csr);
+        let tcg_store = TCGOp::new_2op(TCGOpcode::CSR_STORE, *rd, *csr);
+        let csr_write_gpr = TCGOp::new_2op(TCGOpcode::MOV, *rd, *tmp);
+
+        vec![csr_load, tcg_store, csr_write_gpr]
     }
     pub fn translate_csrrs(inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
@@ -345,15 +358,20 @@ impl TranslateRiscv {
     pub fn translate_srai(inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
     }
-    pub fn translate_srl (inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_srl(inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
     }
-    pub fn translate_sra (inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sra(inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
     }
 
-    pub fn translate_fence (inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_mret (inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_ecall (inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-
+    pub fn translate_fence(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_mret(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_ecall(inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
 }

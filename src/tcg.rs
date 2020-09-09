@@ -5,6 +5,7 @@ use std::rc::Rc;
 use crate::emu_env::EmuEnv;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum TCGOpcode {
     MOV,
     ADD,
@@ -31,6 +32,8 @@ pub enum TCGOpcode {
     SW,
     SH,
     SB,
+    CSR_LOAD,
+    CSR_STORE,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]

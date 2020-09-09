@@ -22,6 +22,8 @@ pub struct EmuEnv {
     m_regs: [u64; 32],
     m_pc: [u64; 1],
 
+    m_csr: [u64; 1024], // CSR implementation
+
     pub m_guestcode: Vec<u8>,
 
     m_inst_vec: Vec<InstrInfo>,
@@ -43,6 +45,7 @@ impl EmuEnv {
             head: [0xdeadbeef; 1],
             m_regs: [0; 32],
             m_pc: [0x0; 1],
+            m_csr: [0; 1024],
             m_inst_vec: vec![],
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
@@ -141,7 +144,7 @@ impl EmuEnv {
                 }
                 start_idx += 1;
             }
-
+            self.m_tcg_vec.clear();
             print!(
                 "start_idx = {}. m_inst_vec.len = {}\n",
                 start_idx,
@@ -160,7 +163,16 @@ impl EmuEnv {
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst);
                 self.m_tcg_vec.append(&mut tcg_inst);
                 print!("Address = {:08x} : {:08x}\n", inst.addr, inst.inst);
-                if id == RiscvInstId::JALR || id == RiscvInstId::JAL {
+                if id == RiscvInstId::JALR
+                    || id == RiscvInstId::JAL
+                    || id == RiscvInstId::BEQ
+                    || id == RiscvInstId::BNE
+                    || id == RiscvInstId::BGE
+                    || id == RiscvInstId::BGEU
+                    || id == RiscvInstId::BLT
+                    || id == RiscvInstId::BLTU
+                    || id == RiscvInstId::ECALL
+                {
                     break;
                 }
                 inst_idx += 1;
@@ -214,6 +226,7 @@ impl EmuEnv {
             println!("pe_address  = {:?}", pe_map_ptr);
             println!("self.m_guestcode = {:?}", host_cod_ptr);
 
+            self.m_tcg_tb_vec.clear();
             for tcg in &self.m_tcg_vec {
                 println!("tcg_inst = {:?}", &tcg);
 
@@ -285,7 +298,7 @@ impl EmuEnv {
                 println!("reflect tb address = {:p}", tb_host_data);
 
                 let ans = func(emu_ptr, tb_host_data);
-                println!("ans = {:x}", ans);
+                println!("ans = 0x{:x}", ans);
             }
             self.dump_gpr();
         }
@@ -390,5 +403,12 @@ impl EmuEnv {
         let guestcode_ptr = self.m_guestcode.as_ptr();
         println!("guestcode_ptr = {:p}", guestcode_ptr);
         return guestcode_ptr as usize;
+    }
+
+    pub fn calc_csr_relat_address(&self) -> isize {
+        let csr_ptr = self.m_csr.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let diff = unsafe { csr_ptr.offset_from(self_ptr) };
+        diff
     }
 }
