@@ -320,18 +320,15 @@ impl TranslateRiscv {
     pub fn translate_csrrw(inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
-        let csr_const: u64 = get_s_imm_field!(inst.inst);
+        let csr_const: u64 = get_imm12!(inst.inst);
 
-        let tmp = Box::new(TCGv::new_reg(31 as u64));
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
+        let zero = Box::new(TCGv::new_imm(0));
 
-        let csr_load = TCGOp::new_2op(TCGOpcode::CSR_LOAD, *tmp, *csr);
-        let tcg_store = TCGOp::new_2op(TCGOpcode::CSR_STORE, *rd, *csr);
-        let csr_write_gpr = TCGOp::new_2op(TCGOpcode::MOV, *rd, *tmp);
-
-        vec![csr_load, tcg_store, csr_write_gpr]
+        let csr_load = TCGOp::new_3op(TCGOpcode::CSR_LOAD, *rd, *rs1, *csr);
+        vec![csr_load]
     }
     pub fn translate_csrrs(inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]

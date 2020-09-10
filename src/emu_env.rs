@@ -10,19 +10,21 @@ use crate::riscv_decoder::decode_inst;
 
 use crate::x86::TCGX86;
 
-use crate::tcg::{TCGOp, TCG};
+use crate::tcg::{TCGOp, TCGvType, TCG};
 
 use crate::instr_info::InstrInfo;
 
 use crate::riscv_inst_id::RiscvInstId;
 
 pub struct EmuEnv {
-    head: [u64; 1], // pointer of this struct. Do not move.
+    pub head: [u64; 1], // pointer of this struct. Do not move.
 
     m_regs: [u64; 32],
     m_pc: [u64; 1],
 
     m_csr: [u64; 1024], // CSR implementation
+
+    helper_csrrw: [fn(emu: &EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize; 1],
 
     pub m_guestcode: Vec<u8>,
 
@@ -46,7 +48,10 @@ impl EmuEnv {
             m_regs: [0; 32],
             m_pc: [0x0; 1],
             m_csr: [0; 1024],
+
+            helper_csrrw: [Self::dummy_helper_csrrw; 1],
             m_inst_vec: vec![],
+
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
             m_tcg_tb_vec: vec![],
@@ -75,6 +80,14 @@ impl EmuEnv {
             ],
             m_guestcode: vec![],
         }
+    }
+
+    fn dummy_helper_csrrw(emu: &EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, source, csr_addr
+        );
+        return 0;
     }
 
     fn dump_gpr(&self) {
@@ -205,7 +218,7 @@ impl EmuEnv {
 
             // Make tb instruction region (temporary 1024byte)
             self.m_tb_mem = match MemoryMap::new(
-                256,
+                1024,
                 &[
                     MapOption::MapReadable,
                     MapOption::MapWritable,
@@ -405,10 +418,18 @@ impl EmuEnv {
         return guestcode_ptr as usize;
     }
 
-    pub fn calc_csr_relat_address(&self) -> isize {
+    pub fn calc_csr_relat_address(&self, csr_addr: u64) -> isize {
         let csr_ptr = self.m_csr.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
-        let diff = unsafe { csr_ptr.offset_from(self_ptr) };
+        let mut diff = unsafe { csr_ptr.offset_from(self_ptr) };
+        diff += csr_addr as isize * mem::size_of::<u64>() as isize;
+        diff
+    }
+
+    pub fn calc_helper_func_relat_address(&self) -> isize {
+        let csr_helper_func_ptr = self.helper_csrrw.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let diff = unsafe { csr_helper_func_ptr.offset_from(self_ptr) };
         diff
     }
 }
