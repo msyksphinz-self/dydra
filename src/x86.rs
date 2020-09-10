@@ -111,7 +111,7 @@ impl TCGX86 {
         mc: &mut Vec<u8>,
     ) -> usize {
         Self::tcg_out(
-            ((modrm as u32 | ((tgt_rm as u32) << 3)) << 16) | (op as u32) << 8 | 0x48,
+            ((modrm as u64 | ((tgt_rm as u64) << 3)) << 16) | (op as u64) << 8 | 0x48,
             3,
             mc,
         );
@@ -125,7 +125,7 @@ impl TCGX86 {
         mc: &mut Vec<u8>,
     ) -> usize {
         Self::tcg_out(
-            ((modrm as u32 | ((tgt_rm as u32) << 3)) << 24) | (op as u32) << 8 | 0x48,
+            ((modrm as u64 | ((tgt_rm as u64) << 3)) << 24) | (op as u64) << 8 | 0x48,
             4,
             mc,
         );
@@ -139,7 +139,7 @@ impl TCGX86 {
         mc: &mut Vec<u8>,
     ) -> usize {
         Self::tcg_out(
-            ((modrm as u32 | ((tgt_rm as u32) << 3)) << 8) | (op as u32) << 0,
+            ((modrm as u64 | ((tgt_rm as u64) << 3)) << 8) | (op as u64) << 0,
             2,
             mc,
         );
@@ -153,7 +153,7 @@ impl TCGX86 {
         mc: &mut Vec<u8>,
     ) -> usize {
         Self::tcg_out(
-            ((modrm as u32 | ((tgt_rm as u32) << 3)) << 16) | (op as u32) << 8 | 0x66,
+            ((modrm as u64 | ((tgt_rm as u64) << 3)) << 16) | (op as u64) << 8 | 0x66,
             3,
             mc,
         );
@@ -167,7 +167,7 @@ impl TCGX86 {
         mc: &mut Vec<u8>,
     ) -> usize {
         Self::tcg_out(
-            ((modrm as u32 | ((tgt_rm as u32) << 3)) << 16) | (op as u32) << 0,
+            ((modrm as u64 | ((tgt_rm as u64) << 3)) << 16) | (op as u64) << 0,
             3,
             mc,
         );
@@ -192,11 +192,11 @@ impl TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
 
         // add    reg_offset(%rbp),%eax
         gen_size += Self::tcg_modrm_64bit_out(op, X86ModRM::MOD_10_DISP_RBP, X86TargetRM::RAX, mc);
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
 
         // mov    %eax,reg_offset(%rbp)
         gen_size += Self::tcg_modrm_64bit_out(
@@ -205,7 +205,7 @@ impl TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
         return gen_size;
     }
@@ -228,11 +228,11 @@ impl TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
 
         // add    imm16,%eax
-        gen_size += Self::tcg_out(op as u32, 1, mc);
-        gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+        gen_size += Self::tcg_out(op as u64, 1, mc);
+        gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
 
         // mov    %eax,reg_offset(%rbp)
         gen_size += Self::tcg_modrm_64bit_out(
@@ -241,15 +241,14 @@ impl TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
         return gen_size;
     }
 
-    fn tcg_out(inst: u32, byte_len: usize, v: &mut Vec<u8>) -> usize {
+    fn tcg_out(inst: u64, byte_len: usize, v: &mut Vec<u8>) -> usize {
         for (i, be) in inst.to_le_bytes().iter().enumerate() {
             if i < byte_len {
-                // println!("register = {:02x}", &be);
                 v.push(*be);
             }
         }
@@ -264,8 +263,8 @@ impl TCGX86 {
     ) -> usize {
         let mut gen_size = gen_size;
 
-        gen_size += Self::tcg_out(x86_op as u32, 2, mc);
-        gen_size += Self::tcg_out(10 as u32, 4, mc);
+        gen_size += Self::tcg_out(x86_op as u64, 2, mc);
+        gen_size += Self::tcg_out(10 as u64, 4, mc);
         gen_size += Self::tcg_out_reloc(gen_size - 4, label);
 
         return gen_size;
@@ -295,7 +294,7 @@ impl TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
         // cmp    reg_offset(%rbp),%eax
         gen_size += Self::tcg_modrm_64bit_out(
@@ -304,7 +303,7 @@ impl TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
 
         gen_size = Self::tcg_gen_jcc(gen_size, x86_op, mc, label);
         // // je     label
@@ -403,8 +402,8 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 return gen_size;
             }
 
@@ -415,11 +414,11 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_pc_address() as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc);
 
                 // add    imm16,%eax
-                gen_size += Self::tcg_out(X86Opcode::ADD_EAX_IV as u32, 1, mc);
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(X86Opcode::ADD_EAX_IV as u64, 1, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
 
                 // mov    %eax,reg_offset(%rbp)
                 gen_size += Self::tcg_modrm_64bit_out(
@@ -428,7 +427,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
                 return gen_size;
             }
@@ -445,7 +444,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size += Self::tcg_modrm_64bit_out(
                     X86Opcode::MOV_EV_GV,
@@ -453,7 +452,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
                 return gen_size;
             }
@@ -499,8 +498,8 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 return gen_size;
             }
 
@@ -516,7 +515,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size += Self::tcg_modrm_64bit_out(
                     X86Opcode::MOV_EV_GV,
@@ -524,7 +523,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
                 return gen_size;
             }
             gen_size += Self::tcg_gen_rrr(emu, X86Opcode::AND_GV_EV, tcg, mc);
@@ -556,8 +555,8 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 return gen_size;
             }
 
@@ -573,7 +572,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size += Self::tcg_modrm_64bit_out(
                     X86Opcode::MOV_EV_GV,
@@ -581,7 +580,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
                 return gen_size;
             }
             gen_size += Self::tcg_gen_rrr(emu, X86Opcode::OR_GV_EV, tcg, mc);
@@ -614,8 +613,8 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 return gen_size;
             }
 
@@ -631,7 +630,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
                 // movl   %eax,reg_addr(%rbp)
                 gen_size += Self::tcg_modrm_64bit_out(
                     X86Opcode::MOV_EV_GV,
@@ -639,7 +638,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
                 return gen_size;
             }
             gen_size += Self::tcg_gen_rrr(emu, X86Opcode::XOR_GV_EV, tcg, mc);
@@ -663,9 +662,9 @@ impl TCG for TCGX86 {
             && arg1.t == tcg::TCGvType::Register
             && arg1.value == 1
         {
-            gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+            gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
             let diff_from_epilogue = emu.calc_epilogue_address();
-            gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
+            gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
 
             return gen_size;
         }
@@ -686,12 +685,11 @@ impl TCG for TCGX86 {
         if arg0.value != 0 {
             gen_size += Self::tcg_out(0x48, 1, mc);
             gen_size += Self::tcg_out(
-                X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RAX as u32,
+                X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RAX as u64,
                 1,
                 mc,
             );
-            gen_size += Self::tcg_out((pc_address & 0xffff_ffff) as u32, 4, mc);
-            gen_size += Self::tcg_out(((pc_address >> 32) & 0xffff_ffff) as u32, 4, mc);
+            gen_size += Self::tcg_out(pc_address as u64, 8, mc);
 
             gen_size += Self::tcg_modrm_64bit_out(
                 X86Opcode::MOV_EV_GV,
@@ -699,11 +697,11 @@ impl TCG for TCGX86 {
                 X86TargetRM::RAX,
                 mc,
             );
-            gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+            gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
         }
 
-        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
-        gen_size += Self::tcg_out(imm.value as u32, 4, mc);
+        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u64, 1, mc);
+        gen_size += Self::tcg_out(imm.value as u64, 4, mc);
 
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::MOV_EV_GV,
@@ -711,12 +709,12 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_pc_address() as u32, 4, mc); // Set Program Counter
+        gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
         // Jump epilogue
-        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
         let diff_from_epilogue = emu.calc_epilogue_address();
-        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
+        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
         return gen_size;
     }
 
@@ -754,8 +752,8 @@ impl TCG for TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u32, 1, mc);
-        gen_size += Self::tcg_out(arg1.value as u32, 4, mc);
+        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u64, 1, mc);
+        gen_size += Self::tcg_out(arg1.value as u64, 4, mc);
 
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::MOV_EV_GV,
@@ -763,12 +761,12 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_pc_address() as u32, 4, mc); // Set Program Counter
+        gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
         // jmp    epilogue
-        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u32, 1, mc);
+        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
         let diff_from_epilogue = emu.calc_epilogue_address();
-        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u32, 4, mc);
+        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
         return gen_size;
     }
 
@@ -813,13 +811,12 @@ impl TCG for TCGX86 {
         // Load Guest Memory Head into EAX
         gen_size += Self::tcg_out(0x48, 1, mc);
         gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RAX as u32,
+            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RAX as u64,
             1,
             mc,
         );
         let guestcode_addr = emu.calc_guestcode_address();
-        gen_size += Self::tcg_out((guestcode_addr & 0xffff_ffff) as u32, 4, mc);
-        gen_size += Self::tcg_out(((guestcode_addr >> 32) & 0xffff_ffff) as u32, 4, mc);
+        gen_size += Self::tcg_out(guestcode_addr as u64, 8, mc);
 
         // Move Guest Memory from EAX to ECX
         gen_size += Self::tcg_modrm_64bit_out(
@@ -836,7 +833,7 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
 
         // Execute Load
         // GPR value + Memory Head Address
@@ -865,7 +862,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_32BIT => {
@@ -876,7 +873,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_16BIT => {
@@ -887,7 +884,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_8BIT => {
@@ -898,7 +895,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_U_32BIT => {
@@ -909,7 +906,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_U_16BIT => {
@@ -920,7 +917,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_U_8BIT => {
@@ -931,7 +928,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             _ => panic!("Not supported load instruction."),
@@ -944,7 +941,7 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
         return gen_size;
     }
@@ -970,13 +967,12 @@ impl TCG for TCGX86 {
         // Load Guest Memory Head into EAX
         gen_size += Self::tcg_out(0x48, 1, mc);
         gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RAX as u32,
+            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RAX as u64,
             1,
             mc,
         );
         let guestcode_addr = emu.calc_guestcode_address();
-        gen_size += Self::tcg_out((guestcode_addr & 0xffff_ffff) as u32, 4, mc);
-        gen_size += Self::tcg_out(((guestcode_addr >> 32) & 0xffff_ffff) as u32, 4, mc);
+        gen_size += Self::tcg_out(guestcode_addr as u64, 8, mc);
 
         // Move Guest Memory from EAX to ECX
         gen_size += Self::tcg_modrm_64bit_out(
@@ -993,7 +989,7 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
         // Address Calculation (EAX)
         Self::tcg_modrm_64bit_out(
             X86Opcode::ADD_GV_EV,
@@ -1009,7 +1005,7 @@ impl TCG for TCGX86 {
             X86TargetRM::RCX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
 
         gen_size += match mem_size {
             MemOpType::STORE_64BIT => {
@@ -1020,7 +1016,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RCX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::STORE_32BIT => {
@@ -1031,7 +1027,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RCX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::STORE_16BIT => {
@@ -1042,7 +1038,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RCX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::STORE_8BIT => {
@@ -1053,7 +1049,7 @@ impl TCG for TCGX86 {
                     X86TargetRM::RCX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u32, 4, mc);
+                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             _ => panic!("Unsupported memory size!"),
@@ -1078,36 +1074,35 @@ impl TCG for TCGX86 {
         let self_diff = unsafe { self_ptr.offset(0) };
         gen_size += Self::tcg_out(0x48, 1, mc);
         gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RDI as u32,
+            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDI as u64,
             1,
             mc,
         );
-        gen_size += Self::tcg_out(((self_diff as u64 >> 0) & 0xffff_ffff) as u32, 4, mc);
-        gen_size += Self::tcg_out(((self_diff as u64 >> 32) & 0xffff_ffff) as u32, 4, mc);
+        gen_size += Self::tcg_out(self_diff as u64, 8, mc);
 
         // Argument 1 : rd u32
         gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RSI as u32,
+            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RSI as u64,
             1,
             mc,
         );
-        gen_size += Self::tcg_out(rd.value as u32, 4, mc);
+        gen_size += Self::tcg_out(rd.value as u64, 4, mc);
 
         // Argument 2 : rs1 u32
         gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RDX as u32,
+            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDX as u64,
             1,
             mc,
         );
-        gen_size += Self::tcg_out(rs1.value as u32, 4, mc);
+        gen_size += Self::tcg_out(rs1.value as u64, 4, mc);
 
         // Argument 3 : csr_addr u32
         gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u32 + X86TargetRM::RCX as u32,
+            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RCX as u64,
             1,
             mc,
         );
-        gen_size += Self::tcg_out(csr_addr.value as u32, 4, mc);
+        gen_size += Self::tcg_out(csr_addr.value as u64, 4, mc);
 
         gen_size += Self::tcg_modrm_32bit_out(
             X86Opcode::CALL,
@@ -1116,7 +1111,7 @@ impl TCG for TCGX86 {
             mc,
         );
         let helper_func_addr = emu.calc_helper_func_relat_address();
-        gen_size += Self::tcg_out(helper_func_addr as u32, 4, mc);
+        gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
         gen_size
     }
@@ -1137,7 +1132,7 @@ impl TCG for TCGX86 {
             X86TargetRM::RCX,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u32, 4, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
 
         // // Load value from csr address
         // gen_size += Self::tcg_modrm_64bit_out(
@@ -1146,7 +1141,7 @@ impl TCG for TCGX86 {
         //     X86TargetRM::RAX,
         //     mc,
         // );
-        // gen_size += Self::tcg_out(csr_addr as u32, 4, mc);
+        // gen_size += Self::tcg_out(csr_addr as u64, 4, mc);
 
         let csr_addr = emu.calc_csr_relat_address(arg1.value);
         gen_size += Self::tcg_modrm_64bit_out(
@@ -1155,7 +1150,7 @@ impl TCG for TCGX86 {
             X86TargetRM::RCX,
             mc,
         );
-        gen_size += Self::tcg_out(csr_addr as u32, 4, mc);
+        gen_size += Self::tcg_out(csr_addr as u64, 4, mc);
         gen_size
     }
 }
