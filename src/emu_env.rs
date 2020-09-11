@@ -10,7 +10,9 @@ use crate::riscv_decoder::decode_inst;
 
 use crate::x86::TCGX86;
 
-use crate::tcg::{TCGOp, TCGvType, TCG};
+use crate::tcg::{TCGOp, TCG};
+
+use crate::riscv_csr::{CsrAddr, RiscvCsr};
 
 use crate::instr_info::InstrInfo;
 
@@ -22,9 +24,9 @@ pub struct EmuEnv {
     m_regs: [u64; 32],
     m_pc: [u64; 1],
 
-    m_csr: [u64; 1024], // CSR implementation
+    m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_csrrw: [fn(emu: &EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize; 1],
+    helper_csrrw: [fn(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize; 6],
 
     pub m_guestcode: Vec<u8>,
 
@@ -47,9 +49,16 @@ impl EmuEnv {
             head: [0xdeadbeef; 1],
             m_regs: [0; 32],
             m_pc: [0x0; 1],
-            m_csr: [0; 1024],
+            m_csr: RiscvCsr::new(),
 
-            helper_csrrw: [Self::dummy_helper_csrrw; 1],
+            helper_csrrw: [
+                Self::dummy_helper_csrrw,
+                Self::dummy_helper_csrrs,
+                Self::dummy_helper_csrrc,
+                Self::dummy_helper_csrrwi,
+                Self::dummy_helper_csrrsi,
+                Self::dummy_helper_csrrci,
+            ],
             m_inst_vec: vec![],
 
             m_tcg_vec: vec![],
@@ -82,11 +91,84 @@ impl EmuEnv {
         }
     }
 
-    fn dummy_helper_csrrw(emu: &EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn dummy_helper_csrrw(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
         );
+        let data = emu.m_regs[source as usize];
+        let reg_data = emu
+            .m_csr
+            .csrrw(CsrAddr::from_u64(csr_addr as u64), data as i64);
+        emu.m_regs[dest as usize] = reg_data as u64;
+        emu.dump_gpr();
+        return 0;
+    }
+
+    fn dummy_helper_csrrs(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_csrrs(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, source, csr_addr
+        );
+        let data = emu.m_regs[source as usize];
+        let reg_data = emu
+            .m_csr
+            .csrrs(CsrAddr::from_u64(csr_addr as u64), data as i64);
+        emu.m_regs[dest as usize] = reg_data as u64;
+        emu.dump_gpr();
+        return 0;
+    }
+
+    fn dummy_helper_csrrc(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_csrrc(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, source, csr_addr
+        );
+        let data = emu.m_regs[source as usize];
+        let reg_data = emu
+            .m_csr
+            .csrrc(CsrAddr::from_u64(csr_addr as u64), data as i64);
+        emu.m_regs[dest as usize] = reg_data as u64;
+        emu.dump_gpr();
+        return 0;
+    }
+
+    fn dummy_helper_csrrwi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, imm, csr_addr
+        );
+        let reg_data = emu
+            .m_csr
+            .csrrw(CsrAddr::from_u64(csr_addr as u64), imm as i64);
+        emu.m_regs[dest as usize] = reg_data as u64;
+        emu.dump_gpr();
+        return 0;
+    }
+
+    fn dummy_helper_csrrsi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_csrrs(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, imm, csr_addr
+        );
+        let reg_data = emu
+            .m_csr
+            .csrrs(CsrAddr::from_u64(csr_addr as u64), imm as i64);
+        emu.m_regs[dest as usize] = reg_data as u64;
+        emu.dump_gpr();
+        return 0;
+    }
+
+    fn dummy_helper_csrrci(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_csrrc(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, imm, csr_addr
+        );
+        let reg_data = emu
+            .m_csr
+            .csrrc(CsrAddr::from_u64(csr_addr as u64), imm as i64);
+        emu.m_regs[dest as usize] = reg_data as u64;
+        emu.dump_gpr();
         return 0;
     }
 
@@ -418,18 +500,12 @@ impl EmuEnv {
         return guestcode_ptr as usize;
     }
 
-    pub fn calc_csr_relat_address(&self, csr_addr: u64) -> isize {
-        let csr_ptr = self.m_csr.as_ptr() as *const u8;
-        let self_ptr = self.head.as_ptr() as *const u8;
-        let mut diff = unsafe { csr_ptr.offset_from(self_ptr) };
-        diff += csr_addr as isize * mem::size_of::<u64>() as isize;
-        diff
-    }
-
-    pub fn calc_helper_func_relat_address(&self) -> isize {
-        let csr_helper_func_ptr = self.helper_csrrw.as_ptr() as *const u8;
+    pub fn calc_helper_func_relat_address(&self, csr_helper_idx: usize) -> isize {
+        let csr_helper_func_ptr =
+            unsafe { self.helper_csrrw.as_ptr().offset(csr_helper_idx as isize) as *const u8 };
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { csr_helper_func_ptr.offset_from(self_ptr) };
+        println!("calc_helper_func_relat_address = {:x}", diff);
         diff
     }
 }

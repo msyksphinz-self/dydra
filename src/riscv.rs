@@ -325,25 +325,69 @@ impl TranslateRiscv {
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
-        let zero = Box::new(TCGv::new_imm(0));
 
-        let csr_load = TCGOp::new_3op(TCGOpcode::CSR_LOAD, *rd, *rs1, *csr);
-        vec![csr_load]
+        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRW, *rd, *rs1, *csr);
+        vec![csr_op]
     }
     pub fn translate_csrrs(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let csr_const: u64 = get_imm12!(inst.inst);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let csr = Box::new(TCGv::new_imm(csr_const));
+
+        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRS, *rd, *rs1, *csr);
+        vec![csr_op]
     }
     pub fn translate_csrrc(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let csr_const: u64 = get_imm12!(inst.inst);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let csr = Box::new(TCGv::new_imm(csr_const));
+
+        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRC, *rd, *rs1, *csr);
+        vec![csr_op]
     }
     pub fn translate_csrrwi(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let rs1_imm: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let csr_const: u64 = get_imm12!(inst.inst);
+
+        let rs1 = Box::new(TCGv::new_imm(rs1_imm as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let csr = Box::new(TCGv::new_imm(csr_const));
+
+        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRW, *rd, *rs1, *csr);
+        vec![csr_op]
     }
     pub fn translate_csrrsi(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let rs1_imm: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let csr_const: u64 = get_imm12!(inst.inst);
+
+        let rs1 = Box::new(TCGv::new_imm(rs1_imm as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let csr = Box::new(TCGv::new_imm(csr_const));
+
+        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRS, *rd, *rs1, *csr);
+        vec![csr_op]
     }
     pub fn translate_csrrci(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let rs1_imm: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let csr_const: u64 = get_imm12!(inst.inst);
+
+        let rs1 = Box::new(TCGv::new_imm(rs1_imm as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let csr = Box::new(TCGv::new_imm(csr_const));
+
+        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRC, *rd, *rs1, *csr);
+        vec![csr_op]
     }
 
     pub fn translate_slli(inst: &InstrInfo) -> Vec<TCGOp> {

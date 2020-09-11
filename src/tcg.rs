@@ -32,8 +32,9 @@ pub enum TCGOpcode {
     SW,
     SH,
     SB,
-    CSR_LOAD,
-    CSR_STORE,
+    CSR_CSRRW,
+    CSR_CSRRS,
+    CSR_CSRRC,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -206,6 +207,7 @@ pub trait TCG {
 
     fn tcg_gen_label(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_csr_load(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_csr_store(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_csrrw(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_csrrs(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_csrrc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 }
