@@ -310,6 +310,14 @@ impl TCGX86 {
 
         return gen_size;
     }
+
+    fn tcg_gen_imm_u64(dest: X86TargetRM, imm: u64, mc: &mut Vec<u8>) -> usize {
+        let mut gen_size = 0;
+        gen_size += Self::tcg_out(0x48, 1, mc);
+        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u64 + dest as u64, 1, mc);
+        gen_size += Self::tcg_out(imm, 8, mc);
+        gen_size
+    }
 }
 
 impl TCG for TCGX86 {
@@ -685,13 +693,7 @@ impl TCG for TCGX86 {
         let mut gen_size: usize = pc_address as usize;
 
         if arg0.value != 0 {
-            gen_size += Self::tcg_out(0x48, 1, mc);
-            gen_size += Self::tcg_out(
-                X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RAX as u64,
-                1,
-                mc,
-            );
-            gen_size += Self::tcg_out(pc_address as u64, 8, mc);
+            gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, pc_address, mc);
 
             gen_size += Self::tcg_modrm_64bit_out(
                 X86Opcode::MOV_EV_GV,
@@ -702,8 +704,7 @@ impl TCG for TCGX86 {
             gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
         }
 
-        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u64, 1, mc);
-        gen_size += Self::tcg_out(imm.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, imm.value as u64, mc);
 
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::MOV_EV_GV,
@@ -754,8 +755,7 @@ impl TCG for TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        gen_size += Self::tcg_out(X86Opcode::MOV_EAX_IV as u64, 1, mc);
-        gen_size += Self::tcg_out(arg1.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, arg1.value, mc);
 
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::MOV_EV_GV,
@@ -811,14 +811,8 @@ impl TCG for TCGX86 {
         assert_eq!(arg2.t, TCGvType::Immediate);
 
         // Load Guest Memory Head into EAX
-        gen_size += Self::tcg_out(0x48, 1, mc);
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RAX as u64,
-            1,
-            mc,
-        );
         let guestcode_addr = emu.calc_guestcode_address();
-        gen_size += Self::tcg_out(guestcode_addr as u64, 8, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, guestcode_addr as u64, mc);
 
         // Move Guest Memory from EAX to ECX
         gen_size += Self::tcg_modrm_64bit_out(
@@ -967,14 +961,8 @@ impl TCG for TCGX86 {
         assert_eq!(arg2.t, TCGvType::Immediate);
 
         // Load Guest Memory Head into EAX
-        gen_size += Self::tcg_out(0x48, 1, mc);
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RAX as u64,
-            1,
-            mc,
-        );
-        let guestcode_addr = emu.calc_guestcode_address();
-        gen_size += Self::tcg_out(guestcode_addr as u64, 8, mc);
+        gen_size +=
+            Self::tcg_gen_imm_u64(X86TargetRM::RAX, emu.calc_guestcode_address() as u64, mc);
 
         // Move Guest Memory from EAX to ECX
         gen_size += Self::tcg_modrm_64bit_out(
@@ -1074,37 +1062,16 @@ impl TCG for TCGX86 {
         // Argument 0 : Env
         let self_ptr = emu.head.as_ptr() as *const u8;
         let self_diff = unsafe { self_ptr.offset(0) };
-        gen_size += Self::tcg_out(0x48, 1, mc);
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDI as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(self_diff as u64, 8, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDI, self_diff as u64, mc);
 
         // Argument 1 : rd u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RSI as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(rd.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RSI, rd.value as u64, mc);
 
         // Argument 2 : rs1 u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDX as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(rs1.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDX, rs1.value as u64, mc);
 
         // Argument 3 : csr_addr u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RCX as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(csr_addr.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, csr_addr.value as u64, mc);
 
         gen_size += Self::tcg_modrm_32bit_out(
             X86Opcode::CALL,
@@ -1136,37 +1103,16 @@ impl TCG for TCGX86 {
         // Argument 0 : Env
         let self_ptr = emu.head.as_ptr() as *const u8;
         let self_diff = unsafe { self_ptr.offset(0) };
-        gen_size += Self::tcg_out(0x48, 1, mc);
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDI as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(self_diff as u64, 8, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDI, self_diff as u64, mc);
 
         // Argument 1 : rd u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RSI as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(rd.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RSI, rd.value as u64, mc);
 
         // Argument 2 : rs1 u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDX as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(rs1.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDX, rs1.value as u64, mc);
 
         // Argument 3 : csr_addr u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RCX as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(csr_addr.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, csr_addr.value as u64, mc);
 
         gen_size += Self::tcg_modrm_32bit_out(
             X86Opcode::CALL,
@@ -1199,37 +1145,16 @@ impl TCG for TCGX86 {
         // Argument 0 : Env
         let self_ptr = emu.head.as_ptr() as *const u8;
         let self_diff = unsafe { self_ptr.offset(0) };
-        gen_size += Self::tcg_out(0x48, 1, mc);
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDI as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(self_diff as u64, 8, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDI, self_diff as u64, mc);
 
         // Argument 1 : rd u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RSI as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(rd.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RSI, rd.value as u64, mc);
 
         // Argument 2 : rs1 u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RDX as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(rs1.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDX, rs1.value as u64, mc);
 
         // Argument 3 : csr_addr u32
-        gen_size += Self::tcg_out(
-            X86Opcode::MOV_EAX_IV as u64 + X86TargetRM::RCX as u64,
-            1,
-            mc,
-        );
-        gen_size += Self::tcg_out(csr_addr.value as u64, 4, mc);
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, csr_addr.value as u64, mc);
 
         gen_size += Self::tcg_modrm_32bit_out(
             X86Opcode::CALL,
