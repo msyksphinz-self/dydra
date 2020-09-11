@@ -490,7 +490,7 @@ impl EmuEnv {
     pub fn calc_pc_address(&self) -> isize {
         let guestcode_ptr = self.m_pc.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
-        let mut diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
+        let diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
         diff
     }
 
@@ -505,7 +505,6 @@ impl EmuEnv {
             unsafe { self.helper_csrrw.as_ptr().offset(csr_helper_idx as isize) as *const u8 };
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { csr_helper_func_ptr.offset_from(self_ptr) };
-        println!("calc_helper_func_relat_address = {:x}", diff);
         diff
     }
 }
