@@ -10,7 +10,7 @@ pub mod x86;
 
 use crate::emu_env::EmuEnv;
 
-pub fn run(filename: String, exp_gpr: &[u64]) -> usize {
+pub fn run(filename: String, exp_gpr: &[u64; 32]) -> usize {
     let mut emu = EmuEnv::new();
     emu.run(&filename);
     let gpr_vec = emu.get_gpr();
