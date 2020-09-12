@@ -172,7 +172,7 @@ impl EmuEnv {
         return 0;
     }
 
-    fn dump_gpr(&self) {
+    pub fn dump_gpr(&self) {
         for (i, reg) in self.m_regs.iter().enumerate() {
             print!("x{:02} = {:016x}  ", i, reg);
             if i % 4 == 3 {
@@ -182,7 +182,11 @@ impl EmuEnv {
         print!("PC = {:016x}\n", self.m_pc[0]);
     }
 
-    pub fn run(mut self, filename: &String) {
+    pub fn get_gpr(&self) -> [u64; 32] {
+        return self.m_regs;
+    }
+
+    pub fn run(&mut self, filename: &String) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
             Err(error) => panic!("There was a problem opening the file: {:?}", error),

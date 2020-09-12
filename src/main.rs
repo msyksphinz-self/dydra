@@ -17,7 +17,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
 
-    let emu = EmuEnv::new();
+    let mut emu = EmuEnv::new();
     emu.run(&filename);
 
     return;
