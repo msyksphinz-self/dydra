@@ -209,9 +209,7 @@ impl ELFHeader {
     }
 }
 
-pub struct ProgramHeader<'a> {
-    elf_header: &'a ELFHeader,
-
+pub struct ProgramHeader {
     pub p_type: Phdr_Type, /* entry type */
     pub p_flags: u32,      /* flags */
     pub p_offset: u64,     /* offset */
@@ -222,9 +220,8 @@ pub struct ProgramHeader<'a> {
     pub p_align: u64,      /* memory & file alignment */
 }
 
-impl<'a> ProgramHeader<'a> {
+impl ProgramHeader {
     pub fn new(
-        elf_header: &'a ELFHeader,
         p_type: Phdr_Type,
         p_flags: u32,
         p_offset: u64,
@@ -235,7 +232,6 @@ impl<'a> ProgramHeader<'a> {
         p_align: u64,
     ) -> ProgramHeader {
         ProgramHeader {
-            elf_header: elf_header,
             p_type: p_type,
             p_flags: p_flags,
             p_offset: p_offset,
@@ -286,9 +282,7 @@ impl<'a> ProgramHeader<'a> {
     }
 }
 
-pub struct SectionHeader<'a> {
-    elf_header: &'a ELFHeader,
-
+pub struct SectionHeader {
     pub sh_name: u32,      /* Section name (string tbl index) */
     pub sh_type: u32,      /* Section type */
     pub sh_flags: u64,     /* Section flags */
@@ -301,9 +295,8 @@ pub struct SectionHeader<'a> {
     pub sh_entsize: u64,   /* Entry size if section holds table */
 }
 
-impl<'a> SectionHeader<'a> {
+impl SectionHeader {
     pub fn new(
-        elf_header: &'a ELFHeader,
         sh_name: u32,
         sh_type: u32,
         sh_flags: u64,
@@ -316,7 +309,6 @@ impl<'a> SectionHeader<'a> {
         sh_entsize: u64,
     ) -> SectionHeader {
         SectionHeader {
-            elf_header: elf_header,
             sh_name: sh_name,
             sh_type: sh_type,
             sh_flags: sh_flags,
@@ -435,13 +427,7 @@ impl ELFLoader {
         )
     }
 
-    pub fn get_program_header<'a>(
-        &self,
-        elf_header: &'a ELFHeader,
-        e_phoff: u64,
-        e_phentsize: u16,
-        idx: u32,
-    ) -> ProgramHeader<'a> {
+    pub fn get_program_header(&self, e_phoff: u64, e_phentsize: u16, idx: u32) -> ProgramHeader {
         let mut ph_off = e_phoff;
         let ph_size = e_phentsize as u32;
 
@@ -469,17 +455,11 @@ impl ELFLoader {
         };
 
         ProgramHeader::new(
-            elf_header, phdr_type, p_flags, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_align,
+            phdr_type, p_flags, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_align,
         )
     }
 
-    pub fn get_section_header<'a>(
-        &self,
-        elf_header: &'a ELFHeader,
-        e_shoff: u64,
-        e_shentsize: u16,
-        idx: u32,
-    ) -> SectionHeader<'a> {
+    pub fn get_section_header(&self, e_shoff: u64, e_shentsize: u16, idx: u32) -> SectionHeader {
         let mut sh_off = e_shoff;
         let sh_entsize = e_shentsize as u32;
 
@@ -506,7 +486,6 @@ impl ELFLoader {
         let sh_entsize = self.get_8byte_elf(sh_off as usize); // sh_off += 8;
 
         SectionHeader::new(
-            elf_header,
             sh_name,
             sh_type,
             sh_flags,

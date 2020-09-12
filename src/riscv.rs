@@ -390,29 +390,29 @@ impl TranslateRiscv {
         vec![csr_op]
     }
 
-    pub fn translate_slli(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_slli(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
-    pub fn translate_srli(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_srli(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
-    pub fn translate_srai(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_srai(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
-    pub fn translate_srl(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_srl(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
-    pub fn translate_sra(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_sra(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
 
-    pub fn translate_fence(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
-    pub fn translate_mret(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
-    pub fn translate_ecall(inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+    pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
+        panic!("Unsupported instruction.");
     }
 }

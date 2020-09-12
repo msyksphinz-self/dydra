@@ -1,5 +1,3 @@
-#![feature(ptr_offset_from)]
-
 use self::tcg::{MemOpType, TCGLabel, TCGOp, TCGOpcode, TCGvType, TCG};
 use super::tcg;
 use std::cell::RefCell;
@@ -10,7 +8,7 @@ use crate::emu_env::EmuEnv;
 extern crate mmap;
 
 #[derive(PartialEq, Debug)]
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, dead_code)]
 enum X86Opcode {
     MOV_EV_IV = 0xc7,
     MOV_GV_EV = 0x8b,
@@ -70,10 +68,8 @@ enum X86Opcode {
     MOV_GV_EV_U_8BIT = 0xb60f,
 }
 
-enum X86_2Wd_Opcode {}
-
 #[derive(PartialEq, Debug)]
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, dead_code)]
 enum X86ModRM {
     MOD_00_DISP_RAX = 0x00,
     MOD_00_DISP_RBP = 0x05,
@@ -90,6 +86,7 @@ enum X86ModRM {
 }
 
 #[derive(PartialEq, Debug)]
+#[allow(dead_code)]
 enum X86TargetRM {
     RAX = 0b000,
     RCX = 0b001,
@@ -377,11 +374,10 @@ impl TCG for TCGX86 {
                     TCGOpcode::CSR_CSRRC => TCGX86::tcg_gen_csrrc(emu, pc_address, tcg, mc),
 
                     TCGOpcode::MOV => TCGX86::tcg_gen_mov(emu, pc_address, tcg, mc),
-                    other => panic!("{:?} : Not supported now", other),
                 };
             }
             None => match &tcg.label {
-                Some(_l) => TCGX86::tcg_gen_label(pc_address, tcg, mc),
+                Some(_l) => TCGX86::tcg_gen_label(pc_address, tcg),
                 None => panic!("Illegal Condition"),
             },
         }
@@ -780,7 +776,7 @@ impl TCG for TCGX86 {
         return 0;
     }
 
-    fn tcg_gen_label(pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_label(pc_address: u64, tcg: &TCGOp) -> usize {
         match &tcg.label {
             Some(label) => {
                 let mut l = &mut *label.borrow_mut();

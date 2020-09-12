@@ -200,7 +200,6 @@ impl EmuEnv {
         let mut ph_headers = Vec::new();
         for ph_idx in 0..elf_header.e_phnum {
             let phdr: ProgramHeader = loader.get_program_header(
-                &elf_header,
                 elf_header.e_phoff,
                 elf_header.e_phentsize,
                 ph_idx.into(),
@@ -211,7 +210,6 @@ impl EmuEnv {
         let mut sh_headers = Vec::new();
         for sh_idx in 0..elf_header.e_shnum {
             let shdr: SectionHeader = loader.get_section_header(
-                &elf_header,
                 elf_header.e_shoff,
                 elf_header.e_shentsize,
                 sh_idx.into(),
