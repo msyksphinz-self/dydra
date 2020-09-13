@@ -171,6 +171,40 @@ impl TCGX86 {
         return 3;
     }
 
+    fn tcg_gen_mov_gpr_imm(emu: &EmuEnv, dest: u64, imm: u64, mc: &mut Vec<u8>) -> usize {
+        let mut gen_size = 0;
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_IV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(dest) as u64, 4, mc);
+        gen_size += Self::tcg_out(imm as u64, 4, mc);
+        return gen_size;
+    }
+
+    fn tcg_gen_mov_gpr_gpr(emu: &EmuEnv, dest: u64, source: u64, mc: &mut Vec<u8>) -> usize {
+        let mut gen_size = 0;
+        // movl   reg_addr(%rbp),%eax
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(source) as u64, 4, mc);
+        // movl   %eax,reg_addr(%rbp)
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(dest) as u64, 4, mc);
+        return gen_size;
+    }
+
     fn tcg_gen_rrr(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -328,6 +362,11 @@ impl TCG for TCGX86 {
                     TCGOpcode::OR => TCGX86::tcg_gen_or(emu, pc_address, tcg, mc),
                     TCGOpcode::XOR => TCGX86::tcg_gen_xor(emu, pc_address, tcg, mc),
 
+                    /* Shift operations */
+                    TCGOpcode::SRL => TCGX86::tcg_gen_srl(emu, pc_address, tcg, mc),
+                    TCGOpcode::SLL => TCGX86::tcg_gen_sll(emu, pc_address, tcg, mc),
+                    TCGOpcode::SRA => TCGX86::tcg_gen_sra(emu, pc_address, tcg, mc),
+
                     TCGOpcode::JMPR => TCGX86::tcg_gen_jmpr(emu, pc_address, tcg, mc),
                     TCGOpcode::JMPIM => TCGX86::tcg_gen_jmpim(emu, pc_address, tcg, mc),
                     TCGOpcode::EQ => TCGX86::tcg_gen_eq(emu, pc_address, tcg, mc),
@@ -401,15 +440,7 @@ impl TCG for TCGX86 {
         if arg2.t == tcg::TCGvType::Immediate {
             if arg1.t == TCGvType::Register && arg1.value == 0 {
                 // if source register is x0, just generate immediate value.
-                // movl   imm,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_IV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
                 return gen_size;
             }
 
@@ -498,15 +529,7 @@ impl TCG for TCGX86 {
             if arg1.value == 0 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_IV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
-                return gen_size;
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
             }
 
             Self::tcg_gen_rri(emu, X86Opcode::AND_EAX_IV, tcg, mc);
@@ -514,23 +537,7 @@ impl TCG for TCGX86 {
         } else {
             if arg1.value == 0 {
                 // if source register is x0, just mov gpr value.
-                // movl   reg_addr(%rbp),%eax
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
-                // movl   %eax,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                return gen_size;
+                Self::tcg_gen_mov_gpr_gpr(emu, arg0.value, arg2.value, mc);
             }
             gen_size += Self::tcg_gen_rrr(emu, X86Opcode::AND_GV_EV, tcg, mc);
             return gen_size;
@@ -555,39 +562,14 @@ impl TCG for TCGX86 {
             if arg1.value == 0 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_IV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
-                return gen_size;
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
             }
-
             gen_size += Self::tcg_gen_rri(emu, X86Opcode::OR_EAX_IV, tcg, mc);
             return gen_size;
         } else {
             if arg1.value == 0 {
                 // if source register is x0, just mov gpr value.
-                // movl   reg_addr(%rbp),%eax
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
-                // movl   %eax,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                return gen_size;
+                Self::tcg_gen_mov_gpr_gpr(emu, arg0.value, arg2.value, mc);
             }
             gen_size += Self::tcg_gen_rrr(emu, X86Opcode::OR_GV_EV, tcg, mc);
             return gen_size;
@@ -613,15 +595,7 @@ impl TCG for TCGX86 {
             if arg1.value == 0 {
                 // if source register is x0, just generate immediate value.
                 // movl   imm,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_IV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
-                return gen_size;
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
             }
 
             gen_size += Self::tcg_gen_rri(emu, X86Opcode::XOR_EAX_IV, tcg, mc);
@@ -629,25 +603,117 @@ impl TCG for TCGX86 {
         } else {
             if arg1.value == 0 {
                 // if source register is x0, just mov gpr value.
-                // movl   reg_addr(%rbp),%eax
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
-                // movl   %eax,reg_addr(%rbp)
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RBP,
-                    X86TargetRM::RAX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
-                return gen_size;
+                Self::tcg_gen_mov_gpr_gpr(emu, arg0.value, arg2.value, mc);
             }
             gen_size += Self::tcg_gen_rrr(emu, X86Opcode::XOR_GV_EV, tcg, mc);
+            return gen_size;
+        }
+    }
+
+    fn tcg_gen_srl(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+        let arg2 = tcg.arg2.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Register);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        if arg0.value == 0 {
+            // if destination is x0, skip generate host machine code.
+            return gen_size;
+        }
+
+        if arg2.t == tcg::TCGvType::Immediate {
+            if arg1.t == TCGvType::Register && arg1.value == 0 {
+                // if source register is x0, just generate immediate value.
+                // movl   imm,reg_addr(%rbp)
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
+            }
+
+            gen_size += Self::tcg_gen_rri(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
+            return gen_size;
+        } else {
+            if arg1.value == 0 {
+                // if source register is x0, just mov gpr value.
+                gen_size += Self::tcg_gen_mov_gpr_gpr(emu, arg0.value, arg2.value, mc);
+
+                return gen_size;
+            }
+            gen_size += Self::tcg_gen_rrr(emu, X86Opcode::ADD_GV_EV, tcg, mc);
+            return gen_size;
+        }
+    }
+
+    fn tcg_gen_sll(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+        let arg2 = tcg.arg2.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Register);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        if arg0.value == 0 {
+            // if destination is x0, skip generate host machine code.
+            return gen_size;
+        }
+
+        if arg2.t == tcg::TCGvType::Immediate {
+            if arg1.t == TCGvType::Register && arg1.value == 0 {
+                // if source register is x0, just generate immediate value.
+                // movl   imm,reg_addr(%rbp)
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
+            }
+
+            gen_size += Self::tcg_gen_rri(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
+            return gen_size;
+        } else {
+            if arg1.value == 0 {
+                // if source register is x0, just mov gpr value.
+                gen_size += Self::tcg_gen_mov_gpr_gpr(emu, arg0.value, arg2.value, mc);
+
+                return gen_size;
+            }
+            gen_size += Self::tcg_gen_rrr(emu, X86Opcode::ADD_GV_EV, tcg, mc);
+            return gen_size;
+        }
+    }
+
+    fn tcg_gen_sra(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+        let arg2 = tcg.arg2.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Register);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        if arg0.value == 0 {
+            // if destination is x0, skip generate host machine code.
+            return gen_size;
+        }
+
+        if arg2.t == tcg::TCGvType::Immediate {
+            if arg1.t == TCGvType::Register && arg1.value == 0 {
+                // if source register is x0, just generate immediate value.
+                // movl   imm,reg_addr(%rbp)
+                gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
+            }
+
+            gen_size += Self::tcg_gen_rri(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
+            return gen_size;
+        } else {
+            if arg1.value == 0 {
+                // if source register is x0, just mov gpr value.
+                gen_size += Self::tcg_gen_mov_gpr_gpr(emu, arg0.value, arg2.value, mc);
+
+                return gen_size;
+            }
+            gen_size += Self::tcg_gen_rrr(emu, X86Opcode::ADD_GV_EV, tcg, mc);
             return gen_size;
         }
     }

@@ -100,6 +100,7 @@ impl TranslateRiscv {
             RiscvInstId::SLLI => TranslateRiscv::translate_slli(inst),
             RiscvInstId::SRLI => TranslateRiscv::translate_srli(inst),
             RiscvInstId::SRAI => TranslateRiscv::translate_srai(inst),
+            RiscvInstId::SLL => TranslateRiscv::translate_sll(inst),
             RiscvInstId::SRL => TranslateRiscv::translate_srl(inst),
             RiscvInstId::SRA => TranslateRiscv::translate_sra(inst),
 
@@ -119,6 +120,81 @@ impl TranslateRiscv {
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
+    }
+
+    fn translate_rrr(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *rs2);
+
+        vec![tcg_inst]
+    }
+
+    fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = (inst.inst >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
+
+        vec![tcg_inst]
+    }
+
+    fn translate_shift_i(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst >> 20) & 0x3f) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
+
+        vec![tcg_inst]
+    }
+
+    fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, *rs1, *rs2, *imm);
+
+        vec![tcg_inst]
+    }
+
+    fn translate_branch(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let target: u64 = get_sb_field!(inst.inst) + inst.addr;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let addr = Box::new(TCGv::new_imm(target));
+
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, Rc::clone(&label));
+        let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4));
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target));
+
+        vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
     }
 
     pub fn translate_jalr(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -171,67 +247,6 @@ impl TranslateRiscv {
         let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD, *rd, *rs1, *imm);
 
         vec![tcg_inst]
-    }
-
-    fn translate_rrr(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *rs2);
-
-        vec![tcg_inst]
-    }
-
-    fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let imm_const: u64 = (inst.inst >> 20) as u64;
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
-
-        vec![tcg_inst]
-    }
-
-    fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let imm_const: u64 = get_s_imm_field!(inst.inst);
-        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-
-        let tcg_inst = TCGOp::new_3op(op, *rs1, *rs2, *imm);
-
-        vec![tcg_inst]
-    }
-
-    fn translate_branch(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-        let target: u64 = get_sb_field!(inst.inst) + inst.addr;
-
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let addr = Box::new(TCGv::new_imm(target));
-
-        let label = Rc::new(RefCell::new(TCGLabel::new()));
-
-        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, Rc::clone(&label));
-        let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4));
-        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
-        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target));
-
-        vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
     }
 
     pub fn translate_add(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -390,20 +405,23 @@ impl TranslateRiscv {
         vec![csr_op]
     }
 
-    pub fn translate_slli(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+    pub fn translate_slli(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_shift_i(TCGOpcode::SLL, inst)
     }
-    pub fn translate_srli(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+    pub fn translate_srli(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_shift_i(TCGOpcode::SRL, inst)
     }
-    pub fn translate_srai(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+    pub fn translate_srai(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_shift_i(TCGOpcode::SRA, inst)
     }
-    pub fn translate_srl(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+    pub fn translate_sll(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SLL, inst)
     }
-    pub fn translate_sra(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+    pub fn translate_srl(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SRL, inst)
+    }
+    pub fn translate_sra(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SRA, inst)
     }
 
     pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {

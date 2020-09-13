@@ -13,6 +13,9 @@ pub enum TCGOpcode {
     AND,
     OR,
     XOR,
+    SRL,
+    SLL,
+    SRA,
     JMPR,
     JMPIM,
     EQ,
@@ -184,6 +187,10 @@ pub trait TCG {
     fn tcg_gen_ltu(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_geu(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_mov(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_srl(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sll(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sra(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     /* Memory Access */
     fn tcg_gen_load(
