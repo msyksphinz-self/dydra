@@ -425,12 +425,12 @@ impl TranslateRiscv {
     }
 
     pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+        vec![]
     }
     pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+        vec![]
     }
     pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
-        panic!("Unsupported instruction.");
+        vec![]
     }
 }

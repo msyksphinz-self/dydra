@@ -26,6 +26,12 @@ enum X86Opcode {
     XOR_EAX_IV = 0x35,
     CMP_GV_EV = 0x3b,
     MOV_EAX_IV = 0xb8,
+    SLL_GV_CL = 0x20_d3,
+    SRL_GV_CL = 0x28_d3,
+    SRA_GV_CL = 0x38_d3,
+    SLL_GV_IMM = 0x20_c1,
+    SRL_GV_IMM = 0x28_c1,
+    SRA_GV_IMM = 0x38_c1,
     RETN = 0xc3,
     JMP_JZ = 0xe9,
     CALL = 0xff,
@@ -264,6 +270,86 @@ impl TCGX86 {
         // add    imm16,%eax
         gen_size += Self::tcg_out(op as u64, 1, mc);
         gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+
+        // mov    %eax,reg_offset(%rbp)
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
+
+        return gen_size;
+    }
+
+    fn tcg_gen_shift_r(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+        let arg2 = tcg.arg2.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(arg2.t, TCGvType::Register);
+
+        let mut gen_size: usize = 0;
+
+        // mov    reg_offset(%rbp),%eax
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_GV_EV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
+
+        // add    reg_offset(%rbp),%ecx
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_GV_EV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RCX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
+
+        // shift_op   cl,%eax
+        gen_size += Self::tcg_modrm_64bit_out(op, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+
+        // mov    %eax,reg_offset(%rbp)
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc);
+
+        return gen_size;
+    }
+
+    fn tcg_gen_shift_i(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+        let arg2 = tcg.arg2.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(arg2.t, TCGvType::Immediate);
+
+        let mut gen_size: usize = 0;
+
+        // mov    reg_offset(%rbp),%eax
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_GV_EV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
+
+        // shift_op   imm,%eax
+        gen_size += Self::tcg_modrm_64bit_out(op, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(arg2.value as u64, 1, mc);
 
         // mov    %eax,reg_offset(%rbp)
         gen_size += Self::tcg_modrm_64bit_out(
@@ -631,8 +717,7 @@ impl TCG for TCGX86 {
                 // movl   imm,reg_addr(%rbp)
                 gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
             }
-
-            gen_size += Self::tcg_gen_rri(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
+            gen_size += Self::tcg_gen_shift_i(emu, X86Opcode::SRL_GV_IMM, tcg, mc);
             return gen_size;
         } else {
             if arg1.value == 0 {
@@ -641,7 +726,7 @@ impl TCG for TCGX86 {
 
                 return gen_size;
             }
-            gen_size += Self::tcg_gen_rrr(emu, X86Opcode::ADD_GV_EV, tcg, mc);
+            gen_size += Self::tcg_gen_shift_r(emu, X86Opcode::SRL_GV_CL, tcg, mc);
             return gen_size;
         }
     }
@@ -667,8 +752,7 @@ impl TCG for TCGX86 {
                 // movl   imm,reg_addr(%rbp)
                 gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
             }
-
-            gen_size += Self::tcg_gen_rri(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
+            gen_size += Self::tcg_gen_shift_i(emu, X86Opcode::SLL_GV_IMM, tcg, mc);
             return gen_size;
         } else {
             if arg1.value == 0 {
@@ -677,7 +761,7 @@ impl TCG for TCGX86 {
 
                 return gen_size;
             }
-            gen_size += Self::tcg_gen_rrr(emu, X86Opcode::ADD_GV_EV, tcg, mc);
+            gen_size += Self::tcg_gen_shift_r(emu, X86Opcode::SLL_GV_CL, tcg, mc);
             return gen_size;
         }
     }
@@ -704,7 +788,7 @@ impl TCG for TCGX86 {
                 gen_size += Self::tcg_gen_mov_gpr_imm(emu, arg0.value, arg2.value, mc);
             }
 
-            gen_size += Self::tcg_gen_rri(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
+            gen_size += Self::tcg_gen_shift_i(emu, X86Opcode::SRA_GV_IMM, tcg, mc);
             return gen_size;
         } else {
             if arg1.value == 0 {
@@ -713,7 +797,7 @@ impl TCG for TCGX86 {
 
                 return gen_size;
             }
-            gen_size += Self::tcg_gen_rrr(emu, X86Opcode::ADD_GV_EV, tcg, mc);
+            gen_size += Self::tcg_gen_shift_r(emu, X86Opcode::SRA_GV_CL, tcg, mc);
             return gen_size;
         }
     }
