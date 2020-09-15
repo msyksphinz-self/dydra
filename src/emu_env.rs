@@ -26,7 +26,7 @@ pub struct EmuEnv {
 
     m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_csrrw: [fn(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize; 6],
+    helper_func: [fn(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize; 16],
 
     pub m_guestcode: Vec<u8>,
 
@@ -51,13 +51,23 @@ impl EmuEnv {
             m_pc: [0x0; 1],
             m_csr: RiscvCsr::new(),
 
-            helper_csrrw: [
-                Self::dummy_helper_csrrw,
-                Self::dummy_helper_csrrs,
-                Self::dummy_helper_csrrc,
-                Self::dummy_helper_csrrwi,
-                Self::dummy_helper_csrrsi,
-                Self::dummy_helper_csrrci,
+            helper_func: [
+                Self::helper_func_csrrw,
+                Self::helper_func_csrrs,
+                Self::helper_func_csrrc,
+                Self::helper_func_csrrwi,
+                Self::helper_func_csrrsi,
+                Self::helper_func_csrrci,
+                Self::helper_func_mret,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
+                Self::dummy_helper,
             ],
             m_inst_vec: vec![],
 
@@ -91,7 +101,11 @@ impl EmuEnv {
         }
     }
 
-    fn dummy_helper_csrrw(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn dummy_helper(_emu: &mut EmuEnv, _dest: u32, _source: u32, _csr_addr: u32) -> usize {
+        panic!("Illegal helper function called!");
+    }
+
+    fn helper_func_csrrw(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
@@ -105,7 +119,7 @@ impl EmuEnv {
         return 0;
     }
 
-    fn dummy_helper_csrrs(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrs(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrs(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
@@ -119,7 +133,7 @@ impl EmuEnv {
         return 0;
     }
 
-    fn dummy_helper_csrrc(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrc(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrc(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
@@ -133,7 +147,7 @@ impl EmuEnv {
         return 0;
     }
 
-    fn dummy_helper_csrrwi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrwi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -146,7 +160,7 @@ impl EmuEnv {
         return 0;
     }
 
-    fn dummy_helper_csrrsi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrsi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrs(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -159,7 +173,7 @@ impl EmuEnv {
         return 0;
     }
 
-    fn dummy_helper_csrrci(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrci(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
         println!(
             "helper_csrrc(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -169,6 +183,16 @@ impl EmuEnv {
             .csrrc(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
         emu.dump_gpr();
+        return 0;
+    }
+
+    fn helper_func_mret(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_mret(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, imm, csr_addr
+        );
+        emu.m_pc[0] = emu.m_csr.csrrc(CsrAddr::Mepc, 0 as i64) as u64;
+        print!("PC is set to 0x{:08x}\n", emu.m_pc[0]);
         return 0;
     }
 
@@ -269,6 +293,7 @@ impl EmuEnv {
                     || id == RiscvInstId::BLT
                     || id == RiscvInstId::BLTU
                     || id == RiscvInstId::ECALL
+                    || id == RiscvInstId::MRET
                 {
                     break;
                 }
@@ -504,7 +529,7 @@ impl EmuEnv {
 
     pub fn calc_helper_func_relat_address(&self, csr_helper_idx: usize) -> isize {
         let csr_helper_func_ptr =
-            unsafe { self.helper_csrrw.as_ptr().offset(csr_helper_idx as isize) as *const u8 };
+            unsafe { self.helper_func.as_ptr().offset(csr_helper_idx as isize) as *const u8 };
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { csr_helper_func_ptr.offset_from(self_ptr) };
         diff

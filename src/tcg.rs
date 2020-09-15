@@ -7,6 +7,10 @@ use crate::emu_env::EmuEnv;
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum TCGOpcode {
+    HELPER_CALL_ARG0,
+    HELPER_CALL_ARG1,
+    HELPER_CALL_ARG2,
+    HELPER_CALL_ARG3,
     MOV,
     ADD,
     SUB,
@@ -70,6 +74,7 @@ pub struct TCGOp {
     pub arg1: Option<TCGv>,
     pub arg2: Option<TCGv>,
     pub label: Option<Rc<RefCell<TCGLabel>>>,
+    pub helper_idx: usize,
 }
 
 impl TCGOp {
@@ -80,6 +85,7 @@ impl TCGOp {
             arg1: Some(a2),
             arg2: None,
             label: None,
+            helper_idx: 0,
         }
     }
 
@@ -90,6 +96,7 @@ impl TCGOp {
             arg1: Some(a2),
             arg2: Some(a3),
             label: None,
+            helper_idx: 0,
         }
     }
 
@@ -106,6 +113,51 @@ impl TCGOp {
             arg1: Some(a2),
             arg2: Some(a3),
             label: Some(label),
+            helper_idx: 0,
+        }
+    }
+
+    pub fn new_helper_call_arg0(helper_idx: usize) -> TCGOp {
+        TCGOp {
+            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            arg0: None,
+            arg1: None,
+            arg2: None,
+            label: None,
+            helper_idx: helper_idx,
+        }
+    }
+
+    pub fn new_helper_call_arg1(helper_idx: usize, a1: TCGv) -> TCGOp {
+        TCGOp {
+            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            arg0: Some(a1),
+            arg1: None,
+            arg2: None,
+            label: None,
+            helper_idx: helper_idx,
+        }
+    }
+
+    pub fn new_helper_call_arg2(helper_idx: usize, a1: TCGv, a2: TCGv) -> TCGOp {
+        TCGOp {
+            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: None,
+            label: None,
+            helper_idx: helper_idx,
+        }
+    }
+
+    pub fn new_helper_call_arg3(helper_idx: usize, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
+        TCGOp {
+            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: Some(a3),
+            label: None,
+            helper_idx: helper_idx,
         }
     }
 
@@ -122,6 +174,7 @@ impl TCGOp {
             arg1: None,
             arg2: None,
             label: Some(label),
+            helper_idx: 0,
         }
     }
 }
@@ -217,4 +270,14 @@ pub trait TCG {
     fn tcg_gen_csrrw(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_csrrs(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_csrrc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_helper_call(
+        emu: &EmuEnv,
+        arg_size: usize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+
+    fn tcg_exit_tb(emu: &EmuEnv, gen_size: usize, mc: &mut Vec<u8>) -> usize;
 }

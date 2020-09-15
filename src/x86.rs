@@ -450,6 +450,19 @@ impl TCG for TCGX86 {
                     TCGOpcode::CSR_CSRRC => TCGX86::tcg_gen_csrrc(emu, pc_address, tcg, mc),
 
                     TCGOpcode::MOV => TCGX86::tcg_gen_mov(emu, pc_address, tcg, mc),
+
+                    TCGOpcode::HELPER_CALL_ARG0 => {
+                        TCGX86::tcg_gen_helper_call(emu, 0, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::HELPER_CALL_ARG1 => {
+                        TCGX86::tcg_gen_helper_call(emu, 1, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::HELPER_CALL_ARG2 => {
+                        TCGX86::tcg_gen_helper_call(emu, 2, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::HELPER_CALL_ARG3 => {
+                        TCGX86::tcg_gen_helper_call(emu, 3, pc_address, tcg, mc)
+                    }
                 };
             }
             None => match &tcg.label {
@@ -842,6 +855,16 @@ impl TCG for TCGX86 {
         return Self::tcg_gen_cmp_branch(emu, pc_address, X86Opcode::JAE_rel16_32, tcg, mc);
     }
 
+    fn tcg_exit_tb(emu: &EmuEnv, gen_size: usize, mc: &mut Vec<u8>) -> usize {
+        let mut gen_size: usize = gen_size;
+        // jmp    epilogue
+        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
+        let diff_from_epilogue = emu.calc_epilogue_address();
+        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
+
+        return gen_size;
+    }
+
     fn tcg_gen_mov(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
         let arg0 = tcg.arg0.unwrap();
@@ -863,9 +886,7 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
         // jmp    epilogue
-        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
-        let diff_from_epilogue = emu.calc_epilogue_address();
-        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
+        gen_size = Self::tcg_exit_tb(emu, gen_size, mc);
         return gen_size;
     }
 
@@ -1249,5 +1270,46 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
         gen_size
+    }
+
+    fn tcg_gen_helper_call(
+        emu: &EmuEnv,
+        arg_size: usize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        let mut gen_size: usize = pc_address as usize;
+
+        let self_ptr = emu.head.as_ptr() as *const u8;
+        let self_diff = unsafe { self_ptr.offset(0) };
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDI, self_diff as u64, mc);
+
+        if arg_size >= 1 {
+            let arg0 = tcg.arg0.unwrap();
+            gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RSI, arg0.value as u64, mc);
+        }
+        if arg_size >= 2 {
+            let arg1 = tcg.arg1.unwrap();
+            gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDX, arg1.value as u64, mc);
+        }
+        if arg_size >= 3 {
+            let arg2 = tcg.arg2.unwrap();
+            gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, arg2.value as u64, mc);
+        }
+
+        gen_size += Self::tcg_modrm_32bit_out(
+            X86Opcode::CALL,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RDX,
+            mc,
+        );
+        let csr_helper_idx = tcg.helper_idx;
+        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx);
+        gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
+
+        //  Jump Epilogue
+        gen_size = Self::tcg_exit_tb(emu, gen_size, mc);
+        return gen_size;
     }
 }

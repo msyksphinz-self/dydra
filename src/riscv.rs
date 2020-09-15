@@ -76,6 +76,8 @@ impl TranslateRiscv {
             RiscvInstId::ORI => TranslateRiscv::translate_ori(inst),
             RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
 
+            RiscvInstId::ADDIW => TranslateRiscv::translate_addiw(inst),
+
             RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
             RiscvInstId::AUIPC => TranslateRiscv::translate_auipc(inst),
 
@@ -237,10 +239,10 @@ impl TranslateRiscv {
     }
 
     pub fn translate_auipc(inst: &InstrInfo) -> Vec<TCGOp> {
-        let imm_const: u64 = (inst.inst as u64) & !0xfff;
+        let imm_const: u64 = ((inst.inst as u64) & !0xfff).wrapping_add(inst.addr);
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
-        let rs1 = Box::new(TCGv::new_pc());
+        let rs1 = Box::new(TCGv::new_reg(0));
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
@@ -276,6 +278,11 @@ impl TranslateRiscv {
     }
     pub fn translate_xori(inst: &InstrInfo) -> Vec<TCGOp> {
         Self::translate_rri(TCGOpcode::XOR, inst)
+    }
+
+    // xxx: Temporary defined as 64-bit ADD
+    pub fn translate_addiw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rri(TCGOpcode::ADD, inst)
     }
 
     pub fn translate_beq(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -428,7 +435,8 @@ impl TranslateRiscv {
         vec![]
     }
     pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let mret_op = TCGOp::new_helper_call_arg0(6);
+        vec![mret_op]
     }
     pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
