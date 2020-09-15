@@ -10,6 +10,7 @@ impl RiscvCsrBase<i64> {
     fn csrrw(&mut self, imm: i64) -> i64 {
         let ret_val: i64 = self.m_csr;
         self.m_csr = imm;
+        print!("csrrw = {:016x}\n", imm);
         return ret_val;
     }
 

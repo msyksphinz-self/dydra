@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::emu_env::EmuEnv;
+use crate::riscv::CALL_HELPER_IDX;
 
 extern crate mmap;
 
@@ -1179,11 +1180,11 @@ impl TCG for TCGX86 {
             X86TargetRM::RDX,
             mc,
         );
-        let mut csr_helper_idx = 0;
+        let mut csr_helper_idx = CALL_HELPER_IDX::CALL_CSRRW_IDX;
         if rs1.t == TCGvType::Immediate {
-            csr_helper_idx = 3;
+            csr_helper_idx = CALL_HELPER_IDX::CALL_CSRRWI_IDX;
         }
-        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx);
+        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx as usize);
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
         gen_size
@@ -1221,11 +1222,11 @@ impl TCG for TCGX86 {
             mc,
         );
 
-        let mut csr_helper_idx = 1;
+        let mut csr_helper_idx = CALL_HELPER_IDX::CALL_CSRRS_IDX;
         if rs1.t == TCGvType::Immediate {
-            csr_helper_idx = 4;
+            csr_helper_idx = CALL_HELPER_IDX::CALL_CSRRSI_IDX;
         }
-        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx);
+        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx as usize);
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
         gen_size
@@ -1262,11 +1263,11 @@ impl TCG for TCGX86 {
             X86TargetRM::RDX,
             mc,
         );
-        let mut csr_helper_idx = 2;
+        let mut csr_helper_idx = CALL_HELPER_IDX::CALL_CSRRC_IDX;
         if rs1.t == TCGvType::Immediate {
-            csr_helper_idx = 5;
+            csr_helper_idx = CALL_HELPER_IDX::CALL_CSRRCI_IDX;
         }
-        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx);
+        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx as usize);
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
         gen_size
@@ -1305,7 +1306,7 @@ impl TCG for TCGX86 {
             mc,
         );
         let csr_helper_idx = tcg.helper_idx;
-        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx);
+        let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx as usize);
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
         //  Jump Epilogue

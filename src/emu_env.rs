@@ -5,18 +5,17 @@ use crate::elf_loader::ELFLoader;
 use crate::elf_loader::ProgramHeader;
 use crate::elf_loader::SectionHeader;
 
-use crate::riscv::TranslateRiscv;
+use crate::riscv::{ExceptCode, PrivMode, TranslateRiscv};
+use crate::riscv_csr::{CsrAddr, RiscvCsr};
+use crate::riscv_csr_def;
 use crate::riscv_decoder::decode_inst;
+use crate::riscv_inst_id::RiscvInstId;
 
 use crate::x86::TCGX86;
 
 use crate::tcg::{TCGOp, TCG};
 
-use crate::riscv_csr::{CsrAddr, RiscvCsr};
-
 use crate::instr_info::InstrInfo;
-
-use crate::riscv_inst_id::RiscvInstId;
 
 pub struct EmuEnv {
     pub head: [u64; 1], // pointer of this struct. Do not move.
@@ -59,7 +58,7 @@ impl EmuEnv {
                 Self::helper_func_csrrsi,
                 Self::helper_func_csrrci,
                 Self::helper_func_mret,
-                Self::dummy_helper,
+                Self::helper_func_ecall,
                 Self::dummy_helper,
                 Self::dummy_helper,
                 Self::dummy_helper,
@@ -196,6 +195,25 @@ impl EmuEnv {
         return 0;
     }
 
+    fn helper_func_ecall(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+        println!(
+            "helper_mret(emu, {:}, {:}, 0x{:03x}) is called!",
+            dest, imm, csr_addr
+        );
+        emu.m_csr.csrrw(CsrAddr::Mepc, emu.m_pc[0] as i64); // MEPC
+
+        // let current_priv: PrivMode = self.m_priv;
+        // match current_priv {
+        //     PrivMode::User => self.generate_exception(ExceptCode::EcallFromUMode, 0),
+        //     PrivMode::Supervisor => self.generate_exception(ExceptCode::EcallFromSMode, 0),
+        //     PrivMode::Hypervisor => self.generate_exception(ExceptCode::EcallFromHMode, 0),
+        //     PrivMode::Machine => self.generate_exception(ExceptCode::EcallFromMMode, 0),
+        // }
+
+        emu.generate_exception(ExceptCode::EcallFromMMode, 0);
+        return 0;
+    }
+
     pub fn dump_gpr(&self) {
         for (i, reg) in self.m_regs.iter().enumerate() {
             print!("x{:02} = {:016x}  ", i, reg);
@@ -257,7 +275,7 @@ impl EmuEnv {
             self.gen_tcg();
         }
 
-        for _loop_idx in 0..10 {
+        for _loop_idx in 0..20 {
             let mut start_idx = 0;
             for inst in &self.m_inst_vec {
                 if inst.addr == self.m_pc[0] {
@@ -310,15 +328,15 @@ impl EmuEnv {
                 self.m_tcg_raw_vec.push(*b);
             }
 
-            {
-                for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
-                    print!("{:02x} ", b);
-                    if i % 16 == 15 {
-                        print!("\n");
-                    }
-                }
-                print!("\n");
-            }
+            // {
+            //     for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
+            //         print!("{:02x} ", b);
+            //         if i % 16 == 15 {
+            //             print!("\n");
+            //         }
+            //     }
+            //     print!("\n");
+            // }
 
             self.m_prologue_epilogue_mem = {
                 let v = self.m_tcg_raw_vec.as_slice();
@@ -327,7 +345,7 @@ impl EmuEnv {
 
             // Make tb instruction region (temporary 1024byte)
             self.m_tb_mem = match MemoryMap::new(
-                1024,
+                2048,
                 &[
                     MapOption::MapReadable,
                     MapOption::MapWritable,
@@ -397,7 +415,6 @@ impl EmuEnv {
             }
 
             let s = self.m_tb_mem.data();
-            // for byte_idx in 0..self.m_tb_mem.len() {
             for byte_idx in 0..256 {
                 if byte_idx % 16 == 0 {
                     print!("{:08x} : ", byte_idx);
@@ -533,5 +550,122 @@ impl EmuEnv {
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { csr_helper_func_ptr.offset_from(self_ptr) };
         diff
+    }
+
+    pub fn extract_bit_field(hex: i64, left: u8, right: u8) -> i64 {
+        let mask: i64 = (1 << (left - right + 1)) - 1;
+        return (hex >> right) & mask;
+    }
+
+    pub fn set_bit_field(hex: i64, val: i64, left: u8, right: u8) -> i64 {
+        let mask: i64 = (1 << (left - right + 1)) - 1;
+        return (hex & !(mask << right)) | (val << right);
+    }
+
+    fn generate_exception(&mut self, code: ExceptCode, tval: i64) {
+        println!(
+            "<Info: Generate Exception Code={}, TVAL={:016x} PC={:016x}>",
+            code as u32, tval, self.m_pc[0]
+        );
+
+        let epc: u64;
+        epc = self.m_pc[0];
+
+        // let curr_priv: PrivMode = self.m_priv;
+        let curr_priv = PrivMode::Machine;
+
+        let mut mstatus: i64;
+        let mut sstatus: i64;
+        let tvec: i64;
+        let medeleg = self.m_csr.csrrs(CsrAddr::Medeleg, 0);
+        let mut next_priv: PrivMode = PrivMode::Machine;
+
+        // self.set_priv_mode(next_priv);
+
+        if (medeleg & (1 << (code as u32))) != 0 {
+            // Delegation
+            self.m_csr.csrrw(CsrAddr::Sepc, epc as i64);
+            self.m_csr.csrrw(CsrAddr::Scause, code as i64);
+            self.m_csr.csrrw(CsrAddr::Stval, tval as i64);
+
+            tvec = self.m_csr.csrrs(CsrAddr::Stvec, 0 as i64);
+            next_priv = PrivMode::Supervisor;
+        } else {
+            self.m_csr.csrrw(CsrAddr::Mepc, epc as i64);
+            self.m_csr.csrrw(CsrAddr::Mcause, code as i64);
+            self.m_csr.csrrw(CsrAddr::Mtval, tval as i64);
+
+            tvec = self.m_csr.csrrs(CsrAddr::Mtvec, 0 as i64);
+            print!("tvec = {:016x}\n", tvec);
+        }
+
+        // Update status CSR
+        if (medeleg & (1 << (code as u32))) != 0 {
+            // Delegation
+            sstatus = self.m_csr.csrrs(CsrAddr::Sstatus, 0 as i64);
+            sstatus = Self::set_bit_field(
+                sstatus,
+                Self::extract_bit_field(
+                    sstatus,
+                    riscv_csr_def::SYSREG_SSTATUS_SIE_MSB,
+                    riscv_csr_def::SYSREG_SSTATUS_SIE_LSB,
+                ),
+                riscv_csr_def::SYSREG_SSTATUS_SPIE_MSB,
+                riscv_csr_def::SYSREG_SSTATUS_SPIE_LSB,
+            );
+            sstatus = Self::set_bit_field(
+                sstatus,
+                curr_priv as i64,
+                riscv_csr_def::SYSREG_SSTATUS_SPP_MSB,
+                riscv_csr_def::SYSREG_SSTATUS_SPP_LSB,
+            );
+            sstatus = Self::set_bit_field(
+                sstatus,
+                0,
+                riscv_csr_def::SYSREG_SSTATUS_SIE_MSB,
+                riscv_csr_def::SYSREG_SSTATUS_SIE_LSB,
+            );
+            self.m_csr.csrrw(CsrAddr::Sstatus, sstatus as i64);
+        } else {
+            mstatus = self.m_csr.csrrs(CsrAddr::Mstatus, 0);
+            mstatus = Self::set_bit_field(
+                mstatus,
+                Self::extract_bit_field(
+                    mstatus,
+                    riscv_csr_def::SYSREG_MSTATUS_MIE_MSB,
+                    riscv_csr_def::SYSREG_MSTATUS_MIE_LSB,
+                ),
+                riscv_csr_def::SYSREG_MSTATUS_MPIE_MSB,
+                riscv_csr_def::SYSREG_MSTATUS_MPIE_LSB,
+            );
+            mstatus = Self::set_bit_field(
+                mstatus,
+                curr_priv as i64,
+                riscv_csr_def::SYSREG_MSTATUS_MPP_MSB,
+                riscv_csr_def::SYSREG_MSTATUS_MPP_LSB,
+            );
+            mstatus = Self::set_bit_field(
+                mstatus,
+                0,
+                riscv_csr_def::SYSREG_MSTATUS_MIE_MSB,
+                riscv_csr_def::SYSREG_MSTATUS_MIE_LSB,
+            );
+
+            self.m_csr.csrrw(CsrAddr::Mstatus, mstatus);
+        }
+
+        // self.set_priv_mode(next_priv);
+        //
+        // self.set_pc(tvec as u64);
+        // self.set_update_pc(true);
+        self.m_pc[0] = tvec as u64;
+
+        println!(
+            "<Info: Exception. ChangeMode from {} to {}>",
+            curr_priv as u32, next_priv as u32
+        );
+        println!("<Info: Set Program Counter = 0x{:16x}>", tvec);
+
+        return;
     }
 }

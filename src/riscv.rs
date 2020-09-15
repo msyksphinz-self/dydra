@@ -5,6 +5,38 @@ use std::rc::Rc;
 use super::instr_info::InstrInfo;
 use super::riscv_inst_id::RiscvInstId;
 
+#[derive(PartialEq, Eq, Copy, Clone)]
+#[allow(dead_code)]
+pub enum ExceptCode {
+    InstAddrMisalign = 0,
+    InstAccessFault = 1,
+    IllegalInst = 2,
+    Breakpoint = 3,
+    LoadAddrMisalign = 4,
+    LoadAccessFault = 5,
+    StoreAddrMisalign = 6,
+    StoreAccessFault = 7,
+    EcallFromUMode = 8,
+    EcallFromSMode = 9,
+    EcallFromHMode = 10,
+    EcallFromMMode = 11,
+    InstPageFault = 12,
+    LoadPageFault = 13,
+    StorePageFault = 15,
+}
+
+#[allow(non_camel_case_types)]
+pub enum CALL_HELPER_IDX {
+    CALL_CSRRW_IDX = 0,
+    CALL_CSRRS_IDX = 1,
+    CALL_CSRRC_IDX = 2,
+    CALL_CSRRWI_IDX = 3,
+    CALL_CSRRSI_IDX = 4,
+    CALL_CSRRCI_IDX = 5,
+    CALL_MRET_IDX = 6,
+    CALL_ECALL_IDX = 7,
+}
+
 macro_rules! get_rs1_addr {
     ($inst:expr) => {
         ($inst >> 15) & 0x1f
@@ -48,10 +80,10 @@ macro_rules! get_sb_field {
 
 macro_rules! extract_j_field {
     ($inst:expr) => {
-        ((($inst as u64 >> 21) & 0x3ff) << 1)
-            | ((($inst as u64 >> 20) & 0x001) << 11)
-            | ((($inst as u64 >> 12) & 0x0ff) << 12)
-            | ((($inst as u64 >> 31) & 0x001) << 20) as u64
+        ((((($inst >> 21) & 0x3ff) << 1)
+            | ((($inst >> 20) & 0x001) << 11)
+            | ((($inst >> 12) & 0x0ff) << 12)
+            | ((($inst >> 31) & 0x001) << 20)) as i32) as u64
     };
 }
 
@@ -59,6 +91,26 @@ macro_rules! get_s_imm_field {
     ($inst:expr) => {
         ((($inst as u64 >> 25) & 0x7f) << 5) | ($inst as u64 >> 7 & 0x1f) as u64
     };
+}
+
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum PrivMode {
+    User,
+    Supervisor,
+    Hypervisor,
+    Machine,
+}
+
+impl PrivMode {
+    pub fn from_u8(n: u8) -> PrivMode {
+        match n {
+            0 => PrivMode::User,
+            1 => PrivMode::Supervisor,
+            2 => PrivMode::Hypervisor,
+            3 => PrivMode::Machine,
+            _ => PrivMode::Machine,
+        }
+    }
 }
 
 pub struct TranslateRiscv;
@@ -140,7 +192,7 @@ impl TranslateRiscv {
 
     fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let imm_const: u64 = (inst.inst >> 20) as u64;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
@@ -201,7 +253,7 @@ impl TranslateRiscv {
 
     pub fn translate_jalr(inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let imm_const: u64 = (inst.inst as u64) >> 20 & 0xfff;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
@@ -214,10 +266,14 @@ impl TranslateRiscv {
     }
 
     pub fn translate_jal(inst: &InstrInfo) -> Vec<TCGOp> {
-        let imm_const: u64 = extract_j_field!(inst.inst);
+        let imm_const = extract_j_field!(inst.inst);
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
-        let imm = Box::new(TCGv::new_imm(imm_const));
+        let imm_const = ((imm_const as i32) << (32 - 21)) >> (32 - 21);
+
+        let imm = Box::new(TCGv::new_imm(
+            ((imm_const as i64).wrapping_add(inst.addr as i64)) as u64,
+        ));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
         let tcg_inst = TCGOp::new_2op(TCGOpcode::JMPIM, *rd, *imm);
@@ -435,10 +491,11 @@ impl TranslateRiscv {
         vec![]
     }
     pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
-        let mret_op = TCGOp::new_helper_call_arg0(6);
+        let mret_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_MRET_IDX as usize);
         vec![mret_op]
     }
     pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let ecall_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_ECALL_IDX as usize);
+        vec![ecall_op]
     }
 }
