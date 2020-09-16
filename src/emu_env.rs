@@ -259,7 +259,6 @@ impl EmuEnv {
             sh_headers.push(shdr);
         }
 
-        // Dump All Section Headers
         for sh_header in sh_headers {
             if sh_header.sh_flags == 6 {
                 sh_header.dump();
@@ -270,6 +269,11 @@ impl EmuEnv {
                 );
             }
         }
+
+        // Fill until 0x2000
+        for _idx in self.m_guestcode.len()..0x2000 {
+            self.m_guestcode.push(0x0);
+        }        
 
         unsafe {
             self.gen_tcg();
@@ -345,7 +349,7 @@ impl EmuEnv {
 
             // Make tb instruction region (temporary 1024byte)
             self.m_tb_mem = match MemoryMap::new(
-                2048,
+                0x2000,
                 &[
                     MapOption::MapReadable,
                     MapOption::MapWritable,
@@ -667,5 +671,21 @@ impl EmuEnv {
         println!("<Info: Set Program Counter = 0x{:16x}>", tvec);
 
         return;
+    }
+
+    pub fn get_mem(&self, addr: u64) -> u32 {
+        let mem = self.m_guestcode.as_slice();
+
+        // println!("size = {:}", self.m_guestcode.len());
+        // for byte_idx in 0..0x2000 {
+        //     if byte_idx % 32 == 0 {
+        //         print!("{:04x}: ", byte_idx);
+        //     }
+        //     print!("{:02x} ", unsafe { mem.as_ptr().offset(byte_idx).read()} as u8);
+        //     if byte_idx % 32 == 31 {
+        //         print!("\n");
+        //     }
+        // }
+        return unsafe {mem.as_ptr().offset(addr as isize).read() } as u32 ;
     }
 }

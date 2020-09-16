@@ -89,7 +89,7 @@ macro_rules! extract_j_field {
 
 macro_rules! get_s_imm_field {
     ($inst:expr) => {
-        ((($inst as u64 >> 25) & 0x7f) << 5) | ($inst as u64 >> 7 & 0x1f) as u64
+        ((((($inst as u64 >> 25) & 0x7f) << 5) | ($inst as u64 >> 7 & 0x1f)) as i32) as u64
     };
 }
 
@@ -223,8 +223,10 @@ impl TranslateRiscv {
         let imm_const: u64 = get_s_imm_field!(inst.inst);
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
 
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32-12);
+
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
+        let imm = Box::new(TCGv::new_imm(imm_const as i64 as u64));
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
 
         let tcg_inst = TCGOp::new_3op(op, *rs1, *rs2, *imm);
