@@ -195,8 +195,8 @@ fn csr_test() {
                 0x0000000076543210,
                 0x0000000000000000,
                 0x0000000012345678,
-                0x00000000bbfdf7ff,
-                0x0000000089a9c5ef,
+                0xffffffffbbfdf7ff,
+                0xffffffff89a9c5ef,
                 0x0000000000000000,
                 0x0000000000000000,
                 0x0000000000000000,
@@ -368,17 +368,17 @@ fn shift() {
                 0x0000000000000000,
                 0x0000000000000000,
                 0x0000000000000000,
-                0x00000000deadb3ef,
+                0xffffffffdeadb3ef,
                 0x0000000000000000,
                 0x0000000000000000,
                 0x0000000000000000,
                 0x0000000000000000,
-                0x00000000001bd5b6,
-                0x000006f56d9f7800,
-                0x00000000001bd5b6,
-                0x00000000001bd5b6,
-                0x000006f56d9f7800,
-                0x00000000001bd5b6,
+                0x001ffffffffbd5b6,
+                0xfffffef56d9f7800,
+                0xfffffffffffbd5b6,
+                0x001ffffffffbd5b6,
+                0xfffffef56d9f7800,
+                0xfffffffffffbd5b6,
                 0xdeadb3ef00000000,
                 0xffffffffdeadb3ef,
                 0x00000000deadb3ef,
@@ -394,4 +394,17 @@ fn shift() {
         ),
         0
     );
+}
+
+#[test] fn rv64ui_p_simple() {
+    assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-simple".to_string()), 1);
+}
+#[test] fn rv64ui_p_add() {
+    assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-add".to_string()), 1);
+}
+#[test] fn rv64ui_p_addi() {
+    assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-addi".to_string()), 1);
+}
+#[test] fn rv64ui_p_addiw() {
+    assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-addiw".to_string()), 1);
 }

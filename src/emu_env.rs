@@ -279,7 +279,7 @@ impl EmuEnv {
             self.gen_tcg();
         }
 
-        for _loop_idx in 0..20 {
+        for _loop_idx in 0..100 {
             let mut start_idx = 0;
             for inst in &self.m_inst_vec {
                 if inst.addr == self.m_pc[0] {

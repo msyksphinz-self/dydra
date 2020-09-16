@@ -239,16 +239,18 @@ impl TranslateRiscv {
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let target: u64 = get_sb_field!(inst.inst) + inst.addr;
 
+        let target = ((target as i32) << (32 - 13)) >> (32 - 13);
+
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let addr = Box::new(TCGv::new_imm(target));
+        let addr = Box::new(TCGv::new_imm(target as i32 as u64));
 
         let label = Rc::new(RefCell::new(TCGLabel::new()));
 
         let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, Rc::clone(&label));
         let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4));
         let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
-        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target));
+        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target as i32 as u64));
 
         vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
     }
@@ -338,9 +340,8 @@ impl TranslateRiscv {
         Self::translate_rri(TCGOpcode::XOR, inst)
     }
 
-    // xxx: Temporary defined as 64-bit ADD
     pub fn translate_addiw(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::ADD, inst)
+        Self::translate_rri(TCGOpcode::ADD_32BIT, inst)
     }
 
     pub fn translate_beq(inst: &InstrInfo) -> Vec<TCGOp> {
