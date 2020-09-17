@@ -160,6 +160,13 @@ impl TranslateRiscv {
             RiscvInstId::SRL => TranslateRiscv::translate_srl(inst),
             RiscvInstId::SRA => TranslateRiscv::translate_sra(inst),
 
+            RiscvInstId::SLLIW => TranslateRiscv::translate_slliw(inst),
+            RiscvInstId::SRLIW => TranslateRiscv::translate_srliw(inst),
+            RiscvInstId::SRAIW => TranslateRiscv::translate_sraiw(inst),
+            RiscvInstId::SLLW => TranslateRiscv::translate_sllw(inst),
+            RiscvInstId::SRLW => TranslateRiscv::translate_srlw(inst),
+            RiscvInstId::SRAW => TranslateRiscv::translate_sraw(inst),
+
             RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
             RiscvInstId::JAL => TranslateRiscv::translate_jal(inst),
 
@@ -282,9 +289,12 @@ impl TranslateRiscv {
         ));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
+        let zero = Box::new(TCGv::new_reg(0));
+        let next_pc = Box::new(TCGv::new_imm(inst.addr.wrapping_add(4)));
+        let mov_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *zero, *next_pc);
         let tcg_inst = TCGOp::new_2op(TCGOpcode::JMPIM, *rd, *imm);
 
-        vec![tcg_inst]
+        vec![mov_inst, tcg_inst]
     }
 
     pub fn translate_lui(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -301,7 +311,7 @@ impl TranslateRiscv {
     }
 
     pub fn translate_auipc(inst: &InstrInfo) -> Vec<TCGOp> {
-        let imm_const: u64 = ((inst.inst as u64) & !0xfff).wrapping_add(inst.addr);
+        let imm_const: u64 = ((inst.inst as i64 as u64) & !0xfff).wrapping_add(inst.addr);
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(0));
@@ -497,6 +507,26 @@ impl TranslateRiscv {
     pub fn translate_sra(inst: &InstrInfo) -> Vec<TCGOp> {
         Self::translate_rrr(TCGOpcode::SRA_64BIT, inst)
     }
+
+    pub fn translate_slliw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_shift_i(TCGOpcode::SLL_32BIT, inst)
+    }
+    pub fn translate_srliw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_shift_i(TCGOpcode::SRL_32BIT, inst)
+    }
+    pub fn translate_sraiw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_shift_i(TCGOpcode::SRA_32BIT, inst)
+    }
+    pub fn translate_sllw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SLL_32BIT, inst)
+    }
+    pub fn translate_srlw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SRL_32BIT, inst)
+    }
+    pub fn translate_sraw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SRA_32BIT, inst)
+    }
+
 
     pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
