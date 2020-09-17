@@ -11,38 +11,39 @@ pub enum TCGOpcode {
     HELPER_CALL_ARG1,
     HELPER_CALL_ARG2,
     HELPER_CALL_ARG3,
-    MOV,
-    ADD,
-    SUB,
-    AND,
-    OR,
-    XOR,
-    SRL,
-    SLL,
-    SRA,
+    MOV_64BIT,
+    ADD_64BIT,
+    SUB_64BIT,
+    AND_64BIT,
+    OR_64BIT,
+    XOR_64BIT,
+    SRL_64BIT,
+    SLL_64BIT,
+    SRA_64BIT,
     JMPR,
     JMPIM,
-    EQ,
-    NE,
-    LT,
-    GE,
-    LTU,
-    GEU,
-    LD,
-    LW,
-    LH,
-    LB,
-    LWU,
-    LHU,
-    LBU,
-    SD,
-    SW,
-    SH,
-    SB,
+    EQ_64BIT,
+    NE_64BIT,
+    LT_64BIT,
+    GE_64BIT,
+    LTU_64BIT,
+    GEU_64BIT,
+    LOAD_64BIT,
+    LOAD_32BIT,
+    LOAD_16BIT,
+    LOAD_8BIT,
+    LOADU_32BIT,
+    LOADU_16BIT,
+    LOADU_8BIT,
+    STORE_64BIT,
+    STORE_32BIT,
+    STORE_16BIT,
+    STORE_8BIT,
     CSR_CSRRW,
     CSR_CSRRS,
     CSR_CSRRC,
-    ADD_32BIT
+    ADD_32BIT,
+    SUB_32BIT,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -165,7 +166,7 @@ impl TCGOp {
     pub fn new_goto_tb(addr: TCGv) -> TCGOp {
         assert_eq!(addr.t, TCGvType::Immediate);
 
-        Self::new_2op(TCGOpcode::MOV, TCGv::new_pc(), addr)
+        Self::new_2op(TCGOpcode::MOV_64BIT, TCGv::new_pc(), addr)
     }
 
     pub fn new_label(label: Rc<RefCell<TCGLabel>>) -> TCGOp {
@@ -243,6 +244,7 @@ pub trait TCG {
     fn tcg_gen_mov(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_add_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>)-> usize;
+    fn tcg_gen_sub_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>)-> usize;
 
     fn tcg_gen_srl(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_sll(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;

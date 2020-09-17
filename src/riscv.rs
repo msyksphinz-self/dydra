@@ -127,6 +127,8 @@ impl TranslateRiscv {
             RiscvInstId::ANDI => TranslateRiscv::translate_andi(inst),
             RiscvInstId::ORI => TranslateRiscv::translate_ori(inst),
             RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
+            RiscvInstId::ADDW => TranslateRiscv::translate_addw(inst),
+            RiscvInstId::SUBW => TranslateRiscv::translate_subw(inst),
 
             RiscvInstId::ADDIW => TranslateRiscv::translate_addiw(inst),
 
@@ -293,7 +295,7 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD, *rd, *rs1, *imm);
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *rs1, *imm);
 
         vec![tcg_inst]
     }
@@ -306,96 +308,102 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD, *rd, *rs1, *imm);
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *rs1, *imm);
 
         vec![tcg_inst]
     }
 
     pub fn translate_add(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::ADD, inst)
+        Self::translate_rrr(TCGOpcode::ADD_64BIT, inst)
     }
     pub fn translate_sub(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::SUB, inst)
+        Self::translate_rrr(TCGOpcode::SUB_64BIT, inst)
     }
     pub fn translate_and(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::AND, inst)
+        Self::translate_rrr(TCGOpcode::AND_64BIT, inst)
     }
     pub fn translate_or(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::OR, inst)
+        Self::translate_rrr(TCGOpcode::OR_64BIT, inst)
     }
     pub fn translate_xor(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::XOR, inst)
+        Self::translate_rrr(TCGOpcode::XOR_64BIT, inst)
     }
 
     pub fn translate_addi(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::ADD, inst)
+        Self::translate_rri(TCGOpcode::ADD_64BIT, inst)
     }
     pub fn translate_andi(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::AND, inst)
+        Self::translate_rri(TCGOpcode::AND_64BIT, inst)
     }
     pub fn translate_ori(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::OR, inst)
+        Self::translate_rri(TCGOpcode::OR_64BIT, inst)
     }
     pub fn translate_xori(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::XOR, inst)
+        Self::translate_rri(TCGOpcode::XOR_64BIT, inst)
     }
 
     pub fn translate_addiw(inst: &InstrInfo) -> Vec<TCGOp> {
         Self::translate_rri(TCGOpcode::ADD_32BIT, inst)
     }
+    pub fn translate_addw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::ADD_32BIT, inst)
+    }
+    pub fn translate_subw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::SUB_32BIT, inst)
+    }
 
     pub fn translate_beq(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::EQ, inst)
+        Self::translate_branch(TCGOpcode::EQ_64BIT, inst)
     }
     pub fn translate_bne(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::NE, inst)
+        Self::translate_branch(TCGOpcode::NE_64BIT, inst)
     }
     pub fn translate_blt(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::LT, inst)
+        Self::translate_branch(TCGOpcode::LT_64BIT, inst)
     }
     pub fn translate_bge(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::GE, inst)
+        Self::translate_branch(TCGOpcode::GE_64BIT, inst)
     }
     pub fn translate_bltu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::LTU, inst)
+        Self::translate_branch(TCGOpcode::LTU_64BIT, inst)
     }
     pub fn translate_bgeu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::GEU, inst)
+        Self::translate_branch(TCGOpcode::GEU_64BIT, inst)
     }
 
     pub fn translate_ld(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LD, inst)
+        Self::translate_rri(TCGOpcode::LOAD_64BIT, inst)
     }
     pub fn translate_lw(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LW, inst)
+        Self::translate_rri(TCGOpcode::LOAD_32BIT, inst)
     }
     pub fn translate_lh(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LH, inst)
+        Self::translate_rri(TCGOpcode::LOAD_16BIT, inst)
     }
     pub fn translate_lb(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LB, inst)
+        Self::translate_rri(TCGOpcode::LOAD_8BIT, inst)
     }
     pub fn translate_lwu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LWU, inst)
+        Self::translate_rri(TCGOpcode::LOADU_32BIT, inst)
     }
     pub fn translate_lhu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LHU, inst)
+        Self::translate_rri(TCGOpcode::LOADU_16BIT, inst)
     }
     pub fn translate_lbu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LBU, inst)
+        Self::translate_rri(TCGOpcode::LOADU_8BIT, inst)
     }
 
     pub fn translate_sd(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::SD, inst)
+        Self::translate_store(TCGOpcode::STORE_64BIT, inst)
     }
     pub fn translate_sw(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::SW, inst)
+        Self::translate_store(TCGOpcode::STORE_32BIT, inst)
     }
     pub fn translate_sh(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::SH, inst)
+        Self::translate_store(TCGOpcode::STORE_16BIT, inst)
     }
     pub fn translate_sb(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::SB, inst)
+        Self::translate_store(TCGOpcode::STORE_8BIT, inst)
     }
 
     pub fn translate_csrrw(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -472,22 +480,22 @@ impl TranslateRiscv {
     }
 
     pub fn translate_slli(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_shift_i(TCGOpcode::SLL, inst)
+        Self::translate_shift_i(TCGOpcode::SLL_64BIT, inst)
     }
     pub fn translate_srli(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_shift_i(TCGOpcode::SRL, inst)
+        Self::translate_shift_i(TCGOpcode::SRL_64BIT, inst)
     }
     pub fn translate_srai(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_shift_i(TCGOpcode::SRA, inst)
+        Self::translate_shift_i(TCGOpcode::SRA_64BIT, inst)
     }
     pub fn translate_sll(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::SLL, inst)
+        Self::translate_rrr(TCGOpcode::SLL_64BIT, inst)
     }
     pub fn translate_srl(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::SRL, inst)
+        Self::translate_rrr(TCGOpcode::SRL_64BIT, inst)
     }
     pub fn translate_sra(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::SRA, inst)
+        Self::translate_rrr(TCGOpcode::SRA_64BIT, inst)
     }
 
     pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {
