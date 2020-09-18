@@ -47,6 +47,9 @@ pub enum TCGOpcode {
     SRL_32BIT,
     SLL_32BIT,
     SRA_32BIT,
+
+    SLT_64BIT,
+    SLTU_64BIT,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -245,6 +248,9 @@ pub trait TCG {
     fn tcg_gen_ltu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_geu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_mov_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_slt_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sltu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_add_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>)-> usize;
     fn tcg_gen_sub_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>)-> usize;

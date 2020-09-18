@@ -305,27 +305,9 @@ impl EmuEnv {
             }
         }
 
-        // unsafe {
-        //     self.gen_tcg();
-        // }
-
         for _loop_idx in 0..100 {
-            // for inst in &self.m_inst_vec {
-            //     if inst.addr == self.m_pc[0] {
-            //         break;
-            //     }
-            //     start_idx += 1;
-            // }
-            // self.m_tcg_vec.clear();
-            // print!(
-            //     "start_idx = {}. m_inst_vec.len = {}\n",
-            //     start_idx,
-            //     &self.m_inst_vec.len(),
-            // );
-            // let mut inst_idx = 0;
             let mut guest_pc = self.m_pc[0];
             
-            // for inst in &self.m_inst_vec {
             self.m_tcg_vec.clear();
             #[allow(while_true)]
             while true {
@@ -558,8 +540,8 @@ impl EmuEnv {
         diff
     }
 
-    pub fn calc_guestcode_address(&self) -> usize {
-        let guestcode_ptr = self.m_guest_text_mem.data();
+    pub fn calc_guest_data_mem_address(&self) -> usize {
+        let guestcode_ptr = self.m_guest_data_mem.data();
         println!("guestcode_ptr = {:p}", guestcode_ptr);
         return guestcode_ptr as usize;
     }
@@ -690,7 +672,7 @@ impl EmuEnv {
     }
 
     pub fn get_mem(&self, addr: u64) -> u32 {
-        let mem = self.m_guest_text_mem.data();
+        let mem = self.m_guest_data_mem.data();
         return unsafe { mem.offset(addr as isize).read() } as u32 ;
     }
 }
