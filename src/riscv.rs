@@ -451,7 +451,7 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRW, *rd, *rs1, *csr);
+        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRW_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
     pub fn translate_csrrs(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -463,7 +463,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRS, *rd, *rs1, *csr);
+        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRS_IDX as usize, *rd, *rs1, *csr);
+
         vec![csr_op]
     }
     pub fn translate_csrrc(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -475,7 +476,7 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRC, *rd, *rs1, *csr);
+        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRC_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
     pub fn translate_csrrwi(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -487,7 +488,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRW, *rd, *rs1, *csr);
+        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRWI_IDX as usize, *rd, *rs1, *csr);
+
         vec![csr_op]
     }
     pub fn translate_csrrsi(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -499,7 +501,7 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRS, *rd, *rs1, *csr);
+        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRSI_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
     pub fn translate_csrrci(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -511,7 +513,7 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_3op(TCGOpcode::CSR_CSRRC, *rd, *rs1, *csr);
+        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRCI_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
 
@@ -572,10 +574,12 @@ impl TranslateRiscv {
     }
     pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
         let mret_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_MRET_IDX as usize);
-        vec![mret_op]
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        vec![mret_op, exit_tb]
     }
     pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
         let ecall_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_ECALL_IDX as usize);
-        vec![ecall_op]
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        vec![ecall_op, exit_tb]
     }
 }

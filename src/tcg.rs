@@ -39,9 +39,6 @@ pub enum TCGOpcode {
     STORE_32BIT,
     STORE_16BIT,
     STORE_8BIT,
-    CSR_CSRRW,
-    CSR_CSRRS,
-    CSR_CSRRC,
     ADD_32BIT,
     SUB_32BIT,
     SRL_32BIT,
@@ -50,6 +47,8 @@ pub enum TCGOpcode {
 
     SLT_64BIT,
     SLTU_64BIT,
+
+    EXIT_TB,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -86,6 +85,16 @@ pub struct TCGOp {
 }
 
 impl TCGOp {
+    pub fn new_0op(opcode: TCGOpcode) -> TCGOp {
+        TCGOp {
+            op: Some(opcode),
+            arg0: None,
+            arg1: None,
+            arg2: None,
+            label: None,
+            helper_idx: 0,
+        }
+    }
     pub fn new_2op(opcode: TCGOpcode, a1: TCGv, a2: TCGv) -> TCGOp {
         TCGOp {
             op: Some(opcode),
@@ -138,7 +147,7 @@ impl TCGOp {
 
     pub fn new_helper_call_arg1(helper_idx: usize, a1: TCGv) -> TCGOp {
         TCGOp {
-            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            op: Some(TCGOpcode::HELPER_CALL_ARG1),
             arg0: Some(a1),
             arg1: None,
             arg2: None,
@@ -149,7 +158,7 @@ impl TCGOp {
 
     pub fn new_helper_call_arg2(helper_idx: usize, a1: TCGv, a2: TCGv) -> TCGOp {
         TCGOp {
-            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            op: Some(TCGOpcode::HELPER_CALL_ARG2),
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: None,
@@ -160,7 +169,7 @@ impl TCGOp {
 
     pub fn new_helper_call_arg3(helper_idx: usize, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
         TCGOp {
-            op: Some(TCGOpcode::HELPER_CALL_ARG0),
+            op: Some(TCGOpcode::HELPER_CALL_ARG3),
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: Some(a3),
@@ -297,5 +306,5 @@ pub trait TCG {
         mc: &mut Vec<u8>,
     ) -> usize;
 
-    fn tcg_exit_tb(emu: &EmuEnv, gen_size: usize, mc: &mut Vec<u8>) -> usize;
+    fn tcg_exit_tb(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 }

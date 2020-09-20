@@ -646,9 +646,6 @@ impl TCG for TCGX86 {
                     TCGOpcode::STORE_8BIT => {
                         TCGX86::tcg_gen_store(emu, pc_address, tcg, mc, MemOpType::STORE_8BIT)
                     }
-                    TCGOpcode::CSR_CSRRW => TCGX86::tcg_gen_csrrw(emu, pc_address, tcg, mc),
-                    TCGOpcode::CSR_CSRRS => TCGX86::tcg_gen_csrrs(emu, pc_address, tcg, mc),
-                    TCGOpcode::CSR_CSRRC => TCGX86::tcg_gen_csrrc(emu, pc_address, tcg, mc),
 
                     TCGOpcode::MOV_64BIT => TCGX86::tcg_gen_mov_64bit(emu, pc_address, tcg, mc),
 
@@ -663,6 +660,9 @@ impl TCG for TCGX86 {
                     }
                     TCGOpcode::HELPER_CALL_ARG3 => {
                         TCGX86::tcg_gen_helper_call(emu, 3, pc_address, tcg, mc)
+                    }
+                    TCGOpcode::EXIT_TB => {
+                        TCGX86::tcg_exit_tb(emu, pc_address, tcg, mc)
                     }
                 };
             }
@@ -1024,8 +1024,8 @@ impl TCG for TCGX86 {
         return Self::tcg_gen_setcc(emu, pc_address, X86Opcode::SETB, tcg, mc);
     }
 
-    fn tcg_exit_tb(emu: &EmuEnv, gen_size: usize, mc: &mut Vec<u8>) -> usize {
-        let mut gen_size: usize = gen_size;
+    fn tcg_exit_tb(emu: &EmuEnv, pc_address: u64, _tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let mut gen_size: usize = pc_address as usize;
         // jmp    epilogue
         gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
         let diff_from_epilogue = emu.calc_epilogue_address();
@@ -1055,7 +1055,7 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
         // jmp    epilogue
-        gen_size = Self::tcg_exit_tb(emu, gen_size, mc);
+        gen_size += Self::tcg_exit_tb(emu, gen_size as u64, tcg, mc);
         return gen_size;
     }
 
@@ -1477,8 +1477,6 @@ impl TCG for TCGX86 {
         let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx as usize);
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
 
-        //  Jump Epilogue
-        gen_size = Self::tcg_exit_tb(emu, gen_size, mc);
         return gen_size;
     }
 
