@@ -439,7 +439,7 @@ extern crate uint_execute;
 // #[test]fn rv64ui_p_fence_i () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-fence_i".to_string()), 1); }
 
 #[test]fn rv64ui_p_jal     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-jal".to_string()), 1); }
-// #[test]fn rv64ui_p_jalr    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-jalr".to_string()), 1); }
+#[test]fn rv64ui_p_jalr    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-jalr".to_string()), 1); }
 
 #[test]fn rv64ui_p_lb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-lb".to_string()), 1); }
 #[test]fn rv64ui_p_lbu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-lbu".to_string()), 1); }

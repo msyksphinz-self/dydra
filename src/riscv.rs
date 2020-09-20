@@ -288,10 +288,18 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let tcg_inst = TCGOp::new_3op(TCGOpcode::JMPR, *rd, *rs1, *imm);
+        let zero = Box::new(TCGv::new_reg(0));
+        let next_pc = Box::new(TCGv::new_imm(inst.addr.wrapping_add(4)));
+        let mov_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *zero, *next_pc);
+        let jmp_inst = TCGOp::new_3op(TCGOpcode::JMPR, *rd, *rs1, *imm);
 
-        vec![tcg_inst]
+        if rd_addr == 0 {
+            return vec![jmp_inst];
+        } else {
+            return vec![mov_inst, jmp_inst];
+        }
     }
+    
 
     pub fn translate_jal(inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const = extract_j_field!(inst.inst);
