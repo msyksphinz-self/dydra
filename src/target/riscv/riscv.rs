@@ -1,8 +1,8 @@
-use super::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGv};
+use super::super::super::tcg::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGv};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::instr_info::InstrInfo;
+use super::super::super::instr_info::InstrInfo;
 use super::riscv_inst_id::RiscvInstId;
 
 #[derive(PartialEq, Eq, Copy, Clone)]

@@ -5,15 +5,14 @@ use crate::elf_loader::ELFLoader;
 use crate::elf_loader::ProgramHeader;
 use crate::elf_loader::SectionHeader;
 
-use crate::riscv::{ExceptCode, PrivMode, TranslateRiscv};
-use crate::riscv_csr::{CsrAddr, RiscvCsr};
-use crate::riscv_csr_def;
-use crate::riscv_decoder::decode_inst;
-use crate::riscv_inst_id::RiscvInstId;
+use crate::target::riscv::riscv::{ExceptCode, PrivMode, TranslateRiscv};
+use crate::target::riscv::riscv_csr::{CsrAddr, RiscvCsr};
+use crate::target::riscv::riscv_csr_def;
+use crate::target::riscv::riscv_decoder::decode_inst;
+use crate::target::riscv::riscv_inst_id::RiscvInstId;
 
-use crate::x86::TCGX86;
-
-use crate::tcg::{TCGOp, TCG};
+use crate::tcg::x86::x86::TCGX86;
+use crate::tcg::tcg::{TCGOp, TCG};
 
 use crate::instr_info::InstrInfo;
 

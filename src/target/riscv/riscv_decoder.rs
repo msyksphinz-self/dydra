@@ -1,5 +1,5 @@
 
-use crate::riscv_inst_id::RiscvInstId;
+use super::riscv_inst_id::RiscvInstId;
 
 // fn decode_inst(inst: u32) -> Option<RiscvInstId>;
 // fn decode_inst_op_11000(inst: u32) -> Option<RiscvInstId>;

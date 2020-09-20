@@ -1,10 +1,10 @@
 use self::tcg::{MemOpType, TCGLabel, TCGOp, TCGOpcode, TCGvType, TCG};
-use super::tcg;
+use super::super::tcg;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::emu_env::EmuEnv;
-use crate::riscv::CALL_HELPER_IDX;
+use crate::target::riscv::riscv::CALL_HELPER_IDX;
 
 extern crate mmap;
 
