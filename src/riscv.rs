@@ -293,13 +293,14 @@ impl TranslateRiscv {
         let mov_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *zero, *next_pc);
         let jmp_inst = TCGOp::new_3op(TCGOpcode::JMPR, *rd, *rs1, *imm);
 
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
         if rd_addr == 0 {
-            return vec![jmp_inst];
+            return vec![jmp_inst, exit_tb];
         } else {
-            return vec![mov_inst, jmp_inst];
+            return vec![mov_inst, jmp_inst, exit_tb];
         }
     }
-    
+
 
     pub fn translate_jal(inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const = extract_j_field!(inst.inst);
@@ -317,10 +318,12 @@ impl TranslateRiscv {
         let mov_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *zero, *next_pc);
         let tcg_inst = TCGOp::new_2op(TCGOpcode::JMPIM, *rd, *imm);
 
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+
         if rd_addr == 0 {
-            return vec![tcg_inst];
+            return vec![tcg_inst, exit_tb];
         } else {
-            return vec![mov_inst, tcg_inst];
+            return vec![mov_inst, tcg_inst, exit_tb];
         }
     }
 

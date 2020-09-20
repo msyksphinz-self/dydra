@@ -976,11 +976,6 @@ impl TCG for TCGX86 {
                 mc,
             );
             gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
-            
-            // Jump epilogue
-            gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
-            let diff_from_epilogue = emu.calc_epilogue_address();
-            gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
 
             return gen_size;
         }
@@ -1008,10 +1003,6 @@ impl TCG for TCGX86 {
         );
         gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
-        // Jump epilogue
-        gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
-        let diff_from_epilogue = emu.calc_epilogue_address();
-        gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
         return gen_size;
     }
 
