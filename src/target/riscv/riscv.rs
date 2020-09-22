@@ -35,6 +35,15 @@ pub enum CALL_HELPER_IDX {
     CALL_CSRRCI_IDX = 5,
     CALL_MRET_IDX = 6,
     CALL_ECALL_IDX = 7,
+    CALL_FADD_D_IDX = 8,
+    CALL_FSUB_D_IDX = 9,
+    CALL_FMUL_D_IDX = 10,
+    CALL_FDIV_D_IDX = 11,
+    CALL_FMADD_D_IDX = 12,
+    CALL_FMSUB_D_IDX = 13,
+    CALL_FNMSUB_D_IDX = 14,
+    CALL_FNMADD_D_IDX = 15,
+    CALL_FSQRT_D_IDX = 16,
 }
 
 macro_rules! get_rs1_addr {
@@ -187,6 +196,25 @@ impl TranslateRiscv {
             RiscvInstId::MRET => TranslateRiscv::translate_mret(inst),
             RiscvInstId::ECALL => TranslateRiscv::translate_ecall(inst),
 
+            RiscvInstId::FLD => TranslateRiscv::translate_fld(inst),
+            RiscvInstId::FLW => TranslateRiscv::translate_flw(inst),
+            RiscvInstId::FSD => TranslateRiscv::translate_fsd(inst),
+            RiscvInstId::FSW => TranslateRiscv::translate_fsw(inst),
+
+            RiscvInstId::FADD_D => TranslateRiscv::translate_fadd_d(inst),
+            RiscvInstId::FSUB_D => TranslateRiscv::translate_fsub_d(inst),
+            RiscvInstId::FMUL_D => TranslateRiscv::translate_fmul_d(inst),
+            RiscvInstId::FDIV_D => TranslateRiscv::translate_fdiv_d(inst),
+
+            RiscvInstId::FMADD_D => TranslateRiscv::translate_fmadd_d(inst),
+            RiscvInstId::FMSUB_D => TranslateRiscv::translate_fmsub_d(inst),
+            RiscvInstId::FNMSUB_D => TranslateRiscv::translate_fnmsub_d(inst),
+            RiscvInstId::FNMADD_D => TranslateRiscv::translate_fnmadd_d(inst),
+
+            RiscvInstId::FSQRT_D => TranslateRiscv::translate_fsqrt_d(inst),
+
+            RiscvInstId::FMV_X_D => TranslateRiscv::translate_fmv_x_d(inst),
+
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
     }
@@ -202,9 +230,9 @@ impl TranslateRiscv {
 
         if rd_addr != 0 {
             let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *rs2);
-            return vec![tcg_inst]
+            return vec![tcg_inst];
         } else {
-            return vec![]
+            return vec![];
         }
     }
 
@@ -219,9 +247,9 @@ impl TranslateRiscv {
 
         if rd_addr != 0 {
             let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
-            return vec![tcg_inst]
+            return vec![tcg_inst];
         } else {
-            return vec![]
+            return vec![];
         }
     }
 
@@ -236,9 +264,9 @@ impl TranslateRiscv {
 
         if rd_addr != 0 {
             let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
-            return vec![tcg_inst]
+            return vec![tcg_inst];
         } else {
-            return vec![]
+            return vec![];
         }
     }
 
@@ -247,7 +275,7 @@ impl TranslateRiscv {
         let imm_const: u64 = get_s_imm_field!(inst.inst);
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
 
-        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32-12);
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const as i64 as u64));
@@ -279,6 +307,19 @@ impl TranslateRiscv {
         vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
     }
 
+    fn translate_float_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
+        return vec![tcg_inst];
+    }
+
     pub fn translate_jalr(inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
@@ -300,7 +341,6 @@ impl TranslateRiscv {
             return vec![mov_inst, jmp_inst, exit_tb];
         }
     }
-
 
     pub fn translate_jal(inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const = extract_j_field!(inst.inst);
@@ -335,12 +375,11 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-
         if rd_addr != 0 {
             let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *rs1, *imm);
-            return vec![tcg_inst]
+            return vec![tcg_inst];
         } else {
-            return vec![]
+            return vec![];
         }
     }
 
@@ -354,9 +393,9 @@ impl TranslateRiscv {
 
         if rd_addr != 0 {
             let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *rs1, *imm);
-            return vec![tcg_inst]
+            return vec![tcg_inst];
         } else {
-            return vec![]
+            return vec![];
         }
     }
 
@@ -462,7 +501,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRW_IDX as usize, *rd, *rs1, *csr);
+        let csr_op =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRW_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
     pub fn translate_csrrs(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -474,7 +514,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRS_IDX as usize, *rd, *rs1, *csr);
+        let csr_op =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRS_IDX as usize, *rd, *rs1, *csr);
 
         vec![csr_op]
     }
@@ -487,7 +528,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRC_IDX as usize, *rd, *rs1, *csr);
+        let csr_op =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRC_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
     pub fn translate_csrrwi(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -499,7 +541,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRWI_IDX as usize, *rd, *rs1, *csr);
+        let csr_op =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRWI_IDX as usize, *rd, *rs1, *csr);
 
         vec![csr_op]
     }
@@ -512,7 +555,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRSI_IDX as usize, *rd, *rs1, *csr);
+        let csr_op =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRSI_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
     pub fn translate_csrrci(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -524,7 +568,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
         let csr = Box::new(TCGv::new_imm(csr_const));
 
-        let csr_op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRCI_IDX as usize, *rd, *rs1, *csr);
+        let csr_op =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRCI_IDX as usize, *rd, *rs1, *csr);
         vec![csr_op]
     }
 
@@ -579,7 +624,6 @@ impl TranslateRiscv {
         Self::translate_rri(TCGOpcode::SLTU_64BIT, inst)
     }
 
-
     pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
     }
@@ -592,5 +636,181 @@ impl TranslateRiscv {
         let ecall_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_ECALL_IDX as usize);
         let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
         vec![ecall_op, exit_tb]
+    }
+
+    pub fn translate_fld(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_float_rri(TCGOpcode::LOAD_FLOAT_64BIT, inst)
+    }
+    pub fn translate_flw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_float_rri(TCGOpcode::LOAD_FLOAT_32BIT, inst)
+    }
+    pub fn translate_fsd(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_float_rri(TCGOpcode::STORE_FLOAT_64BIT, inst)
+    }
+    pub fn translate_fsw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_float_rri(TCGOpcode::STORE_FLOAT_32BIT, inst)
+    }
+
+    pub fn translate_fadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fadd_d =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FADD_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![fadd_d]
+    }
+
+    pub fn translate_fsub_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fsub_d =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FSUB_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![fsub_d]
+    }
+
+    pub fn translate_fmul_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fmul_d =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FMUL_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![fmul_d]
+    }
+
+    pub fn translate_fmadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rs3 = Box::new(TCGv::new_reg(rs3_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fop = TCGOp::new_helper_call_arg4(
+            CALL_HELPER_IDX::CALL_FMADD_D_IDX as usize,
+            *rd,
+            *rs1,
+            *rs2,
+            *rs3,
+        );
+        vec![fop]
+    }
+
+    pub fn translate_fmsub_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rs3 = Box::new(TCGv::new_reg(rs3_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fop = TCGOp::new_helper_call_arg4(
+            CALL_HELPER_IDX::CALL_FMSUB_D_IDX as usize,
+            *rd,
+            *rs1,
+            *rs2,
+            *rs3,
+        );
+        vec![fop]
+    }
+
+    pub fn translate_fnmsub_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rs3 = Box::new(TCGv::new_reg(rs3_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fop = TCGOp::new_helper_call_arg4(
+            CALL_HELPER_IDX::CALL_FNMSUB_D_IDX as usize,
+            *rd,
+            *rs1,
+            *rs2,
+            *rs3,
+        );
+        vec![fop]
+    }
+
+    pub fn translate_fnmadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rs3 = Box::new(TCGv::new_reg(rs3_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fop = TCGOp::new_helper_call_arg4(
+            CALL_HELPER_IDX::CALL_FNMADD_D_IDX as usize,
+            *rd,
+            *rs1,
+            *rs2,
+            *rs3,
+        );
+        vec![fop]
+    }
+
+    pub fn translate_fdiv_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fdiv_d =
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FDIV_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![fdiv_d]
+    }
+
+    pub fn translate_fsqrt_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let fdiv_d =
+            TCGOp::new_helper_call_arg2(CALL_HELPER_IDX::CALL_FSQRT_D_IDX as usize, *rd, *rs1);
+        vec![fdiv_d]
+    }
+
+    pub fn translate_fmv_x_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let mov_x_d = TCGOp::new_2op(TCGOpcode::MOVE_TO_INT_FROM_FLOAT, *rd, *rs1);
+        vec![mov_x_d]
     }
 }

@@ -11,6 +11,7 @@ pub enum TCGOpcode {
     HELPER_CALL_ARG1,
     HELPER_CALL_ARG2,
     HELPER_CALL_ARG3,
+    HELPER_CALL_ARG4,
     MOV_64BIT,
     ADD_64BIT,
     SUB_64BIT,
@@ -39,6 +40,14 @@ pub enum TCGOpcode {
     STORE_32BIT,
     STORE_16BIT,
     STORE_8BIT,
+
+    LOAD_FLOAT_64BIT,
+    LOAD_FLOAT_32BIT,
+    STORE_FLOAT_64BIT,
+    STORE_FLOAT_32BIT,
+
+    MOVE_TO_INT_FROM_FLOAT,
+
     ADD_32BIT,
     SUB_32BIT,
     SRL_32BIT,
@@ -80,8 +89,15 @@ pub struct TCGOp {
     pub arg0: Option<TCGv>,
     pub arg1: Option<TCGv>,
     pub arg2: Option<TCGv>,
+    pub arg3: Option<TCGv>,
     pub label: Option<Rc<RefCell<TCGLabel>>>,
     pub helper_idx: usize,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum RegisterType {
+    IntRegister,
+    FloatRegister,
 }
 
 impl TCGOp {
@@ -91,6 +107,7 @@ impl TCGOp {
             arg0: None,
             arg1: None,
             arg2: None,
+            arg3: None,
             label: None,
             helper_idx: 0,
         }
@@ -101,6 +118,7 @@ impl TCGOp {
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: None,
+            arg3: None,
             label: None,
             helper_idx: 0,
         }
@@ -112,6 +130,7 @@ impl TCGOp {
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: Some(a3),
+            arg3: None,
             label: None,
             helper_idx: 0,
         }
@@ -129,6 +148,7 @@ impl TCGOp {
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: Some(a3),
+            arg3: None,
             label: Some(label),
             helper_idx: 0,
         }
@@ -140,6 +160,7 @@ impl TCGOp {
             arg0: None,
             arg1: None,
             arg2: None,
+            arg3: None,
             label: None,
             helper_idx: helper_idx,
         }
@@ -151,6 +172,7 @@ impl TCGOp {
             arg0: Some(a1),
             arg1: None,
             arg2: None,
+            arg3: None,
             label: None,
             helper_idx: helper_idx,
         }
@@ -162,6 +184,7 @@ impl TCGOp {
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: None,
+            arg3: None,
             label: None,
             helper_idx: helper_idx,
         }
@@ -173,6 +196,25 @@ impl TCGOp {
             arg0: Some(a1),
             arg1: Some(a2),
             arg2: Some(a3),
+            arg3: None,
+            label: None,
+            helper_idx: helper_idx,
+        }
+    }
+
+    pub fn new_helper_call_arg4(
+        helper_idx: usize,
+        a1: TCGv,
+        a2: TCGv,
+        a3: TCGv,
+        a4: TCGv,
+    ) -> TCGOp {
+        TCGOp {
+            op: Some(TCGOpcode::HELPER_CALL_ARG4),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: Some(a3),
+            arg3: Some(a4),
             label: None,
             helper_idx: helper_idx,
         }
@@ -190,6 +232,7 @@ impl TCGOp {
             arg0: None,
             arg1: None,
             arg2: None,
+            arg3: None,
             label: Some(label),
             helper_idx: 0,
         }
@@ -261,8 +304,8 @@ pub trait TCG {
     fn tcg_gen_slt_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_sltu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_add_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>)-> usize;
-    fn tcg_gen_sub_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>)-> usize;
+    fn tcg_gen_add_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sub_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_srl_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_sll_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
@@ -279,6 +322,7 @@ pub trait TCG {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
         mem_size: MemOpType,
+        target_reg: RegisterType,
     ) -> usize;
 
     fn tcg_gen_store(
@@ -287,6 +331,7 @@ pub trait TCG {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
         mem_size: MemOpType,
+        target_reg: RegisterType,
     ) -> usize;
 
     /* Label Relocation */
@@ -301,6 +346,13 @@ pub trait TCG {
     fn tcg_gen_helper_call(
         emu: &EmuEnv,
         arg_size: usize,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+
+    fn tcg_gen_int_reg_from_float_reg(
+        emu: &EmuEnv,
         pc_address: u64,
         tcg: &TCGOp,
         mc: &mut Vec<u8>,

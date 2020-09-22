@@ -1,4 +1,5 @@
 use mmap::{MapOption, MemoryMap};
+use softfloat_wrapper_riscv::{ExceptionFlags, Float, RoundingMode, F64};
 use std::mem;
 
 use crate::elf_loader::ELFLoader;
@@ -11,20 +12,21 @@ use crate::target::riscv::riscv_csr_def;
 use crate::target::riscv::riscv_decoder::decode_inst;
 use crate::target::riscv::riscv_inst_id::RiscvInstId;
 
-use crate::tcg::x86::x86::TCGX86;
 use crate::tcg::tcg::{TCGOp, TCG};
+use crate::tcg::x86::x86::TCGX86;
 
 use crate::instr_info::InstrInfo;
 
 pub struct EmuEnv {
     pub head: [u64; 1], // pointer of this struct. Do not move.
 
-    m_regs: [u64; 32],
+    m_regs: [u64; 32],  // Integer Registers
+    m_fregs: [u64; 32], // Floating Point Registers
     m_pc: [u64; 1],
 
     m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize; 16],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 17],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -47,6 +49,7 @@ impl EmuEnv {
         EmuEnv {
             head: [0xdeadbeef; 1],
             m_regs: [0; 32],
+            m_fregs: [0; 32],
             m_pc: [0x0; 1],
             m_csr: RiscvCsr::new(),
 
@@ -59,17 +62,17 @@ impl EmuEnv {
                 Self::helper_func_csrrci,
                 Self::helper_func_mret,
                 Self::helper_func_ecall,
-                Self::dummy_helper,
-                Self::dummy_helper,
-                Self::dummy_helper,
-                Self::dummy_helper,
-                Self::dummy_helper,
-                Self::dummy_helper,
-                Self::dummy_helper,
-                Self::dummy_helper,
+                Self::helper_func_fadd_d,
+                Self::helper_func_fsub_d,
+                Self::helper_func_fmul_d,
+                Self::helper_func_fdiv_d,
+                Self::helper_func_fmadd_d,
+                Self::helper_func_fmsub_d,
+                Self::helper_func_fnmsub_d,
+                Self::helper_func_fnmadd_d,
+                Self::helper_func_fsqrt_d,
             ],
             // m_inst_vec: vec![],
-
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
             m_tcg_tb_vec: vec![],
@@ -94,10 +97,7 @@ impl EmuEnv {
             },
             m_guest_data_mem: match MemoryMap::new(
                 0x4000,
-                &[
-                    MapOption::MapReadable,
-                    MapOption::MapWritable,
-                ],    
+                &[MapOption::MapReadable, MapOption::MapWritable],
             ) {
                 Ok(m) => m,
                 Err(e) => panic!("Error: {}", e),
@@ -121,11 +121,23 @@ impl EmuEnv {
         }
     }
 
-    fn dummy_helper(_emu: &mut EmuEnv, _dest: u32, _source: u32, _csr_addr: u32) -> usize {
-        panic!("Illegal helper function called!");
-    }
+    // fn dummy_helper(
+    //     _emu: &mut EmuEnv,
+    //     _dest: u32,
+    //     _source: u32,
+    //     _csr_addr: u32,
+    //     _dummy: u32,
+    // ) -> usize {
+    //     panic!("Illegal helper function called!");
+    // }
 
-    fn helper_func_csrrw(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrw(
+        emu: &mut EmuEnv,
+        dest: u32,
+        source: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
@@ -139,7 +151,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_csrrs(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrs(
+        emu: &mut EmuEnv,
+        dest: u32,
+        source: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_csrrs(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
@@ -153,7 +171,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_csrrc(emu: &mut EmuEnv, dest: u32, source: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrc(
+        emu: &mut EmuEnv,
+        dest: u32,
+        source: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_csrrc(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, source, csr_addr
@@ -167,7 +191,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_csrrwi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrwi(
+        emu: &mut EmuEnv,
+        dest: u32,
+        imm: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_csrrw(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -180,7 +210,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_csrrsi(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrsi(
+        emu: &mut EmuEnv,
+        dest: u32,
+        imm: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_csrrs(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -193,7 +229,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_csrrci(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_csrrci(
+        emu: &mut EmuEnv,
+        dest: u32,
+        imm: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_csrrc(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -206,7 +248,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_mret(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_mret(
+        emu: &mut EmuEnv,
+        dest: u32,
+        imm: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_mret(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -216,7 +264,13 @@ impl EmuEnv {
         return 0;
     }
 
-    fn helper_func_ecall(emu: &mut EmuEnv, dest: u32, imm: u32, csr_addr: u32) -> usize {
+    fn helper_func_ecall(
+        emu: &mut EmuEnv,
+        dest: u32,
+        imm: u32,
+        csr_addr: u32,
+        _dummy: u32,
+    ) -> usize {
         println!(
             "helper_mret(emu, {:}, {:}, 0x{:03x}) is called!",
             dest, imm, csr_addr
@@ -235,6 +289,181 @@ impl EmuEnv {
         return 0;
     }
 
+    fn helper_func_fadd_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        println!("fadd(emu, {:}, {:}, {:}) is called!", fd, fs1, fs2);
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data.add(fs2_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        return 0;
+    }
+
+    fn helper_func_fsub_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data.sub(fs2_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        println!(
+            "fsub({:?}, {:?}, {:?}) is called!",
+            fs1_data, fs2_data, fd_data
+        );
+        return 0;
+    }
+
+    fn helper_func_fmul_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data.mul(fs2_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        println!("fmul(emu, {:}, {:}, 0x{:03x}) is called!", fd, fs1, fs2);
+
+        return 0;
+    }
+
+    fn helper_func_fdiv_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data.div(fs2_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        println!("fdiv(emu, {:}, {:}, 0x{:03x}) is called!", fd, fs1, fs2);
+
+        return 0;
+    }
+
+    fn helper_func_fmadd_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+        println!(
+            "fmadd(emu, {:}, {:}, {:}, {:}) is called!",
+            fd, fs1, fs2, fs3
+        );
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let fs3_data = F64::from_bits(emu.m_fregs[fs3 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data
+            .mul(fs2_data, RoundingMode::TiesToEven)
+            .add(fs3_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        return 0;
+    }
+
+    fn helper_func_fmsub_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+        println!(
+            "fmsub(emu, {:}, {:}, {:}, {:}) is called!",
+            fd, fs1, fs2, fs3
+        );
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let fs3_data = F64::from_bits(emu.m_fregs[fs3 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data
+            .mul(fs2_data, RoundingMode::TiesToEven)
+            .sub(fs3_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        return 0;
+    }
+
+    fn helper_func_fnmsub_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+        println!(
+            "fnmsub(emu, {:}, {:}, {:}, {:}) is called!",
+            fd, fs1, fs2, fs3
+        );
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let fs3_data = F64::from_bits(emu.m_fregs[fs3 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data
+            .mul(fs2_data, RoundingMode::TiesToEven)
+            .neg()
+            .add(fs3_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        return 0;
+    }
+
+    fn helper_func_fnmadd_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+        println!(
+            "fnmadd(emu, {:}, {:}, {:}, {:}) is called!",
+            fd, fs1, fs2, fs3
+        );
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let fs3_data = F64::from_bits(emu.m_fregs[fs3 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data
+            .mul(fs2_data, RoundingMode::TiesToEven)
+            .neg()
+            .sub(fs3_data, RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        return 0;
+    }
+
+    fn helper_func_fsqrt_d(emu: &mut EmuEnv, fd: u32, fs1: u32, _: u32, _: u32) -> usize {
+        println!("fsqrt(emu, {:}, {:}) is called!", fd, fs1);
+
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        let fd_data = fs1_data.sqrt(RoundingMode::TiesToEven);
+        flag.get();
+        let ret_flag = flag.bits();
+
+        emu.m_fregs[fd as usize] = fd_data.bits();
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+
+        return 0;
+    }
+
     pub fn dump_gpr(&self) {
         for (i, reg) in self.m_regs.iter().enumerate() {
             print!("x{:02} = {:016x}  ", i, reg);
@@ -242,6 +471,14 @@ impl EmuEnv {
                 print!("\n");
             }
         }
+        print!("\n");
+        for (i, reg) in self.m_fregs.iter().enumerate() {
+            print!("f{:02} = {:016x}  ", i, reg);
+            if i % 4 == 3 {
+                print!("\n");
+            }
+        }
+
         print!("PC = {:016x}\n", self.m_pc[0]);
     }
 
@@ -306,24 +543,49 @@ impl EmuEnv {
 
         for _loop_idx in 0..100 {
             let mut guest_pc = self.m_pc[0];
-            
             self.m_tcg_vec.clear();
             #[allow(while_true)]
             while true {
-                let guest_inst = unsafe { 
-                    ((self.m_guest_text_mem.data().offset(guest_pc as isize + 0).read() as u32) <<  0) |
-                    ((self.m_guest_text_mem.data().offset(guest_pc as isize + 1).read() as u32) <<  8) |
-                    ((self.m_guest_text_mem.data().offset(guest_pc as isize + 2).read() as u32) << 16) |
-                    ((self.m_guest_text_mem.data().offset(guest_pc as isize + 3).read() as u32) << 24) 
+                let guest_inst = unsafe {
+                    ((self
+                        .m_guest_text_mem
+                        .data()
+                        .offset(guest_pc as isize + 0)
+                        .read() as u32)
+                        << 0)
+                        | ((self
+                            .m_guest_text_mem
+                            .data()
+                            .offset(guest_pc as isize + 1)
+                            .read() as u32)
+                            << 8)
+                        | ((self
+                            .m_guest_text_mem
+                            .data()
+                            .offset(guest_pc as isize + 2)
+                            .read() as u32)
+                            << 16)
+                        | ((self
+                            .m_guest_text_mem
+                            .data()
+                            .offset(guest_pc as isize + 3)
+                            .read() as u32)
+                            << 24)
                 };
                 let id = match decode_inst(guest_inst) {
                     Some(id) => id,
                     _ => panic!("Decode Failed"),
                 };
-                let inst_info = InstrInfo {inst:guest_inst, addr:guest_pc};
+                let inst_info = InstrInfo {
+                    inst: guest_inst,
+                    addr: guest_pc,
+                };
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
                 self.m_tcg_vec.append(&mut tcg_inst);
-                print!("Address = {:08x} : {:08x}\n", inst_info.addr, inst_info.inst);
+                print!(
+                    "Address = {:08x} : {:08x}\n",
+                    inst_info.addr, inst_info.inst
+                );
                 if id == RiscvInstId::JALR
                     || id == RiscvInstId::JAL
                     || id == RiscvInstId::BEQ
@@ -532,6 +794,14 @@ impl EmuEnv {
         diff
     }
 
+    pub fn calc_fregs_relat_address(&self, gpr_addr: u64) -> isize {
+        let guestcode_ptr = self.m_fregs.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let mut diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
+        diff += gpr_addr as isize * mem::size_of::<u64>() as isize;
+        diff
+    }
+
     pub fn calc_pc_address(&self) -> isize {
         let guestcode_ptr = self.m_pc.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
@@ -672,6 +942,6 @@ impl EmuEnv {
 
     pub fn get_mem(&self, addr: u64) -> u32 {
         let mem = self.m_guest_data_mem.data();
-        return unsafe { mem.offset(addr as isize).read() } as u32 ;
+        return unsafe { mem.offset(addr as isize).read() } as u32;
     }
 }
