@@ -221,6 +221,7 @@ impl TranslateRiscv {
             RiscvInstId::FSQRT_D => TranslateRiscv::translate_fsqrt_d(inst),
 
             RiscvInstId::FMV_X_D => TranslateRiscv::translate_fmv_x_d(inst),
+            RiscvInstId::FMV_D_X => TranslateRiscv::translate_fmv_d_x(inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };

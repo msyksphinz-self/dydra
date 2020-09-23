@@ -807,6 +807,9 @@ impl TCG for TCGX86 {
                     TCGOpcode::MOVE_TO_INT_FROM_FLOAT => {
                         TCGX86::tcg_gen_int_reg_from_float_reg(emu, pc_address, tcg, mc)
                     }
+                    TCGOpcode::MOVE_TO_FLOAT_FROM_INT => {
+                        TCGX86::tcg_gen_float_reg_from_int_reg(emu, pc_address, tcg, mc)
+                    }
 
                     TCGOpcode::MOV_64BIT => TCGX86::tcg_gen_mov_64bit(emu, pc_address, tcg, mc),
 
@@ -1776,4 +1779,25 @@ impl TCG for TCGX86 {
 
         return gen_size;
     }
+
+    fn tcg_gen_float_reg_from_int_reg(
+        emu: &EmuEnv,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Register);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
+        gen_size += Self::tcg_gen_store_fregs_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
+
+        return gen_size;
+    }
+
 }

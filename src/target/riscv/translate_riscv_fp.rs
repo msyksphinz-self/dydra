@@ -185,4 +185,16 @@ impl TranslateRiscv {
         let mov_x_d = TCGOp::new_2op(TCGOpcode::MOVE_TO_INT_FROM_FLOAT, *rd, *rs1);
         vec![mov_x_d]
     }
+
+
+    pub fn translate_fmv_d_x(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let mov_x_d = TCGOp::new_2op(TCGOpcode::MOVE_TO_FLOAT_FROM_INT, *rd, *rs1);
+        vec![mov_x_d]
+    }
 }
