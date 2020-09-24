@@ -197,4 +197,41 @@ impl TranslateRiscv {
         let mov_x_d = TCGOp::new_2op(TCGOpcode::MOVE_TO_FLOAT_FROM_INT, *rd, *rs1);
         vec![mov_x_d]
     }
+
+    pub fn translate_feq_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FEQ_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![op]
+    }
+    pub fn translate_flt_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FLT_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![op]
+    }
+    pub fn translate_fle_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FLE_D_IDX as usize, *rd, *rs1, *rs2);
+        vec![op]
+    }
 }

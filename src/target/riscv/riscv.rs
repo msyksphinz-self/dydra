@@ -44,6 +44,9 @@ pub enum CALL_HELPER_IDX {
     CALL_FNMSUB_D_IDX = 14,
     CALL_FNMADD_D_IDX = 15,
     CALL_FSQRT_D_IDX = 16,
+    CALL_FEQ_D_IDX = 17,
+    CALL_FLT_D_IDX = 18,
+    CALL_FLE_D_IDX = 19,
 }
 
 #[macro_export]
@@ -222,6 +225,10 @@ impl TranslateRiscv {
 
             RiscvInstId::FMV_X_D => TranslateRiscv::translate_fmv_x_d(inst),
             RiscvInstId::FMV_D_X => TranslateRiscv::translate_fmv_d_x(inst),
+
+            RiscvInstId::FEQ_D => TranslateRiscv::translate_feq_d(inst),
+            RiscvInstId::FLT_D => TranslateRiscv::translate_flt_d(inst),
+            RiscvInstId::FLE_D => TranslateRiscv::translate_fle_d(inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
