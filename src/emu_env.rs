@@ -512,6 +512,7 @@ impl EmuEnv {
     fn helper_func_fclass_d(emu: &mut EmuEnv, rd: u32, fs1: u32, _fs2: u32, _dummy: u32) -> usize {
         println!("fclass(emu, {:}, {:}) is called!", rd, fs1);
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        #[allow(unused_assignments)]
         let mut result = 0;
         if fs1_data.is_negative_infinity() {
             result= 1 << 0;
