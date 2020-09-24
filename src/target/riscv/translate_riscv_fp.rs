@@ -234,4 +234,16 @@ impl TranslateRiscv {
         let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FLE_D_IDX as usize, *rd, *rs1, *rs2);
         vec![op]
     }
+
+    pub fn translate_fclass_d(inst: &InstrInfo) -> Vec<TCGOp> {
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg2(CALL_HELPER_IDX::CALL_FCLASS_D_IDX as usize, *rd, *rs1);
+        vec![op]
+    }
+
 }

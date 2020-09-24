@@ -28,7 +28,7 @@ pub struct EmuEnv {
 
     m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 20],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 21],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -76,6 +76,7 @@ impl EmuEnv {
                 Self::helper_func_feq_d,
                 Self::helper_func_flt_d,
                 Self::helper_func_fle_d,
+                Self::helper_func_fclass_d,
             ],
             // m_inst_vec: vec![],
             m_tcg_vec: vec![],
@@ -505,6 +506,37 @@ impl EmuEnv {
         flag.get();
         let ret_flag = flag.bits();
         emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+    fn helper_func_fclass_d(emu: &mut EmuEnv, rd: u32, fs1: u32, _fs2: u32, _dummy: u32) -> usize {
+        println!("fclass(emu, {:}, {:}) is called!", rd, fs1);
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let mut result = 0;
+        if fs1_data.is_negative_infinity() {
+            result= 1 << 0;
+        } else if fs1_data.is_positive_infinity() {
+            result= 1 << 7;
+        } else if fs1_data.is_negative_zero() {
+            result= 1 << 3;
+        } else if fs1_data.is_positive_zero() {
+            result= 1 << 4;
+        } else if fs1_data.is_negative_zero() || fs1_data.is_negative_subnormal(){
+            result = 1 << 2;
+        } else if fs1_data.is_positive_zero () || fs1_data.is_positive_subnormal() {
+            result = 1 << 5;
+        } else if fs1_data.is_nan() {
+            if fs1_data.is_quiet_nan() {
+                result = 1 << 9;
+            } else {
+                result = 1 << 8;
+            }
+        } else if fs1_data.is_negative() {
+            result = 1 << 1;
+        } else {
+            result = 1 << 6;
+        }
+        emu.m_regs[rd as usize] = result as u64;
         return 0;
     }
 
