@@ -6,6 +6,7 @@ pub mod emu_env;
 pub mod instr_info;
 pub mod target;
 pub mod tcg;
+pub mod op_helper;
 
 use crate::emu_env::EmuEnv;
 
