@@ -48,6 +48,8 @@ pub enum TCGOpcode {
 
     MOVE_TO_INT_FROM_FLOAT,
     MOVE_TO_FLOAT_FROM_INT,
+    MOVE_TO_INT_FROM_FLOAT_32BIT,
+    MOVE_TO_FLOAT_FROM_INT_32BIT,
 
     ADD_32BIT,
     SUB_32BIT,
@@ -359,6 +361,18 @@ pub trait TCG {
         mc: &mut Vec<u8>,
     ) -> usize;
     fn tcg_gen_float_reg_from_int_reg(
+        emu: &EmuEnv,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_int_reg_from_float_reg_32bit(
+        emu: &EmuEnv,
+        pc_address: u64,
+        tcg: &TCGOp,
+        mc: &mut Vec<u8>,
+    ) -> usize;
+    fn tcg_gen_float_reg_from_int_reg_32bit(
         emu: &EmuEnv,
         pc_address: u64,
         tcg: &TCGOp,

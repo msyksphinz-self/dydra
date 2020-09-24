@@ -48,6 +48,19 @@ pub enum CALL_HELPER_IDX {
     CALL_FLT_D_IDX = 18,
     CALL_FLE_D_IDX = 19,
     CALL_FCLASS_D_IDX = 20,
+    CALL_FADD_S_IDX = 21,
+    CALL_FSUB_S_IDX = 22,
+    CALL_FMUL_S_IDX = 23,
+    CALL_FDIV_S_IDX = 24,
+    CALL_FMADD_S_IDX = 25,
+    CALL_FMSUB_S_IDX = 26,
+    CALL_FNMSUB_S_IDX = 27,
+    CALL_FNMADD_S_IDX = 28,
+    CALL_FSQRT_S_IDX = 29,
+    CALL_FEQ_S_IDX = 30,
+    CALL_FLT_S_IDX = 31,
+    CALL_FLE_S_IDX = 32,
+    CALL_FCLASS_S_IDX = 33,
 }
 
 #[macro_export]
@@ -231,6 +244,26 @@ impl TranslateRiscv {
             RiscvInstId::FLT_D => TranslateRiscv::translate_flt_d(inst),
             RiscvInstId::FLE_D => TranslateRiscv::translate_fle_d(inst),
             RiscvInstId::FCLASS_D => TranslateRiscv::translate_fclass_d(inst),
+
+            RiscvInstId::FADD_S => TranslateRiscv::translate_fadd_s(inst),
+            RiscvInstId::FSUB_S => TranslateRiscv::translate_fsub_s(inst),
+            RiscvInstId::FMUL_S => TranslateRiscv::translate_fmul_s(inst),
+            RiscvInstId::FDIV_S => TranslateRiscv::translate_fdiv_s(inst),
+
+            RiscvInstId::FMADD_S => TranslateRiscv::translate_fmadd_s(inst),
+            RiscvInstId::FMSUB_S => TranslateRiscv::translate_fmsub_s(inst),
+            RiscvInstId::FNMSUB_S => TranslateRiscv::translate_fnmsub_s(inst),
+            RiscvInstId::FNMADD_S => TranslateRiscv::translate_fnmadd_s(inst),
+
+            RiscvInstId::FSQRT_S => TranslateRiscv::translate_fsqrt_s(inst),
+
+            RiscvInstId::FMV_X_W => TranslateRiscv::translate_fmv_x_w(inst),
+            RiscvInstId::FMV_W_X => TranslateRiscv::translate_fmv_w_x(inst),
+
+            RiscvInstId::FEQ_S => TranslateRiscv::translate_feq_s(inst),
+            RiscvInstId::FLT_S => TranslateRiscv::translate_flt_s(inst),
+            RiscvInstId::FLE_S => TranslateRiscv::translate_fle_s(inst),
+            RiscvInstId::FCLASS_S => TranslateRiscv::translate_fclass_s(inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
