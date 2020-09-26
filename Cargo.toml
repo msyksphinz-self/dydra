@@ -9,4 +9,5 @@ mmap = "*"
 libc = "*"
 num = "*"
 memmap = "*"
-softfloat-wrapper-riscv = "*"
+softfloat-wrapper-riscv = {path = "../softfloat-wrapper"}
+softfloat-sys-riscv = {path = "../softfloat-sys"}

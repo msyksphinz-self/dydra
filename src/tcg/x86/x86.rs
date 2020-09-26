@@ -21,6 +21,7 @@ enum X86Opcode {
     SUB_GV_EV = 0x2b,
     AND_GV_EV = 0x23,
     OR_GV_EV = 0x0b,
+    OR_EV_GV = 0x09,
     XOR_GV_EV = 0x33,
     AND_EAX_IV = 0x25,
     OR_EAX_IV = 0x0d,
@@ -309,7 +310,11 @@ impl TCGX86 {
     ) -> usize {
         let mut gen_size = 0;
 
-        gen_size += Self::tcg_64bit_out(X86Opcode::SIGN_EXT_A, mc);
+        assert_eq!(source, X86TargetRM::RAX);
+        
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, 0xffffffff_00000000, mc);
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::OR_GV_EV, X86ModRM::MOD_11_DISP_RCX, X86TargetRM::RAX, mc);
+        
         gen_size +=
             Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, source, mc);
         gen_size += Self::tcg_out(emu.calc_fregs_relat_address(dest) as u64, 4, mc);
@@ -800,7 +805,7 @@ impl TCG for TCGX86 {
                         pc_address,
                         tcg,
                         mc,
-                        MemOpType::STORE_64BIT,
+                        MemOpType::STORE_32BIT,
                         RegisterType::FloatRegister,
                     ),
 
@@ -1456,15 +1461,8 @@ impl TCG for TCGX86 {
         );
 
         // Load value from rs1(addr)
-        if target_reg == RegisterType::IntRegister {
-            gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
-        } else if target_reg == RegisterType::FloatRegister && mem_size == MemOpType::LOAD_64BIT {
-            gen_size += Self::tcg_gen_load_fregs_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
-        } else if target_reg == RegisterType::FloatRegister && mem_size == MemOpType::LOAD_32BIT {
-            gen_size += Self::tcg_gen_load_fregs_32bit(emu, X86TargetRM::RAX, arg0.value, mc);
-        } else {
-            panic!("Unknown Register read condition.")
-        }
+        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RCX, arg0.value, mc);
+
         // Address Calculation (EAX)
         gen_size += Self::tcg_modrm_64bit_out(
             X86Opcode::ADD_GV_EV,
@@ -1474,7 +1472,15 @@ impl TCG for TCGX86 {
         );
 
         // Load value from rs2 (data)
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RCX, arg1.value, mc);
+        if target_reg == RegisterType::IntRegister {
+            gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RCX, arg1.value, mc);
+        } else if target_reg == RegisterType::FloatRegister && mem_size == MemOpType::STORE_64BIT {
+            gen_size += Self::tcg_gen_load_fregs_64bit(emu, X86TargetRM::RCX, arg1.value, mc);
+        } else if target_reg == RegisterType::FloatRegister && mem_size == MemOpType::STORE_32BIT {
+            gen_size += Self::tcg_gen_load_fregs_32bit(emu, X86TargetRM::RCX, arg1.value, mc);
+        } else {
+            panic!("Unknown Register read condition.")
+        }
         gen_size += match mem_size {
             MemOpType::STORE_64BIT => {
                 let mut gen_size = 0;

@@ -17,10 +17,10 @@ impl TranslateRiscv {
         Self::translate_float_rri(TCGOpcode::LOAD_FLOAT_32BIT, inst)
     }
     pub fn translate_fsd(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_float_rri(TCGOpcode::STORE_FLOAT_64BIT, inst)
+        Self::translate_store(TCGOpcode::STORE_FLOAT_64BIT, inst)
     }
     pub fn translate_fsw(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_float_rri(TCGOpcode::STORE_FLOAT_32BIT, inst)
+        Self::translate_store(TCGOpcode::STORE_FLOAT_32BIT, inst)
     }
 
     pub fn translate_fadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
