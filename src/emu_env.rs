@@ -24,7 +24,7 @@ pub struct EmuEnv {
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 34],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 41],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -86,6 +86,13 @@ impl EmuEnv {
                 Self::helper_func_flt_s,
                 Self::helper_func_fle_s,
                 Self::helper_func_fclass_s,
+                Self::helper_func_fmax_d,
+                Self::helper_func_fmin_d,
+                Self::helper_func_fmax_s,
+                Self::helper_func_fmin_s,
+                Self::helper_func_fsgnj_s,
+                Self::helper_func_fsgnjn_s,
+                Self::helper_func_fsgnjx_s,
             ],
             // m_inst_vec: vec![],
             m_tcg_vec: vec![],

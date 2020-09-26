@@ -61,6 +61,13 @@ pub enum CALL_HELPER_IDX {
     CALL_FLT_S_IDX = 31,
     CALL_FLE_S_IDX = 32,
     CALL_FCLASS_S_IDX = 33,
+    CALL_FMAX_D_IDX = 34,
+    CALL_FMIN_D_IDX = 35,
+    CALL_FMAX_S_IDX = 36,
+    CALL_FMIN_S_IDX = 37,
+    CALL_FSGNJ_S_IDX = 38,
+    CALL_FSGNJN_S_IDX = 39,
+    CALL_FSGNJX_S_IDX = 40,
 }
 
 #[macro_export]
@@ -245,6 +252,13 @@ impl TranslateRiscv {
             RiscvInstId::FLE_D => TranslateRiscv::translate_fle_d(inst),
             RiscvInstId::FCLASS_D => TranslateRiscv::translate_fclass_d(inst),
 
+            RiscvInstId::FMIN_D => TranslateRiscv::translate_fmin_d(inst),
+            RiscvInstId::FMAX_D => TranslateRiscv::translate_fmax_d(inst),
+
+            RiscvInstId::FSGNJ_D  => TranslateRiscv::translate_fsgnj_d(inst),
+            RiscvInstId::FSGNJN_D => TranslateRiscv::translate_fsgnjn_d(inst),   
+            RiscvInstId::FSGNJX_D => TranslateRiscv::translate_fsgnjx_d(inst),
+
             RiscvInstId::FADD_S => TranslateRiscv::translate_fadd_s(inst),
             RiscvInstId::FSUB_S => TranslateRiscv::translate_fsub_s(inst),
             RiscvInstId::FMUL_S => TranslateRiscv::translate_fmul_s(inst),
@@ -264,6 +278,13 @@ impl TranslateRiscv {
             RiscvInstId::FLT_S => TranslateRiscv::translate_flt_s(inst),
             RiscvInstId::FLE_S => TranslateRiscv::translate_fle_s(inst),
             RiscvInstId::FCLASS_S => TranslateRiscv::translate_fclass_s(inst),
+
+            RiscvInstId::FMIN_S => TranslateRiscv::translate_fmin_s(inst),
+            RiscvInstId::FMAX_S => TranslateRiscv::translate_fmax_s(inst),
+
+            RiscvInstId::FSGNJ_S  => TranslateRiscv::translate_fsgnj_s(inst),
+            RiscvInstId::FSGNJN_S => TranslateRiscv::translate_fsgnjn_s(inst),   
+            RiscvInstId::FSGNJX_S => TranslateRiscv::translate_fsgnjx_s(inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };

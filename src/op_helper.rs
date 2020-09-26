@@ -408,10 +408,59 @@ impl EmuEnv {
         return 0;
     }
 
+    pub fn helper_func_fmax_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        emu.m_fregs[rd as usize] = 
+        if fs1_data.is_nan() && fs2_data.is_nan() { 
+            F64::quiet_nan().bits() as u64
+        } else if fs2_data.lt_quiet(fs1_data) || fs2_data.is_nan() || fs1_data.eq(fs2_data) && fs2_data.is_negative() {
+            fs1_data.bits() as u64
+        } else {
+            fs2_data.bits() as u64
+        };
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fmax_d(emu, {:}, {:}, {:}) is called! => {:}", rd, fs1, fs2, ret_flag);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+    pub fn helper_func_fmin_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
+        let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        emu.m_fregs[rd as usize] = 
+        if fs1_data.is_nan() && fs2_data.is_nan() { 
+            F64::quiet_nan().bits() as u64
+        } else if fs1_data.lt_quiet(fs2_data) || fs2_data.is_nan() || fs1_data.eq(fs2_data) && fs1_data.is_negative() {
+            fs1_data.bits() as u64
+        } else {
+            fs2_data.bits() as u64
+        };
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fmin_d(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+    #[inline]
+    fn convert_nan_boxing (i: u64) -> u32 {
+        if i & 0xffffffff_00000000 == 0xffffffff_00000000 {
+            (i & 0xffffffff) as u32
+        } else {
+            0x7fc00000
+        }
+    }
+
     pub fn helper_func_fadd_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
         println!("fadd(emu, {:}, {:}, {:}) is called!", fd, fs1, fs2);
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data.add(fs2_data, RoundingMode::TiesToEven);
@@ -425,8 +474,8 @@ impl EmuEnv {
     }
 
     pub fn helper_func_fsub_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data.sub(fs2_data, RoundingMode::TiesToEven);
@@ -444,8 +493,8 @@ impl EmuEnv {
     }
 
     pub fn helper_func_fmul_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data.mul(fs2_data, RoundingMode::TiesToEven);
@@ -461,8 +510,8 @@ impl EmuEnv {
     }
 
     pub fn helper_func_fdiv_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data.div(fs2_data, RoundingMode::TiesToEven);
@@ -482,9 +531,9 @@ impl EmuEnv {
             "fmadd(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
         );
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
-        let fs3_data = F32::from_bits((emu.m_fregs[fs3 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
+        let fs3_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs3 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data
@@ -504,9 +553,9 @@ impl EmuEnv {
             "fmsub(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
         );
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
-        let fs3_data = F32::from_bits((emu.m_fregs[fs3 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
+        let fs3_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs3 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data
@@ -526,9 +575,9 @@ impl EmuEnv {
             "fnmsub(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
         );
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
-        let fs3_data = F32::from_bits((emu.m_fregs[fs3 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
+        let fs3_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs3 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data
@@ -549,9 +598,9 @@ impl EmuEnv {
             "fnmadd(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
         );
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
-        let fs3_data = F32::from_bits((emu.m_fregs[fs3 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
+        let fs3_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs3 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data
@@ -570,7 +619,7 @@ impl EmuEnv {
     pub fn helper_func_fsqrt_s(emu: &mut EmuEnv, fd: u32, fs1: u32, _: u32, _: u32) -> usize {
         println!("fsqrt(emu, {:}, {:}) is called!", fd, fs1);
 
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         let fd_data = fs1_data.sqrt(RoundingMode::TiesToEven);
@@ -584,8 +633,8 @@ impl EmuEnv {
     }
 
     pub fn helper_func_feq_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         emu.m_regs[rd as usize] = fs1_data.eq(fs2_data) as u64;
@@ -597,8 +646,8 @@ impl EmuEnv {
     }
 
     pub fn helper_func_flt_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         emu.m_regs[rd as usize] = fs1_data.lt(fs2_data) as u64;
@@ -611,8 +660,8 @@ impl EmuEnv {
 
     pub fn helper_func_fle_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
         println!("fle(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
-        let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0xffffffff) as u32);
-        let fs2_data = F32::from_bits((emu.m_fregs[fs2 as usize] & 0xffffffff) as u32);
+        let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
+        let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
         emu.m_regs[rd as usize] = fs1_data.le(fs2_data) as u64;
@@ -654,5 +703,103 @@ impl EmuEnv {
         return 0;
     }
 
+    pub fn helper_func_fmax_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F32::from_bits(emu.m_fregs[fs1 as usize] as u32);
+        let fs2_data = F32::from_bits(emu.m_fregs[fs2 as usize] as u32);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        emu.m_fregs[rd as usize] = 
+        if fs1_data.is_nan() && fs2_data.is_nan() { 
+            F32::quiet_nan().bits() as u64
+        } else if fs2_data.lt_quiet(fs1_data) || fs2_data.is_nan() || fs1_data.eq(fs2_data) && fs2_data.is_negative() {
+            fs1_data.bits() as u64
+        } else {
+            fs2_data.bits() as u64
+        };
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fmax_d(emu, {:}, {:}, {:}) is called! => {:}", rd, fs1, fs2, ret_flag);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+    pub fn helper_func_fmin_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let fs1_data = F32::from_bits(emu.m_fregs[fs1 as usize] as u32);
+        let fs2_data = F32::from_bits(emu.m_fregs[fs2 as usize] as u32);
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        emu.m_fregs[rd as usize] = 
+        if fs1_data.is_nan() && fs2_data.is_nan() { 
+            F32::quiet_nan().bits() as u64
+        } else if fs1_data.lt_quiet(fs2_data) || fs2_data.is_nan() || fs1_data.eq(fs2_data) && fs1_data.is_negative() {
+            fs1_data.bits() as u64
+        } else {
+            fs2_data.bits() as u64
+        };
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fmin_d(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+    pub fn helper_func_fsgnj_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let mut fs1_data = emu.m_fregs[fs1 as usize];
+        let mut fs2_data = emu.m_fregs[fs2 as usize];
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        
+        if (fs1_data & 0xffffffff_00000000) != 0xffffffff_00000000 {
+            fs1_data = 0xffffffff_7fc00000;
+        }
+        if (fs2_data & 0xffffffff_00000000) != 0xffffffff_00000000 { 
+            fs2_data = 0xffffffff_7fc00000;
+        }
+        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fsgnj_s(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+    pub fn helper_func_fsgnjn_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let mut fs1_data = emu.m_fregs[fs1 as usize];
+        let mut fs2_data = emu.m_fregs[fs2 as usize];
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        if (fs1_data & 0xffffffff_00000000) != 0xffffffff_00000000 {
+            fs1_data = 0xffffffff_7fc00000;
+        }
+        if (fs2_data & 0xffffffff_00000000) != 0xffffffff_00000000 { 
+            fs2_data = 0xffffffff_7fc00000;
+        }
+        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | !fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fsgnjn_s(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
+
+
+    pub fn helper_func_fsgnjx_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+        let mut fs1_data = emu.m_fregs[fs1 as usize];
+        let mut fs2_data = emu.m_fregs[fs2 as usize];
+        let mut flag = ExceptionFlags::default();
+        flag.set();
+        if (fs1_data & 0xffffffff_00000000) != 0xffffffff_00000000 {
+            fs1_data = 0xffffffff_7fc00000;
+        }
+        if (fs2_data & 0xffffffff_00000000) != 0xffffffff_00000000 { 
+            fs2_data = 0xffffffff_7fc00000;
+        }
+        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | (fs1_data ^ fs2_data) & 0x80000000) as u64 | 0xffffffff_00000000;
+        flag.get();
+        let ret_flag = flag.bits();
+        println!("fsgnjx_s(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
+        emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
+        return 0;
+    }
 
 }

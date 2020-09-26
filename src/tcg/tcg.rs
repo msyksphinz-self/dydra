@@ -60,6 +60,14 @@ pub enum TCGOpcode {
     SLT_64BIT,
     SLTU_64BIT,
 
+    SGNJ_64BIT,
+    SGNJN_64BIT,
+    SGNJX_64BIT,
+    
+    SGNJ_32BIT,
+    SGNJN_32BIT,
+    SGNJX_32BIT,   
+
     EXIT_TB,
 }
 
@@ -378,6 +386,14 @@ pub trait TCG {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize;
+
+    fn tcg_gen_sgnj_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sgnjn_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sgnjx_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_sgnj_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sgnjn_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_sgnjx_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_exit_tb(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 }
