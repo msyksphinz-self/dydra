@@ -1,7 +1,7 @@
 use mmap::{MapOption, MemoryMap};
 use std::mem;
 
-use crate::elf_loader::ELFLoader;
+use crate::elf_loader::{ELFLoader, SectionType};
 use crate::elf_loader::ProgramHeader;
 use crate::elf_loader::SectionHeader;
 
@@ -118,7 +118,7 @@ impl EmuEnv {
                 Err(e) => panic!("Error: {}", e),
             },
             m_guest_data_mem: match MemoryMap::new(
-                0x4000,
+                0x10000,
                 &[MapOption::MapReadable, MapOption::MapWritable],
             ) {
                 Ok(m) => m,
@@ -207,7 +207,7 @@ impl EmuEnv {
 
         for sh_header in sh_headers {
             println!("sh_flags = {:}", sh_header.sh_flags);
-            if sh_header.sh_flags != 0 {
+            if sh_header.sh_flags & 0x7 != 0 && sh_header.sh_type != 8 {   // SectionType = NOBITS => Skip
                 sh_header.dump();
                 if sh_header.sh_flags & 4 != 0 {
                     // Text section

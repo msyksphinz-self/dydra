@@ -1154,33 +1154,22 @@ impl TCG for TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        if arg0.t == tcg::TCGvType::Register
-            && arg0.value == 0
-            && arg1.t == tcg::TCGvType::Register
-            && arg1.value == 1
-        {
-            gen_size += Self::tcg_out(X86Opcode::JMP_JZ as u64, 1, mc);
-            let diff_from_epilogue = emu.calc_epilogue_address();
-            gen_size += Self::tcg_out((diff_from_epilogue - gen_size as isize - 4) as u64, 4, mc);
+        // GPR --> RAX
+        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
+        // RAX + arg2.value --> RAX
+        gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
+        gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+        // RAX --> PC
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
-            return gen_size;
-        } else {
-            // GPR --> RAX
-            gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
-            // RAX + arg2.value --> RAX
-            gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
-            gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
-            // RAX --> PC
-            gen_size += Self::tcg_modrm_64bit_out(
-                X86Opcode::MOV_EV_GV,
-                X86ModRM::MOD_10_DISP_RBP,
-                X86TargetRM::RAX,
-                mc,
-            );
-            gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
-
-            return gen_size;
-        }
+        return gen_size;
+        // }
     }
 
     fn tcg_gen_jmpim(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {

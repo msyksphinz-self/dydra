@@ -360,9 +360,10 @@ impl TranslateRiscv {
     pub fn translate_branch(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-        let target: u64 = get_sb_field!(inst.inst) + inst.addr;
+        let target: u64 = get_sb_field!(inst.inst);
 
         let target = ((target as i32) << (32 - 13)) >> (32 - 13);
+        let target = inst.addr.wrapping_add(target as u64);
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));

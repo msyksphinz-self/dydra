@@ -70,6 +70,53 @@ pub enum Phdr_Type {
     PT_HIPROC = 0x7fffffff, /* End of processor-specific */
 }
 
+#[allow(non_camel_case_types)]
+pub enum SectionType {
+    SHT_NULL	       = 0,		/* Section header table entry unused */
+    SHT_PROGBITS	   = 1,		/* Program data */
+    SHT_SYMTAB	       = 2,		/* Symbol table */
+    SHT_STRTAB	       = 3,		/* String table */
+    SHT_RELA	       = 4,		/* Relocation entries with addends */
+    SHT_HASH	       = 5,		/* Symbol hash table */
+    SHT_DYNAMIC	       = 6,		/* Dynamic linking information */
+    SHT_NOTE	       = 7,		/* Notes */
+    SHT_NOBITS	       = 8,		/* Program space with no data (bss) */
+    SHT_REL		       = 9,		/* Relocation entries, no addends */
+    SHT_SHLIB	       = 10,		/* Reserved */
+    SHT_DYNSYM	       = 11,		/* Dynamic linker symbol table */
+    SHT_INIT_ARRAY	   = 14,		/* Array of constructors */
+    SHT_FINI_ARRAY	   = 15,		/* Array of destructors */
+    SHT_PREINIT_ARRAY  = 16,		/* Array of pre-constructors */
+    SHT_GROUP	       = 17	,	/* Section group */
+    SHT_SYMTAB_SHNDX   = 18,		/* Extended section indeces */
+    SHT_NUM		       = 19,		/* Number of defined types.  */
+    SHT_LOOS	       = 0x60000000, 	/* Start OS-specific.  */
+    SHT_GNU_ATTRIBUTES = 0x6ffffff5, 	/* Object attributes.  */
+    SHT_GNU_HASH	   = 0x6ffffff6	, /* GNU-style hash table.  */
+    SHT_GNU_LIBLIST	   = 0x6ffffff7	, /* Prelink library list */
+    SHT_CHECKSUM	   = 0x6ffffff8	, /* Checksum for DSO content.  */
+    SHT_LOSUNW	       = 0x6ffffffa,	/* Sun-specific low bound.  */
+    // SHT_SUNW_move	  = 0x6ffffffa,
+    SHT_SUNW_COMDAT    = 0x6ffffffb,
+    SHT_SUNW_syminfo   = 0x6ffffffc,
+    SHT_GNU_verdef	   = 0x6ffffffd,	/* Version definition section.  */
+    SHT_GNU_verneed	   = 0x6ffffffe,	/* Version needs section.  */
+    SHT_GNU_versym	   = 0x6fffffff,	/* Version symbol table.  */
+    // SHT_HISUNW	 = 0x6fffffff,	/* Sun-specific high bound.  */
+    // SHT_HIOS	       = 0x6fffffff,	/* End OS-specific type */
+    SHT_LOPROC	       = 0x70000000,	/* Start of processor-specific */
+    SHT_HIPROC	       = 0x7fffffff,	/* End of processor-specific */
+    SHT_LOUSER	       = 0x80000000,	/* Start of application-specific */
+    SHT_HIUSER	       = 0x8fffffff,	/* End of application-specific */
+}
+
+
+#[allow(non_camel_case_types)]
+pub enum SectionFlags {
+    SHF_WRITE = (1 << 0),
+    
+}
+
 impl FromPrimitive for Phdr_Type {
     fn from_i64(n: i64) -> Option<Phdr_Type> {
         match n {
@@ -349,9 +396,11 @@ pub struct ELFLoader {
 impl ELFLoader {
     pub fn new(file_path: &str) -> std::io::Result<ELFLoader> {
         let file = File::open(&file_path)?;
-        Ok(ELFLoader {
+        let elf = ELFLoader {
             mapped_file: unsafe { Mmap::map(&file)? },
-        })
+        };
+        println!("ELF filesize = {:}", elf.mapped_file.len());
+        Ok(elf)
     }
 
     fn get_1byte_elf(&self, start: usize) -> u8 {
@@ -501,11 +550,11 @@ impl ELFLoader {
     }
 
     pub fn load_section(&self, offset: usize, memory: &mut MemoryMap, sh_offset: u64, sh_start: u64, sh_memsz: u64) {
+        println!("load_section() sh_offset = {:08x}, sh_memsz = {:08x}", sh_offset, sh_memsz);
         for idx in 0..sh_memsz {
             let offset_idx = sh_offset + idx;
             let inst_byte: u8 = self.get_1byte_elf(offset_idx as usize);
-            // println!("offset = {:x}, {:02x}", sh_start - offset as u64 + idx as u64, inst_byte);
-            unsafe { memory.data().offset((sh_start - offset as u64 + idx as u64) as isize).write(inst_byte) };
+            unsafe { memory.data().offset(sh_start.wrapping_sub(offset as u64).wrapping_add(idx as u64) as isize).write(inst_byte) };
         }
     }
 

@@ -20,7 +20,6 @@ impl EmuEnv {
             .m_csr
             .csrrw(CsrAddr::from_u64(csr_addr as u64), data as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
-        emu.dump_gpr();
         return 0;
     }
 
@@ -40,7 +39,6 @@ impl EmuEnv {
             .m_csr
             .csrrs(CsrAddr::from_u64(csr_addr as u64), data as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
-        emu.dump_gpr();
         return 0;
     }
 
@@ -60,7 +58,6 @@ impl EmuEnv {
             .m_csr
             .csrrc(CsrAddr::from_u64(csr_addr as u64), data as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
-        emu.dump_gpr();
         return 0;
     }
 
@@ -79,7 +76,6 @@ impl EmuEnv {
             .m_csr
             .csrrw(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
-        emu.dump_gpr();
         return 0;
     }
 
@@ -98,7 +94,6 @@ impl EmuEnv {
             .m_csr
             .csrrs(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
-        emu.dump_gpr();
         return 0;
     }
 
@@ -117,7 +112,6 @@ impl EmuEnv {
             .m_csr
             .csrrc(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         emu.m_regs[dest as usize] = reg_data as u64;
-        emu.dump_gpr();
         return 0;
     }
 
@@ -744,17 +738,10 @@ impl EmuEnv {
     }
 
     pub fn helper_func_fsgnj_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let mut fs1_data = emu.m_fregs[fs1 as usize];
-        let mut fs2_data = emu.m_fregs[fs2 as usize];
+        let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
+        let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
         flag.set();
-        
-        if (fs1_data & 0xffffffff_00000000) != 0xffffffff_00000000 {
-            fs1_data = 0xffffffff_7fc00000;
-        }
-        if (fs2_data & 0xffffffff_00000000) != 0xffffffff_00000000 { 
-            fs2_data = 0xffffffff_7fc00000;
-        }
         emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
         flag.get();
         let ret_flag = flag.bits();
@@ -764,16 +751,10 @@ impl EmuEnv {
     }
 
     pub fn helper_func_fsgnjn_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let mut fs1_data = emu.m_fregs[fs1 as usize];
-        let mut fs2_data = emu.m_fregs[fs2 as usize];
+        let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
+        let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
         flag.set();
-        if (fs1_data & 0xffffffff_00000000) != 0xffffffff_00000000 {
-            fs1_data = 0xffffffff_7fc00000;
-        }
-        if (fs2_data & 0xffffffff_00000000) != 0xffffffff_00000000 { 
-            fs2_data = 0xffffffff_7fc00000;
-        }
         emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | !fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
         flag.get();
         let ret_flag = flag.bits();
@@ -784,16 +765,10 @@ impl EmuEnv {
 
 
     pub fn helper_func_fsgnjx_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
-        let mut fs1_data = emu.m_fregs[fs1 as usize];
-        let mut fs2_data = emu.m_fregs[fs2 as usize];
+        let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
+        let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
         flag.set();
-        if (fs1_data & 0xffffffff_00000000) != 0xffffffff_00000000 {
-            fs1_data = 0xffffffff_7fc00000;
-        }
-        if (fs2_data & 0xffffffff_00000000) != 0xffffffff_00000000 { 
-            fs2_data = 0xffffffff_7fc00000;
-        }
         emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | (fs1_data ^ fs2_data) & 0x80000000) as u64 | 0xffffffff_00000000;
         flag.get();
         let ret_flag = flag.bits();
