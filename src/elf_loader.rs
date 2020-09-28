@@ -113,8 +113,8 @@ pub enum SectionType {
 
 #[allow(non_camel_case_types)]
 pub enum SectionFlags {
-    SHF_WRITE = (1 << 0),
-    
+    SHF_WRITE = 1 << 0,
+
 }
 
 impl FromPrimitive for Phdr_Type {

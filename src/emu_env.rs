@@ -1,7 +1,7 @@
 use mmap::{MapOption, MemoryMap};
 use std::mem;
 
-use crate::elf_loader::{ELFLoader, SectionType};
+use crate::elf_loader::{ELFLoader};
 use crate::elf_loader::ProgramHeader;
 use crate::elf_loader::SectionHeader;
 
@@ -179,7 +179,7 @@ impl EmuEnv {
     pub fn run(&mut self, filename: &String) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
-            Err(error) => panic!("There was a problem opening the file: {:?}", error),
+            Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
         };
 
         let elf_header = loader.get_elf_header();

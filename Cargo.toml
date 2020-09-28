@@ -11,3 +11,4 @@ num = "*"
 memmap = "*"
 softfloat-wrapper-riscv = {path = "../softfloat-wrapper"}
 softfloat-sys-riscv = {path = "../softfloat-sys"}
+clap = "3.0.0-beta.1"
