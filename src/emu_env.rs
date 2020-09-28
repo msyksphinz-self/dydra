@@ -10,7 +10,7 @@ use crate::target::riscv::riscv_csr::{CsrAddr, RiscvCsr};
 use crate::target::riscv::riscv_csr_def;
 use crate::target::riscv::riscv_decoder::decode_inst;
 use crate::target::riscv::riscv_inst_id::RiscvInstId;
-use crate::tcg::tcg::{TCGOp, TCG};
+use crate::tcg::tcg::{TCGOp, TCG, TCGOpcode};
 use crate::tcg::x86::x86::TCGX86;
 
 use crate::instr_info::InstrInfo;
@@ -176,7 +176,7 @@ impl EmuEnv {
         return self.m_regs;
     }
 
-    pub fn run(&mut self, filename: &String) {
+    pub fn run(&mut self, filename: &String, debug: bool) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
             Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
@@ -231,8 +231,9 @@ impl EmuEnv {
             }
         }
 
-        for _loop_idx in 0..100 {
-            let mut guest_pc = self.m_pc[0];
+        let loop_max = if debug { 10000 } else { 100 };
+        for _loop_idx in 0..loop_max {
+            let guest_pc = self.m_pc[0];
             self.m_tcg_vec.clear();
             #[allow(while_true)]
             while true {
@@ -272,6 +273,10 @@ impl EmuEnv {
                 };
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
                 self.m_tcg_vec.append(&mut tcg_inst);
+                if debug {
+                    let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB)];
+                    self.m_tcg_vec.append(&mut exit_tcg);
+                }
                 print!(
                     "Address = {:08x} : {:08x}\n",
                     inst_info.addr, inst_info.inst
@@ -289,7 +294,10 @@ impl EmuEnv {
                 {
                     break;
                 }
-                guest_pc += 4;
+                self.m_pc[0] = self.m_pc[0] + 4;
+                if debug {
+                    break;      // When Debug Mode, break for each instruction
+                }
             }
 
             // Emit Prologue
@@ -332,13 +340,13 @@ impl EmuEnv {
 
             let mut pc_address = 0;
 
-            let tb_map_ptr = self.m_tb_text_mem.data() as *const u64;
-            let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
+            // let tb_map_ptr = self.m_tb_text_mem.data() as *const u64;
+            // let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
             // let host_cod_ptr = self.m_guest_text_mem.as_ptr();
 
-            println!("tb_address  = {:?}", tb_map_ptr);
-            println!("pe_address  = {:?}", pe_map_ptr);
-            //println!("self.m_guest_text_mem = {:?}", host_cod_ptr);
+            // println!("tb_address  = {:?}", tb_map_ptr);
+            // println!("pe_address  = {:?}", pe_map_ptr);
+            // println!("self.m_guest_text_mem = {:?}", host_cod_ptr);
 
             self.m_tcg_tb_vec.clear();
             for tcg in &self.m_tcg_vec {
@@ -388,18 +396,18 @@ impl EmuEnv {
                 }
             }
 
-            let s = self.m_tb_text_mem.data();
-            for byte_idx in 0..256 {
-                if byte_idx % 16 == 0 {
-                    print!("{:08x} : ", byte_idx);
-                }
-                unsafe {
-                    print!("{:02x} ", *s.offset(byte_idx as isize) as u8);
-                }
-                if byte_idx % 16 == 15 {
-                    print!("\n");
-                }
-            }
+            // let s = self.m_tb_text_mem.data();
+            // for byte_idx in 0..256 {
+            //     if byte_idx % 16 == 0 {
+            //         print!("{:08x} : ", byte_idx);
+            //     }
+            //     unsafe {
+            //         print!("{:02x} ", *s.offset(byte_idx as isize) as u8);
+            //     }
+            //     if byte_idx % 16 == 15 {
+            //         print!("\n");
+            //     }
+            // }
 
             let emu_ptr: *const [u64; 1] = &self.head;
 

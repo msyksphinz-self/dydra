@@ -39,7 +39,7 @@ fn main() {
     println!("Debug Mode specified : {}\n", debug);
 
     let mut emu = EmuEnv::new();
-    emu.run(&elf_file);
+    emu.run(&elf_file, debug);
 
     println!("Result: MEM[0x1000] = {:08x}", emu.get_mem(0x1000));
 
