@@ -12,7 +12,7 @@ use crate::target::riscv::riscv_decoder::decode_inst;
 use crate::target::riscv::riscv_inst_id::RiscvInstId;
 use crate::tcg::tcg::{TCGOp, TCG, TCGOpcode};
 use crate::tcg::x86::x86::TCGX86;
-
+use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
 
 pub struct EmuEnv {
@@ -162,21 +162,22 @@ impl EmuEnv {
             }
         }
         print!("\n");
+    }
+
+    pub fn dump_fpr(&self) {
         for (i, reg) in self.m_fregs.iter().enumerate() {
             print!("f{:02} = {:016x}  ", i, reg);
             if i % 4 == 3 {
                 print!("\n");
             }
         }
-
-        print!("PC = {:016x}\n", self.m_pc[0]);
     }
 
     pub fn get_gpr(&self) -> [u64; 32] {
         return self.m_regs;
     }
 
-    pub fn run(&mut self, filename: &String, debug: bool) {
+    pub fn run(&mut self, filename: &String, debug: bool, dump_gpr: bool, dump_fpr: bool, dump_tcg: bool) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
             Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
@@ -233,8 +234,14 @@ impl EmuEnv {
 
         let loop_max = if debug { 10000 } else { 100 };
         for _loop_idx in 0..loop_max {
+            if debug {
+                println!("========= BLOCK START =========");
+            }
             let guest_pc = self.m_pc[0];
             self.m_tcg_vec.clear();
+            if debug {
+                print!("Guest PC Address = {:08x}\n", guest_pc);
+            }
             #[allow(while_true)]
             while true {
                 let guest_inst = unsafe {
@@ -277,10 +284,9 @@ impl EmuEnv {
                     let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB)];
                     self.m_tcg_vec.append(&mut exit_tcg);
                 }
-                print!(
-                    "Address = {:08x} : {:08x}\n",
-                    inst_info.addr, inst_info.inst
-                );
+                if debug {
+                    print!("  {:08x}\n",  inst_info.inst);
+                }
                 if id == RiscvInstId::JALR
                     || id == RiscvInstId::JAL
                     || id == RiscvInstId::BEQ
@@ -340,17 +346,19 @@ impl EmuEnv {
 
             let mut pc_address = 0;
 
-            // let tb_map_ptr = self.m_tb_text_mem.data() as *const u64;
+            let tb_map_ptr = self.m_tb_text_mem.data() as *const u64;
             // let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
             // let host_cod_ptr = self.m_guest_text_mem.as_ptr();
 
-            // println!("tb_address  = {:?}", tb_map_ptr);
+            println!("tb_address  = {:?}", tb_map_ptr);
             // println!("pe_address  = {:?}", pe_map_ptr);
             // println!("self.m_guest_text_mem = {:?}", host_cod_ptr);
 
             self.m_tcg_tb_vec.clear();
             for tcg in &self.m_tcg_vec {
-                println!("tcg_inst = {:?}", &tcg);
+                if dump_tcg {
+                    println!("tcg_inst = {:?}", &tcg);
+                }
 
                 let mut mc_byte = vec![];
                 TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
@@ -358,6 +366,7 @@ impl EmuEnv {
                     let be_data = *be;
                     self.m_tcg_tb_vec.push(be_data);
                 }
+                disassemble_x86(mc_byte.as_slice(), self.m_tb_text_mem.data());
                 pc_address += mc_byte.len() as u64;
             }
 
@@ -416,12 +425,18 @@ impl EmuEnv {
                     mem::transmute(self.m_prologue_epilogue_mem.data());
 
                 let tb_host_data = self.m_tb_text_mem.data();
-                println!("reflect tb address = {:p}", tb_host_data);
+                // println!("reflect tb address = {:p}", tb_host_data);
 
-                let ans = func(emu_ptr, tb_host_data);
-                println!("ans = 0x{:x}", ans);
+                let _ans = func(emu_ptr, tb_host_data);
+                // println!("ans = 0x{:x}", ans);
             }
-            self.dump_gpr();
+            if dump_gpr {
+                self.dump_gpr();
+            }
+            if dump_fpr {
+                self.dump_fpr();
+            }
+            // print!("PC = {:016x}\n", self.m_pc[0]);
         }
     }
 
