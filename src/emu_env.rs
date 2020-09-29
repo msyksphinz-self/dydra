@@ -14,6 +14,7 @@ use crate::tcg::tcg::{TCGOp, TCG, TCGOpcode};
 use crate::tcg::x86::x86::TCGX86;
 use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
+use crate::target::riscv::riscv_disassemble::{disassemble_riscv};
 
 pub struct EmuEnv {
     pub head: [u64; 1], // pointer of this struct. Do not move.
@@ -285,7 +286,7 @@ impl EmuEnv {
                     self.m_tcg_vec.append(&mut exit_tcg);
                 }
                 if debug {
-                    print!("  {:08x}\n",  inst_info.inst);
+                    print!("  {:08x} : {}\n",  inst_info.inst, disassemble_riscv(guest_inst));
                 }
                 if id == RiscvInstId::JALR
                     || id == RiscvInstId::JAL
