@@ -49,9 +49,17 @@ fn main() {
         .long("dump-tcg")
         .required(false)
     )
+    .arg(
+        Arg::new("step")
+        .about("TCG Translation, step execution")
+        .long("step")
+        .short('s')
+        .required(false)
+    )
     .get_matches();
 
     let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();
+    let step = matches.is_present("step");
     let debug = matches.is_present("debug");
     let dump_gpr = matches.is_present("dump-gpr");
     let dump_fpr = matches.is_present("dump-fpr");
@@ -59,7 +67,7 @@ fn main() {
     let debug = if dump_gpr || dump_fpr || dump_tcg { true } else { debug };
 
     let mut emu = EmuEnv::new();
-    emu.run(&elf_file, debug, dump_gpr, dump_fpr, dump_tcg);
+    emu.run(&elf_file, debug, dump_gpr, dump_fpr, dump_tcg, step);
 
     println!("Result: MEM[0x1000] = {:08x}", emu.get_mem(0x1000));
 

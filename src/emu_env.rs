@@ -178,7 +178,7 @@ impl EmuEnv {
         return self.m_regs;
     }
 
-    pub fn run(&mut self, filename: &String, debug: bool, dump_gpr: bool, dump_fpr: bool, dump_tcg: bool) {
+    pub fn run(&mut self, filename: &String, debug: bool, dump_gpr: bool, dump_fpr: bool, dump_tcg: bool, step: bool) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
             Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
@@ -233,12 +233,12 @@ impl EmuEnv {
             }
         }
 
-        let loop_max = if debug { 10000 } else { 100 };
+        let loop_max = if step { 10000 } else { 100 };
         for _loop_idx in 0..loop_max {
             if debug {
                 println!("========= BLOCK START =========");
             }
-            let guest_pc = self.m_pc[0];
+            let mut guest_pc = self.m_pc[0];
             self.m_tcg_vec.clear();
             if debug {
                 print!("Guest PC Address = {:08x}\n", guest_pc);
@@ -281,7 +281,7 @@ impl EmuEnv {
                 };
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
                 self.m_tcg_vec.append(&mut tcg_inst);
-                if debug {
+                if step {
                     let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB)];
                     self.m_tcg_vec.append(&mut exit_tcg);
                 }
@@ -302,8 +302,10 @@ impl EmuEnv {
                     break;
                 }
                 self.m_pc[0] = self.m_pc[0] + 4;
-                if debug {
+                if step {
                     break;      // When Debug Mode, break for each instruction
+                } else {
+                    guest_pc = guest_pc + 4;
                 }
             }
 
