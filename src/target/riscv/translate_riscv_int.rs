@@ -19,7 +19,6 @@ impl TranslateRiscv {
         ));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let zero = Box::new(TCGv::new_reg(0));
         let next_pc = Box::new(TCGv::new_imm(inst.addr.wrapping_add(4)));
         let mov_inst = TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, *rd, *next_pc);
         let tcg_inst = TCGOp::new_2op(TCGOpcode::JMPIM, *rd, *imm);
@@ -74,10 +73,10 @@ impl TranslateRiscv {
     }
 
     pub fn translate_auipc(inst: &InstrInfo) -> Vec<TCGOp> {
-        let imm_const: u64 = ((inst.inst as u64) & !0xfff).wrapping_add(inst.addr);
+        let imm_const = (((inst.inst as i32 as i64) & !0xfff) as u64).wrapping_add(inst.addr as u64);
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
-        let imm = Box::new(TCGv::new_imm(imm_const));
+        let imm = Box::new(TCGv::new_imm(imm_const as u64));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
         if rd_addr != 0 {

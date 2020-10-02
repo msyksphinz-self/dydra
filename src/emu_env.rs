@@ -38,8 +38,7 @@ pub struct EmuEnv {
     m_tcg_tb_vec: Vec<u8>,
 
     pub m_prologue_epilogue_mem: MemoryMap,
-    pub m_guest_text_mem: MemoryMap,
-    pub m_guest_data_mem: MemoryMap,
+    pub m_guest_mem: MemoryMap,
 
     pub m_tb_text_mem: MemoryMap,
 
@@ -114,20 +113,13 @@ impl EmuEnv {
                 Ok(m) => m,
                 Err(e) => panic!("Error: {}", e),
             },
-            m_guest_text_mem: match MemoryMap::new(
-                0x8000,
+            m_guest_mem: match MemoryMap::new(
+                0x10000,
                 &[
                     MapOption::MapReadable,
                     MapOption::MapWritable,
                     MapOption::MapExecutable,
                 ],
-            ) {
-                Ok(m) => m,
-                Err(e) => panic!("Error: {}", e),
-            },
-            m_guest_data_mem: match MemoryMap::new(
-                0x10000,
-                &[MapOption::MapReadable, MapOption::MapWritable],
             ) {
                 Ok(m) => m,
                 Err(e) => panic!("Error: {}", e),
@@ -222,7 +214,7 @@ impl EmuEnv {
                     // Text section
                     loader.load_section(
                         0x8000_0000,
-                        &mut self.m_guest_text_mem,
+                        &mut self.m_guest_mem,
                         sh_header.sh_offset,
                         sh_header.sh_addr,
                         sh_header.sh_size,
@@ -231,7 +223,7 @@ impl EmuEnv {
                     // Data section
                     loader.load_section(
                         0x8000_0000,
-                        &mut self.m_guest_data_mem,
+                        &mut self.m_guest_mem,
                         sh_header.sh_offset,
                         sh_header.sh_addr,
                         sh_header.sh_size,
@@ -245,16 +237,16 @@ impl EmuEnv {
             if debug {
                 println!("========= BLOCK START =========");
             }
-            let mut guest_pc = self.m_pc[0];
+            // let mut guest_pc = self.m_pc[0];
             self.m_tcg_vec.clear();
             if debug {
-                print!("Guest PC Address = {:08x}\n", guest_pc);
+                print!("Guest PC Address = {:08x}\n", self.m_pc[0]);
             }
             #[allow(while_true)]
             while true {
                 #[allow(unused_assignments)]
                 let mut guest_phy_pc = 0;
-                match self.convert_physical_address(guest_pc, MemAccType::Read) {
+                match self.convert_physical_address(self.m_pc[0], MemAccType::Read) {
                     Ok(addr) => guest_phy_pc = addr,
                     Err(error) => {
                         print!("Fetch Error: {:?}\n", error);
@@ -270,7 +262,7 @@ impl EmuEnv {
                 };
                 let inst_info = InstrInfo {
                     inst: guest_inst,
-                    addr: guest_pc,
+                    addr: self.m_pc[0],
                 };
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
                 self.m_tcg_vec.append(&mut tcg_inst);
@@ -298,7 +290,7 @@ impl EmuEnv {
                 if step {
                     break;      // When Debug Mode, break for each instruction
                 } else {
-                    guest_pc = guest_pc + 4;
+                    self.m_pc[0] = self.m_pc[0] + 4;
                 }
             }
 
@@ -344,11 +336,11 @@ impl EmuEnv {
 
             let tb_map_ptr = self.m_tb_text_mem.data() as *const u64;
             // let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
-            // let host_cod_ptr = self.m_guest_text_mem.as_ptr();
+            // let host_cod_ptr = self.m_guest_mem.as_ptr();
 
             println!("tb_address  = {:?}", tb_map_ptr);
             // println!("pe_address  = {:?}", pe_map_ptr);
-            // println!("self.m_guest_text_mem = {:?}", host_cod_ptr);
+            // println!("self.m_guest_mem = {:?}", host_cod_ptr);
 
             self.m_tcg_tb_vec.clear();
             for tcg in &self.m_tcg_vec {
@@ -466,7 +458,7 @@ impl EmuEnv {
     }
 
     // unsafe fn gen_tcg(&mut self) {
-    //     let instructions = &self.m_guest_text_mem;
+    //     let instructions = &self.m_guest_mem;
     //     let mut inst_32: u32 = 0;
     //     for (idx, inst) in instructions.iter().enumerate() {
     //         inst_32 = inst_32 | (*inst as u32) << (8 * (idx % 4));
@@ -519,8 +511,7 @@ impl EmuEnv {
     }
 
     pub fn calc_guest_data_mem_address(&self) -> usize {
-        let guestcode_ptr = self.m_guest_data_mem.data();
-        println!("guestcode_ptr = {:p}", guestcode_ptr);
+        let guestcode_ptr = self.m_guest_mem.data();
         return guestcode_ptr as usize;
     }
 
@@ -551,8 +542,7 @@ impl EmuEnv {
         let epc: u64;
         epc = self.m_pc[0];
 
-        // let curr_priv: PrivMode = self.m_priv;
-        let curr_priv = PrivMode::Machine;
+        let curr_priv: PrivMode = self.m_priv;
 
         let mut mstatus: i64;
         let mut sstatus: i64;
@@ -560,7 +550,7 @@ impl EmuEnv {
         let medeleg = self.m_csr.csrrs(CsrAddr::Medeleg, 0);
         let mut next_priv: PrivMode = PrivMode::Machine;
 
-        // self.set_priv_mode(next_priv);
+        self.m_priv = next_priv;
 
         if (medeleg & (1 << (code as u32))) != 0 {
             // Delegation
@@ -635,7 +625,7 @@ impl EmuEnv {
         }
 
         // self.set_priv_mode(next_priv);
-        //
+        self.m_priv = next_priv;
         // self.set_pc(tvec as u64);
         // self.set_update_pc(true);
         self.m_pc[0] = tvec as u64;
@@ -650,7 +640,7 @@ impl EmuEnv {
     }
 
     pub fn get_mem(&self, addr: u64) -> u32 {
-        let mem = self.m_guest_data_mem.data();
+        let mem = self.m_guest_mem.data();
         return unsafe { mem.offset(addr as isize).read() } as u32;
     }
 
@@ -658,10 +648,10 @@ impl EmuEnv {
         assert!(guest_phy_pc >= 0x8000_0000);
         let guest_phy_pc = guest_phy_pc - 0x8000_0000;
         unsafe {
-            ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 0).read() as u32) << 0)
-          | ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 1).read() as u32) << 8)
-          | ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 2).read() as u32) << 16)
-          | ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 3).read() as u32) << 24)
+            ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 0).read() as u32) << 0)
+          | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 1).read() as u32) << 8)
+          | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 2).read() as u32) << 16)
+          | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 3).read() as u32) << 24)
         }
     }
 

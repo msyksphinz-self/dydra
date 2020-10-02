@@ -108,19 +108,9 @@ impl EmuEnv {
 
     }
 
-    fn walk_page_table(
-        &mut self,
-        virtual_addr: u64,
-        acc_type: MemAccType,
-        init_level: u32,
-        ppn_idx: Vec<u8>,
-        pte_len: Vec<u8>,
-        pte_idx: Vec<u8>,
-        vpn_len: Vec<u8>,
-        vpn_idx: Vec<u8>,
-        pagesize: u32,
-        ptesize: u32,
-    ) -> Result<u64, MemResult> {
+    fn walk_page_table(&mut self, virtual_addr: u64, acc_type: MemAccType, init_level: u32, 
+        ppn_idx: Vec<u8>, pte_len: Vec<u8>, pte_idx: Vec<u8>, vpn_len: Vec<u8>, vpn_idx: Vec<u8>, 
+        pagesize: u32, ptesize: u32) -> Result<u64, MemResult> {
         let is_write_access = match acc_type {
             MemAccType::Write => true,
             _ => false,
@@ -314,6 +304,7 @@ impl EmuEnv {
             PrivMode::User => true,
             _ => false,
         };
+        println!("is_allowed_access.is_user_mode = {:}", is_user_mode);
         if is_user_mode && !((i_type & 0x08) != 0) {
             return false;
         }
