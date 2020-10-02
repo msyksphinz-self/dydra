@@ -68,6 +68,7 @@ pub enum CALL_HELPER_IDX {
     CALL_FSGNJ_S_IDX = 38,
     CALL_FSGNJN_S_IDX = 39,
     CALL_FSGNJX_S_IDX = 40,
+    CALL_SRET_IDX = 41,
 }
 
 #[macro_export]
@@ -226,6 +227,7 @@ impl TranslateRiscv {
             RiscvInstId::FENCE => TranslateRiscv::translate_fence(inst),
             RiscvInstId::MRET => TranslateRiscv::translate_mret(inst),
             RiscvInstId::ECALL => TranslateRiscv::translate_ecall(inst),
+            RiscvInstId::SRET => TranslateRiscv::translate_sret(inst),
 
             RiscvInstId::FLD => TranslateRiscv::translate_fld(inst),
             RiscvInstId::FLW => TranslateRiscv::translate_flw(inst),
@@ -361,20 +363,19 @@ impl TranslateRiscv {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let target: u64 = get_sb_field!(inst.inst);
-
-        let target = ((target as i32) << (32 - 13)) >> (32 - 13);
+        let target = ((target as i64) << (64 - 13)) >> (64 - 13);
         let target = inst.addr.wrapping_add(target as u64);
 
         let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let addr = Box::new(TCGv::new_imm(target as i32 as u64));
+        let addr = Box::new(TCGv::new_imm(target as u64));
 
         let label = Rc::new(RefCell::new(TCGLabel::new()));
 
         let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, Rc::clone(&label));
         let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4));
         let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
-        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target as i32 as u64));
+        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target  as u64));
 
         vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
     }

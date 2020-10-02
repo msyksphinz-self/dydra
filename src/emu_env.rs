@@ -10,14 +10,18 @@ use crate::target::riscv::riscv_csr::{CsrAddr, RiscvCsr};
 use crate::target::riscv::riscv_csr_def;
 use crate::target::riscv::riscv_decoder::decode_inst;
 use crate::target::riscv::riscv_inst_id::RiscvInstId;
+use crate::target::riscv::mmu::{MemAccType};
+use crate::target::riscv::riscv_disassemble::{disassemble_riscv};
+
 use crate::tcg::tcg::{TCGOp, TCG, TCGOpcode};
 use crate::tcg::x86::x86::TCGX86;
 use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
-use crate::target::riscv::riscv_disassemble::{disassemble_riscv};
 
 pub struct EmuEnv {
     pub head: [u64; 1], // pointer of this struct. Do not move.
+
+    pub m_priv: PrivMode,
 
     pub m_regs: [u64; 32],  // Integer Registers
     pub m_fregs: [u64; 32], // Floating Point Registers
@@ -25,7 +29,7 @@ pub struct EmuEnv {
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 41],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 42],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -47,9 +51,11 @@ impl EmuEnv {
     pub fn new() -> EmuEnv {
         EmuEnv {
             head: [0xdeadbeef; 1],
+            m_priv: PrivMode::Machine,
+
             m_regs: [0; 32],
             m_fregs: [0; 32],
-            m_pc: [0x0; 1],
+            m_pc: [0x8000_0000; 1],
             m_csr: RiscvCsr::new(),
 
             helper_func: [
@@ -94,6 +100,7 @@ impl EmuEnv {
                 Self::helper_func_fsgnj_s,
                 Self::helper_func_fsgnjn_s,
                 Self::helper_func_fsgnjx_s,
+                Self::helper_func_sret,
             ],
             // m_inst_vec: vec![],
             m_tcg_vec: vec![],
@@ -245,32 +252,18 @@ impl EmuEnv {
             }
             #[allow(while_true)]
             while true {
-                let guest_inst = unsafe {
-                    ((self
-                        .m_guest_text_mem
-                        .data()
-                        .offset(guest_pc as isize + 0)
-                        .read() as u32)
-                        << 0)
-                        | ((self
-                            .m_guest_text_mem
-                            .data()
-                            .offset(guest_pc as isize + 1)
-                            .read() as u32)
-                            << 8)
-                        | ((self
-                            .m_guest_text_mem
-                            .data()
-                            .offset(guest_pc as isize + 2)
-                            .read() as u32)
-                            << 16)
-                        | ((self
-                            .m_guest_text_mem
-                            .data()
-                            .offset(guest_pc as isize + 3)
-                            .read() as u32)
-                            << 24)
+                #[allow(unused_assignments)]
+                let mut guest_phy_pc = 0;
+                match self.convert_physical_address(guest_pc, MemAccType::Read) {
+                    Ok(addr) => guest_phy_pc = addr,
+                    Err(error) => {
+                        print!("Fetch Error: {:?}\n", error);
+                        continue;
+                    }
                 };
+                print!("  converted physical address = {:08x}\n", guest_phy_pc);
+                let guest_inst = self.read_mem_4byte(guest_phy_pc);
+
                 let id = match decode_inst(guest_inst) {
                     Some(id) => id,
                     _ => panic!("Decode Failed"),
@@ -660,4 +653,16 @@ impl EmuEnv {
         let mem = self.m_guest_data_mem.data();
         return unsafe { mem.offset(addr as isize).read() } as u32;
     }
+
+    pub fn read_mem_4byte(&self, guest_phy_pc: u64) -> u32 {
+        assert!(guest_phy_pc >= 0x8000_0000);
+        let guest_phy_pc = guest_phy_pc - 0x8000_0000;
+        unsafe {
+            ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 0).read() as u32) << 0)
+          | ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 1).read() as u32) << 8)
+          | ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 2).read() as u32) << 16)
+          | ((self.m_guest_text_mem.data().offset(guest_phy_pc as isize + 3).read() as u32) << 24)
+        }
+    }
+
 }

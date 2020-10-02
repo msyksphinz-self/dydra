@@ -97,10 +97,17 @@ impl TranslateRiscv {
         let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
         vec![mret_op, exit_tb]
     }
+
     pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
         let ecall_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_ECALL_IDX as usize);
         let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
         vec![ecall_op, exit_tb]
+    }
+
+    pub fn translate_sret(_inst: &InstrInfo) -> Vec<TCGOp> {
+        let mret_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_SRET_IDX as usize);
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        vec![mret_op, exit_tb]
     }
 
 }

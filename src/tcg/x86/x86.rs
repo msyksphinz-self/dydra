@@ -19,6 +19,7 @@ enum X86Opcode {
     ADD_GV_EV = 0x03,
     ADD_EAX_IV = 0x05,
     SUB_GV_EV = 0x2b,
+    SUB_EAX_IV = 0x2d,
     AND_GV_EV = 0x23,
     OR_GV_EV = 0x0b,
     OR_EV_GV = 0x09,
@@ -826,6 +827,7 @@ impl TCG for TCGX86 {
                         TCGX86::tcg_gen_float_reg_from_int_reg_32bit(emu, pc_address, tcg, mc)
                     }
 
+                    TCGOpcode::MOV_IMM_64BIT => TCGX86::tcg_gen_mov_imm_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::MOV_64BIT => TCGX86::tcg_gen_mov_64bit(emu, pc_address, tcg, mc),
 
                     TCGOpcode::SGNJ_64BIT => TCGX86::tcg_gen_sgnj_64bit(emu, pc_address, tcg, mc),
@@ -1264,6 +1266,31 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
+    fn tcg_gen_mov_imm_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let op = tcg.op.unwrap();
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+
+        assert_eq!(op, TCGOpcode::MOV_IMM_64BIT);
+        assert_eq!(arg0.t, TCGvType::Register);
+        assert_eq!(arg1.t, TCGvType::Immediate);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, arg1.value, mc);
+
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::MOV_EV_GV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc); // Set Program Counter
+
+        return gen_size;
+    }
+
+
     fn tcg_out_reloc(host_code_ptr: usize, label: &Rc<RefCell<TCGLabel>>) -> usize {
         // let mut l = &mut *label.borrow_mut();
         let l2 = &mut *label.borrow_mut();
@@ -1332,6 +1359,10 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
+
+        // Address Calculation : Sub Bias 0x8000_0000
+        gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
+        gen_size += Self::tcg_out(0x8000_0000 as u64, 4, mc);
 
         gen_size += match mem_size {
             MemOpType::LOAD_64BIT => {
@@ -1471,6 +1502,10 @@ impl TCG for TCGX86 {
             X86TargetRM::RAX,
             mc,
         );
+
+        // Address Calculation : Sub Bias 0x8000_0000
+        gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
+        gen_size += Self::tcg_out(0x8000_0000 as u64, 4, mc);
 
         // Load value from rs2 (data)
         if target_reg == RegisterType::IntRegister {
