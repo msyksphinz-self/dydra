@@ -5,7 +5,7 @@ use super::super::super::get_rs1_addr;
 use super::super::super::get_rd_addr;
 use super::super::super::extract_j_field;
 
-use super::riscv::TranslateRiscv;
+use super::riscv::{TranslateRiscv, CALL_HELPER_IDX};
 
 impl TranslateRiscv {
     pub fn translate_jal(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -146,38 +146,163 @@ impl TranslateRiscv {
     }
 
     pub fn translate_ld(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOAD_64BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOAD_64BIT, inst)
     }
     pub fn translate_lw(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOAD_32BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD32_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOAD_32BIT, inst)
     }
     pub fn translate_lh(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOAD_16BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD16_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOAD_16BIT, inst)
     }
     pub fn translate_lb(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOAD_8BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD8_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOAD_8BIT, inst)
     }
     pub fn translate_lwu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOADU_32BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOADU32_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOADU_32BIT, inst)
     }
     pub fn translate_lhu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOADU_16BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOADU16_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOADU_16BIT, inst)
     }
     pub fn translate_lbu(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::LOADU_8BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const));
+        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOADU8_IDX as usize, *rd, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_rri(TCGOpcode::LOADU_8BIT, inst)
     }
 
     pub fn translate_sd(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::STORE_64BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, *rs2, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_store(TCGOpcode::STORE_64BIT, inst)
     }
     pub fn translate_sw(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::STORE_32BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE32_IDX as usize, *rs2, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_store(TCGOpcode::STORE_32BIT, inst)
     }
     pub fn translate_sh(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::STORE_16BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE16_IDX as usize, *rs2, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_store(TCGOpcode::STORE_16BIT, inst)
     }
     pub fn translate_sb(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_store(TCGOpcode::STORE_8BIT, inst)
+        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
+
+        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        let imm = Box::new(TCGv::new_imm(imm_const as u64));
+
+        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE8_IDX as usize, *rs2, *rs1, *imm);
+        vec![op]
+
+        // Self::translate_store(TCGOpcode::STORE_8BIT, inst)
     }
 
 

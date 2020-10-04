@@ -29,7 +29,7 @@ pub struct EmuEnv {
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 42],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 53],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -100,6 +100,17 @@ impl EmuEnv {
                 Self::helper_func_fsgnjn_s,
                 Self::helper_func_fsgnjx_s,
                 Self::helper_func_sret,
+                Self::helper_func_load64,
+                Self::helper_func_load32,
+                Self::helper_func_load16,
+                Self::helper_func_load8,
+                Self::helper_func_loadu32,
+                Self::helper_func_loadu16,
+                Self::helper_func_loadu8,
+                Self::helper_func_store64,
+                Self::helper_func_store32,
+                Self::helper_func_store16,
+                Self::helper_func_store8,
             ],
             // m_inst_vec: vec![],
             m_tcg_vec: vec![],
@@ -653,6 +664,17 @@ impl EmuEnv {
           | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 2).read() as u32) << 16)
           | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 3).read() as u32) << 24)
         }
+    }
+
+    pub fn write_mem_4byte(&self, guest_phy_pc: u64, data: u32) {
+        assert!(guest_phy_pc >= 0x8000_0000);
+        let guest_phy_pc = guest_phy_pc - 0x8000_0000;
+        unsafe {
+            self.m_guest_mem.data().offset(guest_phy_pc as isize + 0).write(((data >>  0) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_pc as isize + 1).write(((data >>  8) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_pc as isize + 2).write(((data >> 16) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_pc as isize + 3).write(((data >> 24) & 0xff) as u8);
+        };
     }
 
 }
