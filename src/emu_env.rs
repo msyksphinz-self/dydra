@@ -300,8 +300,6 @@ impl EmuEnv {
                 self.m_pc[0] = self.m_pc[0] + 4;
                 if step {
                     break;      // When Debug Mode, break for each instruction
-                } else {
-                    self.m_pc[0] = self.m_pc[0] + 4;
                 }
             }
 

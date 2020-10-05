@@ -10,7 +10,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr :u64 = 0;
@@ -32,7 +32,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -54,7 +54,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -76,7 +76,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -98,7 +98,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -120,7 +120,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -142,7 +142,7 @@ impl EmuEnv {
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -158,14 +158,14 @@ impl EmuEnv {
 
     pub fn helper_func_store64(
         emu: &mut EmuEnv,
-        rs1: u32,
         rs2: u32,
+        rs1: u32,
         imm: u32,
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
         let rs2_data = emu.m_regs[rs2 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr: u64 = 0;
@@ -180,14 +180,14 @@ impl EmuEnv {
 
     pub fn helper_func_store32(
         emu: &mut EmuEnv,
-        rs1: u32,
         rs2: u32,
+        rs1: u32,
         imm: u32,
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
         let rs2_data = emu.m_regs[rs2 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -203,14 +203,14 @@ impl EmuEnv {
 
     pub fn helper_func_store16(
         emu: &mut EmuEnv,
-        rs1: u32,
         rs2: u32,
+        rs1: u32,
         imm: u32,
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
         let rs2_data = emu.m_regs[rs2 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
@@ -226,14 +226,14 @@ impl EmuEnv {
 
     pub fn helper_func_store8(
         emu: &mut EmuEnv,
-        rs1: u32,
         rs2: u32,
+        rs1: u32,
         imm: u32,
         _dummy: u32,
     ) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
         let rs2_data = emu.m_regs[rs2 as usize];
-        let addr = rs1_data + imm as u64;
+        let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr:u64 = 0;
