@@ -92,6 +92,12 @@ impl TranslateRiscv {
     pub fn translate_fence(_inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]
     }
+    pub fn translate_fence_i(_inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+    pub fn translate_sfence_vma(_inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
     pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
         let mret_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_MRET_IDX as usize);
         let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);

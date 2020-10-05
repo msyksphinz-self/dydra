@@ -154,7 +154,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOAD_64BIT, inst)
@@ -168,7 +170,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD32_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOAD_32BIT, inst)
@@ -182,7 +186,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD16_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOAD_16BIT, inst)
@@ -196,7 +202,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOAD8_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOAD_8BIT, inst)
@@ -210,7 +218,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOADU32_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOADU_32BIT, inst)
@@ -224,7 +234,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOADU16_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOADU_16BIT, inst)
@@ -238,7 +250,9 @@ impl TranslateRiscv {
         let imm = Box::new(TCGv::new_imm(imm_const));
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_LOADU8_IDX as usize, *rd, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_rri(TCGOpcode::LOADU_8BIT, inst)
@@ -254,7 +268,9 @@ impl TranslateRiscv {
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, *rs2, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_store(TCGOpcode::STORE_64BIT, inst)
@@ -269,7 +285,9 @@ impl TranslateRiscv {
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE32_IDX as usize, *rs2, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE32_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_store(TCGOpcode::STORE_32BIT, inst)
@@ -284,7 +302,9 @@ impl TranslateRiscv {
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE16_IDX as usize, *rs2, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE16_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_store(TCGOpcode::STORE_16BIT, inst)
@@ -299,7 +319,9 @@ impl TranslateRiscv {
         let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
         let imm = Box::new(TCGv::new_imm(imm_const as u64));
 
-        let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_STORE8_IDX as usize, *rs2, *rs1, *imm);
+        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
+
+        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE8_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
         vec![op]
 
         // Self::translate_store(TCGOpcode::STORE_8BIT, inst)

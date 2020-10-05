@@ -12,7 +12,7 @@ impl EmuEnv {
         }
     }
 
-    pub fn helper_func_fadd_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fadd_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         println!("fadd(emu, {:}, {:}, {:}) is called!", fd, fs1, fs2);
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
@@ -28,7 +28,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fsub_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fsub_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
@@ -47,7 +47,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmul_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fmul_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
@@ -64,7 +64,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fdiv_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fdiv_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
@@ -81,7 +81,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmadd_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fmadd_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fmadd(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -103,7 +103,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmsub_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fmsub_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fmsub(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -125,7 +125,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fnmsub_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fnmsub_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fnmsub(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -148,7 +148,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fnmadd_s(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fnmadd_s(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fnmadd(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -171,7 +171,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fsqrt_s(emu: &mut EmuEnv, fd: u32, fs1: u32, _: u32, _: u32) -> usize {
+    pub fn helper_func_fsqrt_s(emu: &mut EmuEnv, fd: u64, fs1: u64, _: u64, _: u64) -> usize {
         println!("fsqrt(emu, {:}, {:}) is called!", fd, fs1);
 
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
@@ -187,7 +187,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_feq_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_feq_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
@@ -200,7 +200,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_flt_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_flt_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
         let mut flag = ExceptionFlags::default();
@@ -213,7 +213,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fle_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fle_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         println!("fle(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
         let fs1_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32);
         let fs2_data = F32::from_bits(Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32);
@@ -226,7 +226,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fclass_s(emu: &mut EmuEnv, rd: u32, fs1: u32, _fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fclass_s(emu: &mut EmuEnv, rd: u64, fs1: u64, _fs2: u64, _: u64) -> usize {
         println!("fclass_s(emu, {:}, {:}) is called!", rd, fs1);
         let fs1_data = F32::from_bits((emu.m_fregs[fs1 as usize] & 0x0ffffffff) as u32);
         #[allow(unused_assignments)]
@@ -258,7 +258,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmax_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fmax_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(emu.m_fregs[fs1 as usize] as u32);
         let fs2_data = F32::from_bits(emu.m_fregs[fs2 as usize] as u32);
         let mut flag = ExceptionFlags::default();
@@ -278,7 +278,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmin_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fmin_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F32::from_bits(emu.m_fregs[fs1 as usize] as u32);
         let fs2_data = F32::from_bits(emu.m_fregs[fs2 as usize] as u32);
         let mut flag = ExceptionFlags::default();
@@ -298,7 +298,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fsgnj_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fsgnj_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
         let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
@@ -311,7 +311,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fsgnjn_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fsgnjn_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
         let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
@@ -325,7 +325,7 @@ impl EmuEnv {
     }
 
 
-    pub fn helper_func_fsgnjx_s(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fsgnjx_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
         let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();

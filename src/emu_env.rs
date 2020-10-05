@@ -29,7 +29,7 @@ pub struct EmuEnv {
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u32, arg1: u32, arg2: u32, arg3: u32) -> usize; 53],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 53],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -44,6 +44,8 @@ pub struct EmuEnv {
 
     pub m_host_prologue: [u8; 15],
     pub m_host_epilogue: [u8; 11],
+
+    m_updated_pc : bool,
 }
 
 impl EmuEnv {
@@ -125,7 +127,7 @@ impl EmuEnv {
                 Err(e) => panic!("Error: {}", e),
             },
             m_guest_mem: match MemoryMap::new(
-                0x10000,
+                0x80000,
                 &[
                     MapOption::MapReadable,
                     MapOption::MapWritable,
@@ -151,6 +153,7 @@ impl EmuEnv {
                 0x5d, // popq     %rbp
                 0xc3, // retq
             ],
+            m_updated_pc: false,
         }
     }
 
@@ -243,29 +246,57 @@ impl EmuEnv {
             }
         }
 
-        let loop_max = if step { 10000 } else { 100 };
-        for _loop_idx in 0..loop_max {
+        // Make tb instruction region (temporary 1024byte)
+        self.m_tb_text_mem = match MemoryMap::new(
+            0x4000,
+            &[
+                MapOption::MapReadable,
+                MapOption::MapWritable,
+                MapOption::MapExecutable,
+            ],
+        ) {
+            Ok(m) => m,
+            Err(e) => panic!("Error: {}", e),
+        };
+
+        // Emit Prologue
+        for b in &self.m_host_prologue {
+            self.m_tcg_raw_vec.push(*b);
+        }
+
+        // Emit Epilogue
+        for b in &self.m_host_epilogue {
+            self.m_tcg_raw_vec.push(*b);
+        }
+
+        self.m_prologue_epilogue_mem = {
+            let v = self.m_tcg_raw_vec.as_slice();
+            Self::reflect(v)
+        };
+
+        let loop_max = if step { 12000 } else { 10000 };
+        for loop_idx in 5..loop_max {
             if debug {
                 println!("========= BLOCK START =========");
             }
             // let mut guest_pc = self.m_pc[0];
             self.m_tcg_vec.clear();
             if debug {
-                print!("Guest PC Address = {:08x}\n", self.m_pc[0]);
+                print!("{:}: Guest PC Address = {:08x}\n", loop_idx, self.m_pc[0]);
             }
             #[allow(while_true)]
             while true {
                 #[allow(unused_assignments)]
-                let mut guest_phy_pc = 0;
-                match self.convert_physical_address(self.m_pc[0], MemAccType::Read) {
-                    Ok(addr) => guest_phy_pc = addr,
+                let mut guest_phy_addr = 0;
+                match self.convert_physical_address(self.m_pc[0], self.m_pc[0], MemAccType::Fetch) {
+                    Ok(addr) => guest_phy_addr = addr,
                     Err(error) => {
                         print!("Fetch Error: {:?}\n", error);
                         continue;
                     }
                 };
-                print!("  converted physical address = {:08x}\n", guest_phy_pc);
-                let guest_inst = self.read_mem_4byte(guest_phy_pc);
+                print!("  converted physical address = {:08x}\n", guest_phy_addr);
+                let guest_inst = self.read_mem_4byte(guest_phy_addr);
 
                 let id = match decode_inst(guest_inst) {
                     Some(id) => id,
@@ -303,15 +334,6 @@ impl EmuEnv {
                 }
             }
 
-            // Emit Prologue
-            for b in &self.m_host_prologue {
-                self.m_tcg_raw_vec.push(*b);
-            }
-
-            // Emit Epilogue
-            for b in &self.m_host_epilogue {
-                self.m_tcg_raw_vec.push(*b);
-            }
 
             // {
             //     for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
@@ -323,23 +345,18 @@ impl EmuEnv {
             //     print!("\n");
             // }
 
-            self.m_prologue_epilogue_mem = {
-                let v = self.m_tcg_raw_vec.as_slice();
-                Self::reflect(v)
-            };
-
-            // Make tb instruction region (temporary 1024byte)
-            self.m_tb_text_mem = match MemoryMap::new(
-                0x4000,
-                &[
-                    MapOption::MapReadable,
-                    MapOption::MapWritable,
-                    MapOption::MapExecutable,
-                ],
-            ) {
-                Ok(m) => m,
-                Err(e) => panic!("Error: {}", e),
-            };
+            // // Make tb instruction region (temporary 1024byte)
+            // self.m_tb_text_mem = match MemoryMap::new(
+            //     0x4000,
+            //     &[
+            //         MapOption::MapReadable,
+            //         MapOption::MapWritable,
+            //         MapOption::MapExecutable,
+            //     ],
+            // ) {
+            //     Ok(m) => m,
+            //     Err(e) => panic!("Error: {}", e),
+            // };
 
             let mut pc_address = 0;
 
@@ -542,14 +559,13 @@ impl EmuEnv {
         return (hex & !(mask << right)) | (val << right);
     }
 
-    pub fn generate_exception(&mut self, code: ExceptCode, tval: i64) {
+    pub fn generate_exception(&mut self, guest_pc: u64, code: ExceptCode, tval: i64) {
         println!(
             "<Info: Generate Exception Code={}, TVAL={:016x} PC={:016x}>",
-            code as u32, tval, self.m_pc[0]
+            code as u32, tval, guest_pc
         );
 
-        let epc: u64;
-        epc = self.m_pc[0];
+        let epc = guest_pc;
 
         let curr_priv: PrivMode = self.m_priv;
 
@@ -644,6 +660,7 @@ impl EmuEnv {
             curr_priv as u32, next_priv as u32
         );
         println!("<Info: Set Program Counter = 0x{:16x}>", tvec);
+        self.m_updated_pc = true;
 
         return;
     }
@@ -653,26 +670,66 @@ impl EmuEnv {
         return unsafe { mem.offset(addr as isize).read() } as u32;
     }
 
-    pub fn read_mem_4byte(&self, guest_phy_pc: u64) -> u32 {
-        assert!(guest_phy_pc >= 0x8000_0000);
-        let guest_phy_pc = guest_phy_pc - 0x8000_0000;
+
+    pub fn read_mem_1byte(&self, guest_phy_addr: u64) -> u8 {
+        assert!(guest_phy_addr >= 0x8000_0000);
+        let guest_phy_addr = guest_phy_addr - 0x8000_0000;
         unsafe {
-            ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 0).read() as u32) << 0)
-          | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 1).read() as u32) << 8)
-          | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 2).read() as u32) << 16)
-          | ((self.m_guest_mem.data().offset(guest_phy_pc as isize + 3).read() as u32) << 24)
+            self.m_guest_mem.data().offset(guest_phy_addr as isize).read() 
         }
     }
 
-    pub fn write_mem_4byte(&self, guest_phy_pc: u64, data: u32) {
-        assert!(guest_phy_pc >= 0x8000_0000);
-        let guest_phy_pc = guest_phy_pc - 0x8000_0000;
+    pub fn read_mem_2byte(&self, guest_phy_addr: u64) -> u16 {
+        ((self.read_mem_1byte(guest_phy_addr + 1) as u16) << 8) | 
+        ((self.read_mem_1byte(guest_phy_addr + 0) as u16) << 0)
+    }
+
+
+    pub fn read_mem_4byte(&self, guest_phy_addr: u64) -> u32 {
+        ((self.read_mem_2byte(guest_phy_addr + 2) as u32) << 16) | 
+        ((self.read_mem_2byte(guest_phy_addr + 0) as u32) <<  0)
+    }
+
+
+    pub fn read_mem_8byte(&self, guest_phy_addr: u64) -> u64 {
+        ((self.read_mem_4byte(guest_phy_addr + 4) as u64) << 32) | 
+        ((self.read_mem_4byte(guest_phy_addr + 0) as u64) <<  0)
+    }
+
+    pub fn write_mem_1byte(&self, guest_phy_addr: u64, data: u8) {
+        assert!(guest_phy_addr >= 0x8000_0000);
+        let guest_phy_addr = guest_phy_addr - 0x8000_0000;
         unsafe {
-            self.m_guest_mem.data().offset(guest_phy_pc as isize + 0).write(((data >>  0) & 0xff) as u8);
-            self.m_guest_mem.data().offset(guest_phy_pc as isize + 1).write(((data >>  8) & 0xff) as u8);
-            self.m_guest_mem.data().offset(guest_phy_pc as isize + 2).write(((data >> 16) & 0xff) as u8);
-            self.m_guest_mem.data().offset(guest_phy_pc as isize + 3).write(((data >> 24) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 0).write(((data >>  0) & 0xff) as u8);
         };
+    }
+
+    pub fn write_mem_2byte(&self, guest_phy_addr: u64, data: u16) {
+        assert!(guest_phy_addr >= 0x8000_0000);
+        let guest_phy_addr = guest_phy_addr - 0x8000_0000;
+        unsafe {
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 0).write(((data >>  0) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 1).write(((data >>  8) & 0xff) as u8);
+        };
+    }
+
+
+    pub fn write_mem_4byte(&self, guest_phy_addr: u64, data: u32) {
+        assert!(guest_phy_addr >= 0x8000_0000);
+        let guest_phy_addr = guest_phy_addr - 0x8000_0000;
+        unsafe {
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 0).write(((data >>  0) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 1).write(((data >>  8) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 2).write(((data >> 16) & 0xff) as u8);
+            self.m_guest_mem.data().offset(guest_phy_addr as isize + 3).write(((data >> 24) & 0xff) as u8);
+        };
+    }
+
+    pub fn write_mem_8byte(&self, guest_phy_addr: u64, data: u64) {
+        let data0 = data & 0xffff_ffff;
+        let data1 = (data >> 32) & 0xffff_ffff;
+        self.write_mem_4byte(guest_phy_addr + 0, data0 as u32);
+        self.write_mem_4byte(guest_phy_addr + 4, data1 as u32);
     }
 
 }

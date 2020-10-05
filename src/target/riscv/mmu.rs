@@ -51,7 +51,7 @@ impl VMMode {
 
 impl EmuEnv {
 
-    pub fn convert_physical_address(&mut self, virtual_addr: u64, acc_type: MemAccType) -> Result<u64, MemResult> {
+    pub fn convert_physical_address(&mut self, guest_pc: u64, virtual_addr: u64, acc_type: MemAccType) -> Result<u64, MemResult> {
         let is_fetch_access = match acc_type {
             MemAccType::Fetch => true,
             _ => false,
@@ -85,7 +85,7 @@ impl EmuEnv {
             let pagesize: u32 = 4096; // num::pow(2, 12);
             let ptesize: u32 = 8;
 
-            return self.walk_page_table(
+            return self.walk_page_table(guest_pc, 
                 virtual_addr, acc_type, 3, ppn_idx, pte_len, pte_idx, vpn_len, vpn_idx, pagesize, ptesize,
             );
         } else if self.get_vm_mode() == VMMode::Sv32
@@ -99,7 +99,7 @@ impl EmuEnv {
             let pagesize: u32 = 4096; // num::pow(2, 12);
             let ptesize: u32 = 4;
 
-            return self.walk_page_table(
+            return self.walk_page_table(guest_pc, 
                 virtual_addr, acc_type, 2, ppn_idx, pte_len, pte_idx, vpn_len, vpn_idx, pagesize, ptesize,
             );
         } else {
@@ -108,7 +108,7 @@ impl EmuEnv {
 
     }
 
-    fn walk_page_table(&mut self, virtual_addr: u64, acc_type: MemAccType, init_level: u32, 
+    fn walk_page_table(&mut self, guest_pc: u64, virtual_addr: u64, acc_type: MemAccType, init_level: u32, 
         ppn_idx: Vec<u8>, pte_len: Vec<u8>, pte_idx: Vec<u8>, vpn_len: Vec<u8>, vpn_idx: Vec<u8>, 
         pagesize: u32, ptesize: u32) -> Result<u64, MemResult> {
         let is_write_access = match acc_type {
@@ -167,14 +167,15 @@ impl EmuEnv {
 
                 match acc_type {
                     MemAccType::Fetch => {
-                        self.generate_exception(ExceptCode::InstPageFault, virtual_addr as i64);
+                        self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
                     }
-                    MemAccType::Read => {
-                        self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
-                    }
-                    MemAccType::Write => {
-                        self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
-                    }
+                    _ => {}
+                    // MemAccType::Read => {
+                    //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
+                    // }
+                    // MemAccType::Write => {
+                    //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
+                    // }
                 };
                 return Err(MemResult::TlbError);
             }
@@ -193,14 +194,15 @@ impl EmuEnv {
 
                     match acc_type {
                         MemAccType::Fetch => {
-                            self.generate_exception(ExceptCode::InstPageFault, virtual_addr as i64);
+                            self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
                         }
-                        MemAccType::Read => {
-                            self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
-                        }
-                        MemAccType::Write => {
-                            self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
-                        }
+                        _ => {}
+                        // MemAccType::Read => {
+                        //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
+                        // }
+                        // MemAccType::Write => {
+                        //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
+                        // }
                     };
                     return Err(MemResult::TlbError);
                 }
@@ -250,14 +252,15 @@ impl EmuEnv {
 
             match acc_type {
                 MemAccType::Fetch => {
-                    self.generate_exception(ExceptCode::InstPageFault, virtual_addr as i64);
+                    self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
                 }
-                MemAccType::Read => {
-                    self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
-                }
-                MemAccType::Write => {
-                    self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
-                }
+                _ => {}
+                // MemAccType::Read => {
+                //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
+                // }
+                // MemAccType::Write => {
+                //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
+                // }
             };
             return Err(MemResult::TlbError);
         }
@@ -304,7 +307,6 @@ impl EmuEnv {
             PrivMode::User => true,
             _ => false,
         };
-        println!("is_allowed_access.is_user_mode = {:}", is_user_mode);
         if is_user_mode && !((i_type & 0x08) != 0) {
             return false;
         }

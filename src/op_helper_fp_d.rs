@@ -3,7 +3,7 @@ use crate::target::riscv::riscv_csr::{CsrAddr};
 use crate::emu_env::EmuEnv;
 
 impl EmuEnv {
-    pub fn helper_func_fadd_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fadd_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         println!("fadd(emu, {:}, {:}, {:}) is called!", fd, fs1, fs2);
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
@@ -19,7 +19,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fsub_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fsub_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
@@ -38,7 +38,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmul_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fmul_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
@@ -55,7 +55,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fdiv_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fdiv_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
@@ -72,7 +72,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmadd_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fmadd_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fmadd(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -94,7 +94,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmsub_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fmsub_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fmsub(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -116,7 +116,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fnmsub_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fnmsub_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fnmsub(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -139,7 +139,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fnmadd_d(emu: &mut EmuEnv, fd: u32, fs1: u32, fs2: u32, fs3: u32) -> usize {
+    pub fn helper_func_fnmadd_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, fs3: u64) -> usize {
         println!(
             "fnmadd(emu, {:}, {:}, {:}, {:}) is called!",
             fd, fs1, fs2, fs3
@@ -162,7 +162,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fsqrt_d(emu: &mut EmuEnv, fd: u32, fs1: u32, _: u32, _: u32) -> usize {
+    pub fn helper_func_fsqrt_d(emu: &mut EmuEnv, fd: u64, fs1: u64, _: u64, _: u64) -> usize {
         println!("fsqrt(emu, {:}, {:}) is called!", fd, fs1);
 
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
@@ -178,7 +178,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_feq_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_feq_d(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
@@ -191,7 +191,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_flt_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_flt_d(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
@@ -204,7 +204,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fle_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fle_d(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         println!("fle(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
@@ -217,7 +217,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fclass_d(emu: &mut EmuEnv, rd: u32, fs1: u32, _fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fclass_d(emu: &mut EmuEnv, rd: u64, fs1: u64, _fs2: u64, _: u64) -> usize {
         println!("fclass(emu, {:}, {:}) is called!", rd, fs1);
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         #[allow(unused_assignments)]
@@ -249,7 +249,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmax_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fmax_d(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
@@ -269,7 +269,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_fmin_d(emu: &mut EmuEnv, rd: u32, fs1: u32, fs2: u32, _dummy: u32) -> usize {
+    pub fn helper_func_fmin_d(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();

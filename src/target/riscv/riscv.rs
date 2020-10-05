@@ -236,6 +236,8 @@ impl TranslateRiscv {
             RiscvInstId::CSRRCI => TranslateRiscv::translate_csrrci(inst),
 
             RiscvInstId::FENCE => TranslateRiscv::translate_fence(inst),
+            RiscvInstId::FENCE_I => TranslateRiscv::translate_fence_i(inst),
+            RiscvInstId::SFENCE_VMA => TranslateRiscv::translate_sfence_vma(inst),
             RiscvInstId::MRET => TranslateRiscv::translate_mret(inst),
             RiscvInstId::ECALL => TranslateRiscv::translate_ecall(inst),
             RiscvInstId::SRET => TranslateRiscv::translate_sret(inst),
