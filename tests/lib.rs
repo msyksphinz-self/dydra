@@ -1,416 +1,5 @@
 extern crate uint_execute;
 
-// #[test]
-// fn simple_start2() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/simple_start2/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000000000001,
-//                 0x0000000000000003,
-//                 0x0000000000000006,
-//                 0x000000000000000a,
-//                 0x000000000000000f,
-//                 0x0000000000000015,
-//                 0x000000000000001c,
-//                 0x0000000000000024,
-//                 0x000000000000002d,
-//                 0x0000000000000037,
-//                 0x0000000000000042,
-//                 0x000000000000004e,
-//                 0x000000000000005b,
-//                 0x0000000000000069,
-//                 0x0000000000000078,
-//                 0x0000000000000088,
-//                 0x0000000000000099,
-//                 0x00000000000000ab,
-//                 0x00000000000000be,
-//                 0x00000000000000d2,
-//                 0x0000000000000190,
-//                 0x0000000000000262,
-//                 0x00000000000003f2,
-//                 0x0000000000000654,
-//                 0x0000000000000a46,
-//                 0x000000000000109a,
-//                 0x0000000000001ae0,
-//                 0x0000000000002b7a,
-//                 0x000000000000465a,
-//                 0x00000000000071d4,
-//                 0x0000000000002b7a
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn simple_start() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/simple_start/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn simple_load() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/load_test/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000084,
-//                 0x01234567deadbeef,
-//                 0x0000000001234567,
-//                 0x0000000000000123,
-//                 0x0000000000000001,
-//                 0x0000000000000000,
-//                 0xffffffffdeadbeef,
-//                 0xffffffffffffbeef,
-//                 0xffffffffffffffef,
-//                 0x0000000000000000,
-//                 0x00000000deadbeef,
-//                 0x000000000000beef,
-//                 0x00000000000000ef,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x01234567deadbeef,
-//                 0x0123456701234567,
-//                 0x0123000001230000,
-//                 0x0100010001000100,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn branch_test() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/branch_test/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000001,
-//                 0x0000000000000001,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn csr_test() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/csr_test/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000076543210,
-//                 0x0000000000000000,
-//                 0x0000000012345678,
-//                 0xffffffffbbfdf7ff,
-//                 0xffffffff89a9c5ef,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn long_insts() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/long_insts/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000000000001,
-//                 0x0000000000000003,
-//                 0x0000000000000006,
-//                 0x000000000000000a,
-//                 0x000000000000000f,
-//                 0x0000000000000015,
-//                 0x000000000000001c,
-//                 0x0000000000000024,
-//                 0x000000000000002d,
-//                 0x0000000000000037,
-//                 0x0000000000000042,
-//                 0x000000000000004e,
-//                 0x000000000000005b,
-//                 0x0000000000000069,
-//                 0x0000000000000078,
-//                 0x0000000000000088,
-//                 0x0000000000000099,
-//                 0x00000000000000ab,
-//                 0x00000000000000be,
-//                 0x00000000000000d2,
-//                 0x0000000000000014,
-//                 0xffffffffffffff42,
-//                 0xffffffffffffff2e,
-//                 0xffffffffffffffec,
-//                 0x00000000000000be,
-//                 0x00000000000000d2,
-//                 0x0000000000000014,
-//                 0xffffffffffffff42,
-//                 0xffffffffffffff2e,
-//                 0xffffffffffffffec,
-//                 0x00000000000000be
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn simple_add() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/simple_add/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000012345678,
-//                 0x0000000001234567,
-//                 0x0000000013579bdf,
-//                 0x0000000011111111,
-//                 0x0000000000204460,
-//                 0x000000001337577f,
-//                 0x000000001317131f,
-//                 0x0000000000000438,
-//                 0x00000000123456fc,
-//                 0x00000000123452c4,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn simple_lui() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/simple_lui/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x0000000012345000,
-//                 0xffffffff87654000,
-//                 0xffffffff99999000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000
-//             ]
-//         ),
-//         0
-//     );
-// }
-//
-// #[test]
-// fn shift() {
-//     assert_eq!(
-//         uint_execute::run(
-//             "rvtests/shift/test.riscv".to_string(),
-//             &[
-//                 0x0000000000000000,
-//                 0x000000000000000b,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0xffffffffdeadb3ef,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x001ffffffffbd5b6,
-//                 0xfffffef56d9f7800,
-//                 0xfffffffffffbd5b6,
-//                 0x001ffffffffbd5b6,
-//                 0xfffffef56d9f7800,
-//                 0xfffffffffffbd5b6,
-//                 0xdeadb3ef00000000,
-//                 0xffffffffdeadb3ef,
-//                 0x00000000deadb3ef,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//                 0x0000000000000000,
-//             ]
-//         ),
-//         0
-//     );
-// }
-
-// #[test] fn rv64ui_p_simple() {
-//     assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-simple".to_string()), 1);
-// }
-// #[test] fn rv64ui_p_add() {
-//     assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-add".to_string()), 1);
-// }
-// #[test] fn rv64ui_p_addi() {
-//     assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-addi".to_string()), 1);
-// }
-// #[test] fn rv64ui_p_addiw() {
-//     assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-addiw".to_string()), 1);
-// }
-// #[test] fn rv64ui_p_sub() {
-//     assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-sub".to_string()), 1);
-// }
 #[test]fn rv64ui_p_simple  () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-simple".to_string()), 1); }
 
 #[test]fn rv64ui_p_add     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-add".to_string()), 1); }
@@ -499,3 +88,91 @@ extern crate uint_execute;
 #[test]fn rv64uf_p_move      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-p-move".to_string()), 1); }
 #[test]fn rv64uf_p_recoding  () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-p-recoding".to_string()), 1); }
 #[test]fn rv64uf_p_structural() { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-p-structural".to_string()), 1); }
+
+#[test]fn rv64ui_v_simple  () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-simple".to_string()), 1); }
+
+#[test]fn rv64ui_v_add     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-add".to_string()), 1); }
+#[test]fn rv64ui_v_addi    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-addi".to_string()), 1); }
+#[test]fn rv64ui_v_addiw   () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-addiw".to_string()), 1); }
+#[test]fn rv64ui_v_addw    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-addw".to_string()), 1); }
+#[test]fn rv64ui_v_sub     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sub".to_string()), 1); }
+#[test]fn rv64ui_v_subw    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-subw".to_string()), 1); }
+
+#[test]fn rv64ui_v_and     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-and".to_string()), 1); }
+#[test]fn rv64ui_v_andi    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-andi".to_string()), 1); }
+#[test]fn rv64ui_v_or      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-or".to_string()), 1); }
+#[test]fn rv64ui_v_ori     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-ori".to_string()), 1); }
+#[test]fn rv64ui_v_xor     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-xor".to_string()), 1); }
+#[test]fn rv64ui_v_xori    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-xori".to_string()), 1); }
+
+#[test]fn rv64ui_v_auipc   () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-auipc".to_string()), 1); }
+#[test]fn rv64ui_v_lui     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lui".to_string()), 1); }
+
+#[test]fn rv64ui_v_beq     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-beq".to_string()), 1); }
+#[test]fn rv64ui_v_bge     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-bge".to_string()), 1); }
+#[test]fn rv64ui_v_bgeu    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-bgeu".to_string()), 1); }
+#[test]fn rv64ui_v_blt     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-blt".to_string()), 1); }
+#[test]fn rv64ui_v_bltu    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-bltu".to_string()), 1); }
+#[test]fn rv64ui_v_bne     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-bne".to_string()), 1); }
+#[test]fn rv64ui_v_fence_i () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-fence_i".to_string()), 1); }
+#[test]fn rv64ui_v_jal     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-jal".to_string()), 1); }
+#[test]fn rv64ui_v_jalr    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-jalr".to_string()), 1); }
+
+#[test]fn rv64ui_v_lb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lb".to_string()), 1); }
+#[test]fn rv64ui_v_lbu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lbu".to_string()), 1); }
+#[test]fn rv64ui_v_ld      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-ld".to_string()), 1); }
+#[test]fn rv64ui_v_lh      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lh".to_string()), 1); }
+#[test]fn rv64ui_v_lhu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lhu".to_string()), 1); }
+#[test]fn rv64ui_v_lw      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lw".to_string()), 1); }
+#[test]fn rv64ui_v_lwu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lwu".to_string()), 1); }
+
+#[test]fn rv64ui_v_sb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sb".to_string()), 1); }
+#[test]fn rv64ui_v_sd      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sd".to_string()), 1); }
+#[test]fn rv64ui_v_sh      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sh".to_string()), 1); }
+#[test]fn rv64ui_v_sw      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sw".to_string()), 1); }
+
+// #[test]fn rv64ui_v_slt     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-slt".to_string()), 1); }
+// #[test]fn rv64ui_v_slti    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-slti".to_string()), 1); }
+// #[test]fn rv64ui_v_sltiu   () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sltiu".to_string()), 1); }
+// #[test]fn rv64ui_v_sltu    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sltu".to_string()), 1); }
+// 
+// #[test]fn rv64ui_v_sll     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sll".to_string()), 1); }
+// #[test]fn rv64ui_v_slli    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-slli".to_string()), 1); }
+// #[test]fn rv64ui_v_slliw   () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-slliw".to_string()), 1); }
+// #[test]fn rv64ui_v_sllw    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sllw".to_string()), 1); }
+// 
+// #[test]fn rv64ui_v_sra     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sra".to_string()), 1); }
+// #[test]fn rv64ui_v_srai    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-srai".to_string()), 1); }
+// #[test]fn rv64ui_v_sraiw   () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sraiw".to_string()), 1); }
+// #[test]fn rv64ui_v_sraw    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sraw".to_string()), 1); }
+// 
+// #[test]fn rv64ui_v_srl     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-srl".to_string()), 1); }
+// #[test]fn rv64ui_v_srli    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-srli".to_string()), 1); }
+// #[test]fn rv64ui_v_srliw   () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-srliw".to_string()), 1); }
+// #[test]fn rv64ui_v_srlw    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-srlw".to_string()), 1); }
+
+// #[test]fn rv64ud_v_fadd      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fadd".to_string()), 1); }
+// #[test]fn rv64ud_v_fclass    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fclass".to_string()), 1); }
+// #[test]fn rv64ud_v_fcmp      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fcmp".to_string()), 1); }
+// #[test]fn rv64ud_v_fcvt      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fcvt".to_string()), 1); }
+// #[test]fn rv64ud_v_fcvt_w    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fcvt_w".to_string()), 1); }
+// #[test]fn rv64ud_v_fdiv      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fdiv".to_string()), 1); }
+// #[test]fn rv64ud_v_fmadd     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fmadd".to_string()), 1); }
+// #[test]fn rv64ud_v_fmin      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-fmin".to_string()), 1); }
+// #[test]fn rv64ud_v_ldst      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-ldst".to_string()), 1); }
+// #[test]fn rv64ud_v_move      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-move".to_string()), 1); }
+// #[test]fn rv64ud_v_recoding  () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-recoding".to_string()), 1); }
+// #[test]fn rv64ud_v_structural() { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ud-v-structural".to_string()), 1); }
+// 
+// #[test]fn rv64uf_v_fadd      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fadd".to_string()), 1); }
+// #[test]fn rv64uf_v_fclass    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fclass".to_string()), 1); }
+// #[test]fn rv64uf_v_fcmp      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fcmp".to_string()), 1); }
+// #[test]fn rv64uf_v_fcvt      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fcvt".to_string()), 1); }
+// #[test]fn rv64uf_v_fcvt_w    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fcvt_w".to_string()), 1); }
+// #[test]fn rv64uf_v_fdiv      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fdiv".to_string()), 1); }
+// #[test]fn rv64uf_v_fmadd     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fmadd".to_string()), 1); }
+// #[test]fn rv64uf_v_fmin      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-fmin".to_string()), 1); }
+// #[test]fn rv64uf_v_ldst      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-ldst".to_string()), 1); }
+// #[test]fn rv64uf_v_move      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-move".to_string()), 1); }
+// #[test]fn rv64uf_v_recoding  () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-recoding".to_string()), 1); }
+// #[test]fn rv64uf_v_structural() { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64uf-v-structural".to_string()), 1); }

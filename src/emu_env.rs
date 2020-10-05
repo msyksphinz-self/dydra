@@ -274,7 +274,7 @@ impl EmuEnv {
             Self::reflect(v)
         };
 
-        let loop_max = if step { 12000 } else { 10000 };
+        let loop_max = if step { 100000 } else { 10000 };
         for loop_idx in 5..loop_max {
             if debug {
                 println!("========= BLOCK START =========");
@@ -451,6 +451,9 @@ impl EmuEnv {
                 self.dump_fpr();
             }
             // print!("PC = {:016x}\n", self.m_pc[0]);
+            if self.get_mem(0x1000) != 0 {
+                break;
+            }
         }
     }
 
