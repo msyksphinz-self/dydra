@@ -114,22 +114,22 @@ extern crate uint_execute;
 #[test]fn rv64ui_v_blt     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-blt".to_string()), 1); }
 #[test]fn rv64ui_v_bltu    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-bltu".to_string()), 1); }
 #[test]fn rv64ui_v_bne     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-bne".to_string()), 1); }
-#[test]fn rv64ui_v_fence_i () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-fence_i".to_string()), 1); }
-#[test]fn rv64ui_v_jal     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-jal".to_string()), 1); }
-#[test]fn rv64ui_v_jalr    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-jalr".to_string()), 1); }
-
-#[test]fn rv64ui_v_lb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lb".to_string()), 1); }
-#[test]fn rv64ui_v_lbu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lbu".to_string()), 1); }
-#[test]fn rv64ui_v_ld      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-ld".to_string()), 1); }
-#[test]fn rv64ui_v_lh      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lh".to_string()), 1); }
-#[test]fn rv64ui_v_lhu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lhu".to_string()), 1); }
-#[test]fn rv64ui_v_lw      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lw".to_string()), 1); }
-#[test]fn rv64ui_v_lwu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lwu".to_string()), 1); }
-
-#[test]fn rv64ui_v_sb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sb".to_string()), 1); }
-#[test]fn rv64ui_v_sd      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sd".to_string()), 1); }
-#[test]fn rv64ui_v_sh      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sh".to_string()), 1); }
-#[test]fn rv64ui_v_sw      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sw".to_string()), 1); }
+// #[test]fn rv64ui_v_fence_i () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-fence_i".to_string()), 1); }
+// #[test]fn rv64ui_v_jal     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-jal".to_string()), 1); }
+// #[test]fn rv64ui_v_jalr    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-jalr".to_string()), 1); }
+// 
+// #[test]fn rv64ui_v_lb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lb".to_string()), 1); }
+// #[test]fn rv64ui_v_lbu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lbu".to_string()), 1); }
+// #[test]fn rv64ui_v_ld      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-ld".to_string()), 1); }
+// #[test]fn rv64ui_v_lh      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lh".to_string()), 1); }
+// #[test]fn rv64ui_v_lhu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lhu".to_string()), 1); }
+// #[test]fn rv64ui_v_lw      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lw".to_string()), 1); }
+// #[test]fn rv64ui_v_lwu     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-lwu".to_string()), 1); }
+// 
+// #[test]fn rv64ui_v_sb      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sb".to_string()), 1); }
+// #[test]fn rv64ui_v_sd      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sd".to_string()), 1); }
+// #[test]fn rv64ui_v_sh      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sh".to_string()), 1); }
+// #[test]fn rv64ui_v_sw      () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-sw".to_string()), 1); }
 
 // #[test]fn rv64ui_v_slt     () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-slt".to_string()), 1); }
 // #[test]fn rv64ui_v_slti    () { assert_eq!(uint_execute::run_riscv_test("/home/msyksphinz/riscv64/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-v-slti".to_string()), 1); }
