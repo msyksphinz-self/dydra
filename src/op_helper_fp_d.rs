@@ -1,4 +1,4 @@
-use softfloat_wrapper_riscv::{ExceptionFlags, Float, RoundingMode, F64};
+use softfloat_wrapper::{ExceptionFlags, Float, RoundingMode, F64};
 use crate::target::riscv::riscv_csr::{CsrAddr};
 use crate::emu_env::EmuEnv;
 
@@ -235,7 +235,8 @@ impl EmuEnv {
         } else if fs1_data.is_positive_zero () || fs1_data.is_positive_subnormal() {
             result = 1 << 5;
         } else if fs1_data.is_nan() {
-            if fs1_data.is_quiet_nan() {
+            if (fs1_data.exponent() == F64::EXPONENT_BIT) &&
+                (fs1_data.fraction() & (1 << (F64::EXPONENT_POS - 1))) != 0 {
                 result = 1 << 9;
             } else {
                 result = 1 << 8;
