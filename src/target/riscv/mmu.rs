@@ -71,8 +71,10 @@ impl EmuEnv {
             self.m_priv
         };
 
-        println!("<Convert_Virtual_Address. virtual_addr={:016x} : vm_mode = {}, priv_mode = {}>",
+        if self.m_arg_config.mmu_debug { 
+            println!("<Convert_Virtual_Address. virtual_addr={:016x} : vm_mode = {}, priv_mode = {}>",
                  virtual_addr, self.get_vm_mode() as u32, priv_mode as u32);
+        }
 
         if self.get_vm_mode() == VMMode::Sv39
             && (priv_mode == PrivMode::Supervisor || priv_mode == PrivMode::User)
@@ -126,12 +128,12 @@ impl EmuEnv {
         //     let pte_val:u64 = m_tlb_addr[virtual_addr_tag] & 0x0ff;
         //
         //     if (!is_allowed_access ((pte_val >> 1) & 0x0f, acc_type, self.m_priv)) {
-        //         println! ("<Page Access Failed. Allowed Access Failed PTE_VAL=%016lx>", pte_val);
+        //         if self.m_arg_config.mmu_debug { println! ("<Page Access Failed. Allowed Access Failed PTE_VAL=%016lx>", pte_val);
         //         return Err(MemResult::TlbError);
         //     }
         //     if (((pte_val & 0x40) == 0) || // PTE.A
         //         ((acc_type == MemAccType::Write) && (pte_val & 0x80) == 0)) { // PTE.D
-        //         println!("<Access Fault : Page Permission Fault {:01x}>", (pte_val >> 1) & 0x0f);
+        //         if self.m_arg_config.mmu_debug { println!("<Access Fault : Page Permission Fault {:01x}>", (pte_val >> 1) & 0x0f);
         //         if (acc_type == MemAccType::Fetch) {
         //             generate_exception (self, ExceptCode::InstPageFault, virtual_addr as i64);
         //         }
@@ -154,17 +156,18 @@ impl EmuEnv {
 
             pte_val = self.read_mem_4byte(pte_addr) as i64;
 
-            println!(
-                "<Info: VAddr = 0x{:016x} PTEAddr = 0x{:016x} : PPTE = 0x{:08x}>",
-                virtual_addr, pte_addr, pte_val
-            );
+            if self.m_arg_config.mmu_debug {
+                println!("<Info: VAddr = 0x{:016x} PTEAddr = 0x{:016x} : PPTE = 0x{:08x}>",virtual_addr, pte_addr, pte_val);
+            }
 
             // 3. If pte:v = 0, or if pte:r = 0 and pte:w = 1, stop and raise a page-fault exception.
             if (pte_val & 0x01) == 0 || (((pte_val & 0x02) == 0) && ((pte_val & 0x04) == 0x04)) {
                 // let bit_length: u32 = m_bit_mode == RiscvBitMode_t::Bit32 ? 8 : 16;
-                println!("<Page Table Error : 0x{:016x} = 0x{:08x} is not valid Page Table. Generate Exception>",
+                if self.m_arg_config.mmu_debug { 
+                    println!("<Page Table Error : 0x{:016x} = 0x{:08x} is not valid Page Table. Generate Exception>",
                          pte_addr, pte_val);
-
+                }
+                
                 match acc_type {
                     MemAccType::Fetch => {
                         self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
@@ -187,11 +190,11 @@ impl EmuEnv {
                 break;
             } else {
                 if level == 0 {
-                    println!(
+                    if self.m_arg_config.mmu_debug { println!(
                         "<Access Fault : Tried to Access to Page {:01x}>",
                         ((pte_val >> 1) & 0x0f)
                     );
-
+                }
                     match acc_type {
                         MemAccType::Fetch => {
                             self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
@@ -221,10 +224,9 @@ impl EmuEnv {
             acc_type.clone(),
             current_priv,
         ) {
-            println!(
-                "<Page Access Failed. Allowed Access Failed PTE_VAL={:016x}>",
-                pte_val,
-            );
+            if self.m_arg_config.mmu_debug { 
+                println!("<Page Access Failed. Allowed Access Failed PTE_VAL={:016x}>",pte_val);
+            }
             return Err(MemResult::TlbError);
         }
 
@@ -237,7 +239,7 @@ impl EmuEnv {
         {
             // 6. If i > 0 and pa:ppn[i−1:0] != 0, this is a misaligned superpage
             // stop and raise a page-fault exception.
-            // println! ("<Page Access Failed. Last PTE != 0>");
+            // if self.m_arg_config.mmu_debug { println! ("<Page Access Failed. Last PTE != 0>");
             return Err(MemResult::TlbError);
         }
 
@@ -245,11 +247,11 @@ impl EmuEnv {
             (is_write_access && (pte_val & 0x80) == 0)
         {
             // PTE.D
-            println!(
+            if self.m_arg_config.mmu_debug { println!(
                 "<Access Fault : Page Permission Fault {:01x}",
                 ((pte_val >> 1) & 0x0f)
-            );
-
+               );
+            }
             match acc_type {
                 MemAccType::Fetch => {
                     self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
@@ -271,7 +273,7 @@ impl EmuEnv {
             pte_idx[level],
         ) << ppn_idx[level]) as u64;
 
-        // println!("Level = {}", level);
+        // if self.m_arg_config.mmu_debug { println!("Level = {}", level);
 
         for l in 0..(level + 1) {
             let virtual_addr_vpn: u64 = Self::extract_bit_field(
@@ -288,7 +290,7 @@ impl EmuEnv {
         //==========================
         // Update Simple TLB Search
         //==========================
-        // println!(
+        // if self.m_arg_config.mmu_debug { println!(
         //     "<Info: TLB[{:d}] <= 0x{:016x}(0x{:016x})>",
         //     virtual_addr as i64_tag,
         //     virtual_addr as i64_vpn,
@@ -298,7 +300,7 @@ impl EmuEnv {
         // m_tlb_tag [virtual_addr_tag] = virtual_addr_vpn;
         // m_tlb_addr[virtual_addr_tag] = (*paddr & !0x0fff) | (pte_val & 0x0ff);
 
-        // println!("<Converted Virtual Address = {:08x}>", phy_addr);
+        // if self.m_arg_config.mmu_debug { println!("<Converted Virtual Address = {:08x}>", phy_addr);
         return Ok(phy_addr);
     }
 

@@ -13,6 +13,7 @@ pub mod op_helper_fp_d;
 pub mod op_helper_mem;
 
 use crate::emu_env::EmuEnv;
+use crate::emu_env::ArgConfig;
 
 fn main() {
     let matches = App::new("Hydra")
@@ -32,6 +33,13 @@ fn main() {
         .about("Debug mode")
         .short('d')
         .long("debug")
+        .required(false)
+    )
+    .arg(
+        Arg::new("mmu-debug")
+        .about("MMU debug log output")
+        .short('m')
+        .long("mmu")
         .required(false)
     )
     .arg(
@@ -61,16 +69,25 @@ fn main() {
     )
     .get_matches();
 
-    let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();
-    let step = matches.is_present("step");
-    let debug = matches.is_present("debug");
-    let dump_gpr = matches.is_present("dump-gpr");
-    let dump_fpr = matches.is_present("dump-fpr");
-    let dump_tcg = matches.is_present("dump-tcg");
-    let debug = if dump_gpr || dump_fpr || dump_tcg { true } else { debug };
+    let arg_config_step     = matches.is_present("step");
+    let arg_config_dump_gpr = matches.is_present("dump-gpr");
+    let arg_config_dump_fpr = matches.is_present("dump-fpr");
+    let arg_config_dump_tcg = matches.is_present("dump-tcg");
+    let arg_config_mmu_debug = matches.is_present("mmu-debug");
+    let arg_config_debug    = matches.is_present("debug") || arg_config_dump_gpr || arg_config_dump_fpr || arg_config_dump_tcg;
+    let arg_config = ArgConfig {
+        step    : arg_config_step,
+        debug   : arg_config_debug,
+        dump_gpr: arg_config_dump_gpr,
+        dump_fpr: arg_config_dump_fpr,
+        dump_tcg: arg_config_dump_tcg,
+        mmu_debug: arg_config_mmu_debug,
+    };
 
-    let mut emu = EmuEnv::new();
-    emu.run(&elf_file, debug, dump_gpr, dump_fpr, dump_tcg, step);
+    let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();
+
+    let mut emu = EmuEnv::new(arg_config);
+    emu.run(&elf_file);
 
     println!("Result: MEM[0x1000] = {:08x}", emu.get_mem(0x1000));
 

@@ -8,11 +8,20 @@ pub mod op_helper_fp_d;
 pub mod op_helper_fp_s;
 pub mod op_helper_mem;
 
-use crate::emu_env::EmuEnv;
+use crate::emu_env::{EmuEnv, ArgConfig};
 
 pub fn run(filename: String, exp_gpr: &[u64; 32]) -> usize {
-    let mut emu = EmuEnv::new();
-    emu.run(&filename, false, false, false, false, false);
+    let arg_config = ArgConfig {
+        step    : false,
+        debug   : false,
+        dump_gpr: false,
+        dump_fpr: false,
+        dump_tcg: false,
+        mmu_debug: false,
+    };
+
+    let mut emu = EmuEnv::new(arg_config);
+    emu.run(&filename);
     let gpr_vec = emu.get_gpr();
     for (gpr_val, exp_val) in gpr_vec.iter().zip(exp_gpr.iter()) {
         if gpr_val != exp_val {
@@ -24,7 +33,16 @@ pub fn run(filename: String, exp_gpr: &[u64; 32]) -> usize {
 }
 
 pub fn run_riscv_test(filename: String) -> u64 {
-    let mut emu = EmuEnv::new();
-    emu.run(&filename, false, false, false, false, false);
+    let arg_config = ArgConfig {
+        step    : false,
+        debug   : false,
+        dump_gpr: false,
+        dump_fpr: false,
+        dump_tcg: false,
+        mmu_debug : false,
+    };
+
+    let mut emu = EmuEnv::new(arg_config);
+    emu.run(&filename);
     return emu.get_mem(0x1000) as u64;
 }

@@ -18,6 +18,18 @@ use crate::tcg::x86::x86::TCGX86;
 use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
 
+
+#[derive(Debug, Copy, Clone)]
+pub struct ArgConfig {
+    pub debug: bool, 
+    pub dump_gpr: bool, 
+    pub dump_fpr: bool, 
+    pub dump_tcg: bool, 
+    pub step: bool,
+    pub mmu_debug: bool,
+}
+
+
 pub struct EmuEnv {
     pub head: [u64; 1], // pointer of this struct. Do not move.
 
@@ -46,10 +58,13 @@ pub struct EmuEnv {
     pub m_host_epilogue: [u8; 11],
 
     m_updated_pc : bool,
+
+    // Configuration
+    pub m_arg_config: ArgConfig,
 }
 
 impl EmuEnv {
-    pub fn new() -> EmuEnv {
+    pub fn new(arg_config: ArgConfig) -> EmuEnv {
         EmuEnv {
             head: [0xdeadbeef; 1],
             m_priv: PrivMode::Machine,
@@ -154,6 +169,8 @@ impl EmuEnv {
                 0xc3, // retq
             ],
             m_updated_pc: false,
+
+            m_arg_config: arg_config,
         }
     }
 
@@ -191,7 +208,7 @@ impl EmuEnv {
         return self.m_regs;
     }
 
-    pub fn run(&mut self, filename: &String, debug: bool, dump_gpr: bool, dump_fpr: bool, dump_tcg: bool, step: bool) {
+    pub fn run(&mut self, filename: &String) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
             Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
@@ -274,14 +291,14 @@ impl EmuEnv {
             Self::reflect(v)
         };
 
-        let loop_max = if step { 100000 } else { 10000 };
+        let loop_max = if self.m_arg_config.step { 100000 } else { 10000 };
         for loop_idx in 5..loop_max {
-            if debug {
+            if self.m_arg_config.debug {
                 println!("========= BLOCK START =========");
             }
             // let mut guest_pc = self.m_pc[0];
             self.m_tcg_vec.clear();
-            if debug {
+            if self.m_arg_config.debug {
                 print!("{:}: Guest PC Address = {:08x}\n", loop_idx, self.m_pc[0]);
             }
             #[allow(while_true)]
@@ -308,11 +325,11 @@ impl EmuEnv {
                 };
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
                 self.m_tcg_vec.append(&mut tcg_inst);
-                if step {
+                if self.m_arg_config.step {
                     let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB)];
                     self.m_tcg_vec.append(&mut exit_tcg);
                 }
-                if debug {
+                if self.m_arg_config.debug {
                     print!("  {:08x} : {}\n",  inst_info.inst, disassemble_riscv(guest_inst));
                 }
                 if id == RiscvInstId::JALR
@@ -329,8 +346,8 @@ impl EmuEnv {
                     break;
                 }
                 self.m_pc[0] = self.m_pc[0] + 4;
-                if step {
-                    break;      // When Debug Mode, break for each instruction
+                if self.m_arg_config.step {
+                    break;      // When self.m_arg_config.debug Mode, break for each instruction
                 }
             }
 
@@ -370,7 +387,7 @@ impl EmuEnv {
 
             self.m_tcg_tb_vec.clear();
             for tcg in &self.m_tcg_vec {
-                if dump_tcg {
+                if self.m_arg_config.dump_tcg {
                     println!("tcg_inst = {:?}", &tcg);
                 }
 
@@ -444,10 +461,10 @@ impl EmuEnv {
                 let _ans = func(emu_ptr, tb_host_data);
                 // println!("ans = 0x{:x}", ans);
             }
-            if dump_gpr {
+            if self.m_arg_config.dump_gpr {
                 self.dump_gpr();
             }
-            if dump_fpr {
+            if self.m_arg_config.dump_fpr {
                 self.dump_fpr();
             }
             // print!("PC = {:016x}\n", self.m_pc[0]);
