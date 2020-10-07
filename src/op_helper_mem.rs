@@ -3,17 +3,9 @@ use crate::target::riscv::mmu::{MemAccType, MemResult};
 use crate::target::riscv::riscv::ExceptCode;
 
 impl EmuEnv {
-    pub fn helper_func_load64(
-        emu: &mut EmuEnv,
-        rd: u64,
-        rs1: u64,
-        imm: u64,
-        guest_pc: u64,
-    ) -> usize {
+    pub fn helper_func_load64(emu: &mut EmuEnv,rd: u64,rs1: u64,imm: u64,guest_pc: u64) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
-
-        println!("load64 : converted address: {:016x}", addr);
 
         #[allow(unused_assignments)]
         let mut guest_phy_addr :u64 = 0;
