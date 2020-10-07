@@ -27,6 +27,8 @@ pub struct ArgConfig {
     pub dump_tcg: bool, 
     pub step: bool,
     pub mmu_debug: bool,
+    pub dump_guest: bool,
+    pub dump_host: bool,
 }
 
 
@@ -291,8 +293,9 @@ impl EmuEnv {
             Self::reflect(v)
         };
 
-        let loop_max = if self.m_arg_config.step { 100000 } else { 10000 };
-        for loop_idx in 5..loop_max {
+        let loop_max = 100000;
+        let mut loop_idx = 5;
+        while loop_idx < loop_max {
             if self.m_arg_config.debug {
                 println!("========= BLOCK START =========");
             }
@@ -303,6 +306,7 @@ impl EmuEnv {
             }
             #[allow(while_true)]
             while true {
+                loop_idx += 1;
                 #[allow(unused_assignments)]
                 let mut guest_phy_addr = 0;
                 match self.convert_physical_address(self.m_pc[0], self.m_pc[0], MemAccType::Fetch) {
@@ -329,8 +333,8 @@ impl EmuEnv {
                     let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB)];
                     self.m_tcg_vec.append(&mut exit_tcg);
                 }
-                if self.m_arg_config.debug {
-                    print!("  {:08x} : {}\n",  inst_info.inst, disassemble_riscv(guest_inst));
+                if self.m_arg_config.dump_guest {
+                    print!(" {:016x}:{:016x} Hostcode {:08x} : {}\n",  self.m_pc[0], guest_phy_addr, inst_info.inst, disassemble_riscv(guest_inst));
                 }
                 if id == RiscvInstId::JALR
                     || id == RiscvInstId::JAL
@@ -342,6 +346,7 @@ impl EmuEnv {
                     || id == RiscvInstId::BLTU
                     || id == RiscvInstId::ECALL
                     || id == RiscvInstId::MRET
+                    || id == RiscvInstId::SRET
                 {
                     break;
                 }
@@ -397,7 +402,9 @@ impl EmuEnv {
                     let be_data = *be;
                     self.m_tcg_tb_vec.push(be_data);
                 }
-                disassemble_x86(mc_byte.as_slice(), self.m_tb_text_mem.data());
+                if self.m_arg_config.dump_host {
+                    disassemble_x86(mc_byte.as_slice(), self.m_tb_text_mem.data());
+                }
                 pc_address += mc_byte.len() as u64;
             }
 
@@ -450,24 +457,24 @@ impl EmuEnv {
             // }
 
             let emu_ptr: *const [u64; 1] = &self.head;
+            print!("NextPC0 = {:016x}\n", self.m_pc[0]);
 
             unsafe {
                 let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
                     mem::transmute(self.m_prologue_epilogue_mem.data());
 
                 let tb_host_data = self.m_tb_text_mem.data();
-                // println!("reflect tb address = {:p}", tb_host_data);
 
                 let _ans = func(emu_ptr, tb_host_data);
-                // println!("ans = 0x{:x}", ans);
             }
+
             if self.m_arg_config.dump_gpr {
                 self.dump_gpr();
             }
             if self.m_arg_config.dump_fpr {
                 self.dump_fpr();
             }
-            // print!("PC = {:016x}\n", self.m_pc[0]);
+            print!("NextPC = {:016x}\n", self.m_pc[0]);
             if self.get_mem(0x1000) != 0 {
                 break;
             }
@@ -679,7 +686,7 @@ impl EmuEnv {
             "<Info: Exception. ChangeMode from {} to {}>",
             curr_priv as u32, next_priv as u32
         );
-        println!("<Info: Set Program Counter = 0x{:16x}>", tvec);
+        println!("<Info: Set Program Counter = 0x{:16x}>", self.m_pc[0]);
         self.m_updated_pc = true;
 
         return;

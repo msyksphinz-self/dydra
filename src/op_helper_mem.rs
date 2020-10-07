@@ -1,5 +1,5 @@
 use crate::emu_env::EmuEnv;
-use crate::target::riscv::mmu::{MemAccType};
+use crate::target::riscv::mmu::{MemAccType, MemResult};
 use crate::target::riscv::riscv::ExceptCode;
 
 impl EmuEnv {
@@ -20,17 +20,15 @@ impl EmuEnv {
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
-                println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 emu.m_regs[rd as usize] = emu.read_mem_8byte(guest_phy_addr) as u64;
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
-                print!("Read Error: {:?}\n", error);
                 emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                return error as usize;
             }
         };
-
-        return 0;
-    }
+   }
 
     pub fn helper_func_load32(
         emu: &mut EmuEnv,
@@ -48,14 +46,14 @@ impl EmuEnv {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
                 println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
-                emu.m_regs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as i32 as u64;
+                emu.m_regs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as i32 as u64; return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
                 emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_load16(
@@ -74,14 +72,15 @@ impl EmuEnv {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
                 println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
-                emu.m_regs[rd as usize] = emu.read_mem_2byte(guest_phy_addr) as i16 as u64;
+                emu.m_regs[rd as usize] = emu.read_mem_2byte(guest_phy_addr) as i16 as u64; 
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
                 emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_load8(
@@ -100,14 +99,15 @@ impl EmuEnv {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
                 println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
-                emu.m_regs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as i8 as u64;
+                emu.m_regs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as i8 as u64; 
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
                 emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_loadu32(
@@ -126,14 +126,15 @@ impl EmuEnv {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
                 println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
-                emu.m_regs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as u64;
+                emu.m_regs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as u64; 
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
                 emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_loadu16(
@@ -153,13 +154,14 @@ impl EmuEnv {
                 guest_phy_addr = addr; 
                 println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 emu.m_regs[rd as usize] = emu.read_mem_2byte(guest_phy_addr) as u64;
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
                 emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_loadu8(
@@ -178,14 +180,15 @@ impl EmuEnv {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
                 println!("load64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
-                emu.m_regs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as u64;
+                emu.m_regs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as u64; 
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
-                emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                emu.generate_exception(guest_pc, ExceptCode::StorePageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_store64(
@@ -205,14 +208,16 @@ impl EmuEnv {
             Ok(addr) => { 
                 guest_phy_addr = addr; 
                 println!("store64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
-                emu.write_mem_8byte(guest_phy_addr, rs2_data);
+                emu.write_mem_8byte(guest_phy_addr, rs2_data); 
+                return MemResult::NoExcept as usize; 
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
-                emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                emu.generate_exception(guest_pc, ExceptCode::StorePageFault, addr as i64);
+                return error as usize;
             }
         };
-    return 0;}
+    }
 
     pub fn helper_func_store32(
         emu: &mut EmuEnv,
@@ -232,13 +237,14 @@ impl EmuEnv {
                 guest_phy_addr = addr; 
                 println!("store32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 emu.write_mem_4byte(guest_phy_addr, rs2_data as u32);
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
-                emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                emu.generate_exception(guest_pc, ExceptCode::StorePageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_store16(
@@ -259,13 +265,14 @@ impl EmuEnv {
                 guest_phy_addr = addr; 
                 println!("store16 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 emu.write_mem_2byte(guest_phy_addr, rs2_data as u16);
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
-                emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                emu.generate_exception(guest_pc, ExceptCode::StorePageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
 
     pub fn helper_func_store8(
@@ -286,13 +293,13 @@ impl EmuEnv {
                 guest_phy_addr = addr; 
                 println!("store8 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 emu.write_mem_1byte(guest_phy_addr, rs2_data as u8);
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
-                emu.generate_exception(guest_pc, ExceptCode::LoadPageFault, addr as i64);
+                emu.generate_exception(guest_pc, ExceptCode::StorePageFault, addr as i64);
+                return error as usize;
             }
         };
-        return 0;
     }
-
 }

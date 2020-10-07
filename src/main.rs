@@ -67,6 +67,18 @@ fn main() {
         .short('s')
         .required(false)
     )
+    .arg(
+        Arg::new("dump-guest")
+        .about("Dump Guest Instruction")
+        .long("dump-guest")
+        .required(false)
+    )
+    .arg(
+        Arg::new("dump-host")
+        .about("Dump Host Instruction")
+        .long("dump-host")
+        .required(false)
+    )
     .get_matches();
 
     let arg_config_step     = matches.is_present("step");
@@ -74,6 +86,8 @@ fn main() {
     let arg_config_dump_fpr = matches.is_present("dump-fpr");
     let arg_config_dump_tcg = matches.is_present("dump-tcg");
     let arg_config_mmu_debug = matches.is_present("mmu-debug");
+    let arg_config_dump_guest = matches.is_present("dump-guest");
+    let arg_config_dump_host = matches.is_present("dump-host");
     let arg_config_debug    = matches.is_present("debug") || arg_config_dump_gpr || arg_config_dump_fpr || arg_config_dump_tcg;
     let arg_config = ArgConfig {
         step    : arg_config_step,
@@ -82,6 +96,8 @@ fn main() {
         dump_fpr: arg_config_dump_fpr,
         dump_tcg: arg_config_dump_tcg,
         mmu_debug: arg_config_mmu_debug,
+        dump_guest: arg_config_dump_guest,
+        dump_host: arg_config_dump_host,
     };
 
     let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();

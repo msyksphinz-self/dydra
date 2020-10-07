@@ -18,6 +18,8 @@ pub fn run(filename: String, exp_gpr: &[u64; 32]) -> usize {
         dump_fpr: false,
         dump_tcg: false,
         mmu_debug: false,
+        dump_guest: false,
+        dump_host: false,
     };
 
     let mut emu = EmuEnv::new(arg_config);
@@ -40,6 +42,8 @@ pub fn run_riscv_test(filename: String) -> u64 {
         dump_fpr: false,
         dump_tcg: false,
         mmu_debug : false,
+        dump_guest: false,
+        dump_host: false,
     };
 
     let mut emu = EmuEnv::new(arg_config);

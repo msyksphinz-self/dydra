@@ -691,6 +691,8 @@ impl TCG for TCGX86 {
                     TCGOpcode::SLT_64BIT => TCGX86::tcg_gen_slt_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::SLTU_64BIT => TCGX86::tcg_gen_sltu_64bit(emu, pc_address, tcg, mc),
 
+                    TCGOpcode::EQ_EAX_64BIT => TCGX86::tcg_gen_eq_eax_64bit(emu, pc_address, tcg, mc),
+
                     TCGOpcode::LOAD_64BIT => TCGX86::tcg_gen_load(
                         emu,
                         pc_address,
@@ -1229,6 +1231,35 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sltu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         return Self::tcg_gen_setcc(emu, pc_address, X86Opcode::SETB, tcg, mc);
+    }
+
+    fn tcg_gen_eq_eax_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let arg0 = tcg.arg0.unwrap();
+        let arg1 = tcg.arg1.unwrap();
+
+        let label = match &tcg.label {
+            Some(l) => l,
+            None => panic!("Label is not defined."),
+        };
+
+        let mut gen_size: usize = pc_address as usize;
+
+        // mov    reg_offset(%rbp),%eax
+        // gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
+
+        // cmp    reg_offset(%rbp),%eax
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::CMP_GV_EV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
+
+        gen_size = Self::tcg_gen_jcc(gen_size, X86Opcode::JE_rel16_32, mc, label);
+        // je     label
+
+        return gen_size;
     }
 
     fn tcg_exit_tb(emu: &EmuEnv, pc_address: u64, _tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {

@@ -1,4 +1,7 @@
-use super::super::super::tcg::tcg::{TCGOp, TCGOpcode, TCGv};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use super::super::super::tcg::tcg::{TCGOp, TCGOpcode, TCGv, TCGLabel};
 use super::super::super::instr_info::InstrInfo;
 
 use super::super::super::get_rs1_addr;
@@ -156,8 +159,19 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
+
 
         // Self::translate_rri(TCGOpcode::LOAD_64BIT, inst)
     }
@@ -172,8 +186,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_rri(TCGOpcode::LOAD_32BIT, inst)
     }
@@ -188,8 +212,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_rri(TCGOpcode::LOAD_16BIT, inst)
     }
@@ -204,8 +238,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_rri(TCGOpcode::LOAD_8BIT, inst)
     }
@@ -220,8 +264,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_rri(TCGOpcode::LOADU_32BIT, inst)
     }
@@ -236,8 +290,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_rri(TCGOpcode::LOADU_16BIT, inst)
     }
@@ -252,8 +316,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let tcg_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_rri(TCGOpcode::LOADU_8BIT, inst)
     }
@@ -270,9 +344,19 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
 
+        let call_sd_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![call_sd_op, result_cmp_op, exit_tb, tcg_set_label]
+ 
         // Self::translate_store(TCGOpcode::STORE_64BIT, inst)
     }
     pub fn translate_sw(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -287,8 +371,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE32_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let call_sd_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE32_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![call_sd_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_store(TCGOpcode::STORE_32BIT, inst)
     }
@@ -304,8 +398,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE16_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let call_sd_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE16_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![call_sd_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_store(TCGOpcode::STORE_16BIT, inst)
     }
@@ -321,8 +425,18 @@ impl TranslateRiscv {
 
         let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
 
-        let op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE8_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
-        vec![op]
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let call_sd_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE8_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
+
+        let zero = Box::new(TCGv::new_reg(0 as u64));        
+        let dummy_addr = Box::new(TCGv::new_imm(0));
+
+        let result_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label));
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
+
+        vec![call_sd_op, result_cmp_op, exit_tb, tcg_set_label]
 
         // Self::translate_store(TCGOpcode::STORE_8BIT, inst)
     }
