@@ -1,5 +1,5 @@
 [package]
-name = "uint_execute"
+name = "dydra"
 version = "0.1.0"
 authors = ["msyksphinz <msyksphinz.dev@gmail.com>"]
 edition = "2018"
