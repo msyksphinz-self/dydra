@@ -43,7 +43,7 @@ pub struct EmuEnv {
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 53],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 57],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -130,6 +130,10 @@ impl EmuEnv {
                 Self::helper_func_store32,
                 Self::helper_func_store16,
                 Self::helper_func_store8,
+                Self::helper_func_float_load64,
+                Self::helper_func_float_load32,
+                Self::helper_func_float_store64,
+                Self::helper_func_float_store32,
             ],
             // m_inst_vec: vec![],
             m_tcg_vec: vec![],
@@ -457,7 +461,6 @@ impl EmuEnv {
             // }
 
             let emu_ptr: *const [u64; 1] = &self.head;
-            print!("NextPC0 = {:016x}\n", self.m_pc[0]);
 
             unsafe {
                 let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
@@ -474,7 +477,6 @@ impl EmuEnv {
             if self.m_arg_config.dump_fpr {
                 self.dump_fpr();
             }
-            print!("NextPC = {:016x}\n", self.m_pc[0]);
             if self.get_mem(0x1000) != 0 {
                 break;
             }

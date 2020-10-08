@@ -172,7 +172,6 @@ impl TranslateRiscv {
 
         vec![tcg_call_op, result_cmp_op, exit_tb, tcg_set_label]
 
-
         // Self::translate_rri(TCGOpcode::LOAD_64BIT, inst)
     }
     pub fn translate_lw(inst: &InstrInfo) -> Vec<TCGOp> {
