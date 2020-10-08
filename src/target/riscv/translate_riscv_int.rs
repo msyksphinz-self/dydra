@@ -60,7 +60,7 @@ impl TranslateRiscv {
 
 
     pub fn translate_lui(inst: &InstrInfo) -> Vec<TCGOp> {
-        let imm_const: u64 = (inst.inst as u64) & !0xfff;
+        let imm_const: u64 = ((inst.inst as i32 as i64) & !0xfff) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
         let rs1 = Box::new(TCGv::new_reg(0));

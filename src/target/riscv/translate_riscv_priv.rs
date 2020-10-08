@@ -93,7 +93,8 @@ impl TranslateRiscv {
         vec![]
     }
     pub fn translate_fence_i(_inst: &InstrInfo) -> Vec<TCGOp> {
-        vec![]
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        vec![exit_tb]
     }
     pub fn translate_sfence_vma(_inst: &InstrInfo) -> Vec<TCGOp> {
         vec![]

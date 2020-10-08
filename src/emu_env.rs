@@ -355,6 +355,11 @@ impl EmuEnv {
                     break;
                 }
                 self.m_pc[0] = self.m_pc[0] + 4;
+
+                if id == RiscvInstId::FENCE_I {
+                    break;
+                }
+
                 if self.m_arg_config.step {
                     break;      // When self.m_arg_config.debug Mode, break for each instruction
                 }

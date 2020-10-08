@@ -196,14 +196,16 @@ impl TCGX86 {
 
     fn tcg_gen_mov_gpr_imm_64bit(emu: &EmuEnv, dest: u64, imm: u64, mc: &mut Vec<u8>) -> usize {
         let mut gen_size = 0;
+
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, imm, mc);
+
         gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::MOV_EV_IV,
+            X86Opcode::MOV_EV_GV,
             X86ModRM::MOD_10_DISP_RBP,
             X86TargetRM::RAX,
             mc,
         );
         gen_size += Self::tcg_out(emu.calc_gpr_relat_address(dest) as u64, 4, mc);
-        gen_size += Self::tcg_out(imm as u64, 4, mc);
         return gen_size;
     }
 
