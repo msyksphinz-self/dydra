@@ -1279,66 +1279,60 @@ impl TCG for TCGX86 {
                 let mut gen_size = 0;
                 gen_size += Self::tcg_modrm_64bit_out(
                     X86Opcode::MOV_GV_EV_32BIT,
-                    X86ModRM::MOD_10_DISP_RAX,
+                    X86ModRM::MOD_00_DISP_RAX,
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_16BIT => {
                 let mut gen_size = 0;
                 gen_size += Self::tcg_modrm_2byte_64bit_out(
                     X86Opcode::MOV_GV_EV_S_16BIT,
-                    X86ModRM::MOD_10_DISP_RAX,
+                    X86ModRM::MOD_00_DISP_RAX,
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_8BIT => {
                 let mut gen_size = 0;
                 gen_size += Self::tcg_modrm_2byte_64bit_out(
                     X86Opcode::MOV_GV_EV_S_8BIT,
-                    X86ModRM::MOD_10_DISP_RAX,
+                    X86ModRM::MOD_00_DISP_RAX,
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_U_32BIT => {
                 let mut gen_size = 0;
                 gen_size += Self::tcg_modrm_32bit_out(
                     X86Opcode::MOV_GV_EV,
-                    X86ModRM::MOD_10_DISP_RAX,
+                    X86ModRM::MOD_00_DISP_RAX,
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_U_16BIT => {
                 let mut gen_size = 0;
                 gen_size += Self::tcg_modrm_2byte_32bit_out(
                     X86Opcode::MOV_GV_EV_U_16BIT,
-                    X86ModRM::MOD_10_DISP_RAX,
+                    X86ModRM::MOD_00_DISP_RAX,
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             MemOpType::LOAD_U_8BIT => {
                 let mut gen_size = 0;
                 gen_size += Self::tcg_modrm_2byte_32bit_out(
                     X86Opcode::MOV_GV_EV_U_8BIT,
-                    X86ModRM::MOD_10_DISP_RAX,
+                    X86ModRM::MOD_00_DISP_RAX,
                     X86TargetRM::RAX,
                     mc,
                 );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
                 gen_size
             }
             _ => panic!("Not supported load instruction."),

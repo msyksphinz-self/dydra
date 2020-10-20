@@ -31,6 +31,9 @@ impl EmuEnv {
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
             Ok(guest_phy_addr) => { 
                 println!("load32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
+                emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);
+                emu.m_tlb_addr_vec[((addr >> 12) & 0xfff) as usize] = guest_phy_addr & !0xfff;
+                println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 emu.m_regs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as i32 as u64; 
                 return MemResult::NoExcept as usize;
             }

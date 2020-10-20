@@ -61,8 +61,8 @@ pub struct EmuEnv {
 
     m_updated_pc : bool,
 
-    pub m_tlb_vec: [u64; 4096],
-    pub m_tlb_addr_vec: [u64; 4096],
+        pub m_tlb_vec: [u64; 4096],
+        pub m_tlb_addr_vec: [u64; 4096],
     // Configuration
     pub m_arg_config: ArgConfig,
 }
