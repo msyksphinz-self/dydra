@@ -93,7 +93,7 @@ impl TranslateRiscv {
         vec![]
     }
     pub fn translate_fence_i(_inst: &InstrInfo) -> Vec<TCGOp> {
-        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         vec![exit_tb]
     }
     pub fn translate_sfence_vma(_inst: &InstrInfo) -> Vec<TCGOp> {
@@ -101,19 +101,19 @@ impl TranslateRiscv {
     }
     pub fn translate_mret(_inst: &InstrInfo) -> Vec<TCGOp> {
         let mret_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_MRET_IDX as usize);
-        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         vec![mret_op, exit_tb]
     }
 
     pub fn translate_ecall(_inst: &InstrInfo) -> Vec<TCGOp> {
         let ecall_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_ECALL_IDX as usize);
-        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         vec![ecall_op, exit_tb]
     }
 
     pub fn translate_sret(_inst: &InstrInfo) -> Vec<TCGOp> {
         let mret_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_SRET_IDX as usize);
-        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB);
+        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         vec![mret_op, exit_tb]
     }
 

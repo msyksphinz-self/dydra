@@ -71,6 +71,8 @@ pub enum TCGOpcode {
     SGNJN_32BIT,
     SGNJX_32BIT,   
 
+    TLB_MATCH_CHECK,
+    CMP_EQ,
     EXIT_TB,
 }
 
@@ -115,14 +117,14 @@ pub enum RegisterType {
 }
 
 impl TCGOp {
-    pub fn new_0op(opcode: TCGOpcode) -> TCGOp {
+    pub fn new_0op(opcode: TCGOpcode, label: Option<Rc<RefCell<TCGLabel>>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: None,
             arg1: None,
             arg2: None,
             arg3: None,
-            label: None,
+            label: label,
             helper_idx: 0,
         }
     }
@@ -333,23 +335,9 @@ pub trait TCG {
     fn tcg_gen_sra_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     /* Memory Access */
-    fn tcg_gen_load(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-        mem_size: MemOpType,
-        target_reg: RegisterType,
-    ) -> usize;
+    fn tcg_gen_load(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType, target_reg: RegisterType) -> usize;
 
-    fn tcg_gen_store(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-        mem_size: MemOpType,
-        target_reg: RegisterType,
-    ) -> usize;
+    fn tcg_gen_store(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType, target_reg: RegisterType) -> usize;
 
     /* Label Relocation */
     fn tcg_out_reloc(host_code_ptr: usize, label: &Rc<RefCell<TCGLabel>>) -> usize;
@@ -360,38 +348,12 @@ pub trait TCG {
     fn tcg_gen_csrrs(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_csrrc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_helper_call(
-        emu: &EmuEnv,
-        arg_size: usize,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
+    fn tcg_gen_helper_call(emu: &EmuEnv,arg_size: usize,pc_address: u64,tcg: &TCGOp,mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_int_reg_from_float_reg(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_float_reg_from_int_reg(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_int_reg_from_float_reg_32bit(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
-    fn tcg_gen_float_reg_from_int_reg_32bit(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize;
+    fn tcg_gen_int_reg_from_float_reg(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_float_reg_from_int_reg(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_int_reg_from_float_reg_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_float_reg_from_int_reg_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_sgnj_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_sgnjn_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
@@ -402,4 +364,7 @@ pub trait TCG {
     fn tcg_gen_sgnjx_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_exit_tb(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_cmp_eq(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_match_check(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 }

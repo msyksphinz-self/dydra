@@ -61,6 +61,8 @@ pub struct EmuEnv {
 
     m_updated_pc : bool,
 
+    pub m_tlb_vec: [u64; 4096],
+    pub m_tlb_addr_vec: [u64; 4096],
     // Configuration
     pub m_arg_config: ArgConfig,
 }
@@ -176,6 +178,9 @@ impl EmuEnv {
             ],
             m_updated_pc: false,
 
+            // TLB format
+            m_tlb_vec: [0xdeadbeef_01234567; 4096],
+            m_tlb_addr_vec: [0x0; 4096],
             m_arg_config: arg_config,
         }
     }
@@ -192,8 +197,12 @@ impl EmuEnv {
 
 
     pub fn dump_gpr(&self) {
+        let abi_reg_name = ["zero ", "ra   ", "sp   ", "gp   ", "tp   ", "t0   ", "t1   ", "t2   ",
+                            "s0/fp", "s1   ", "a0   ", "a1   ", "a2   ", "a3   ", "a4   ", "a5   ", 
+                            "a6   ", "a7   ", "s2   ", "s3   ", "s4   ", "s5   ", "s6   ", "s7   ", 
+                            "s8   ", "s9   ", "s10  ", "s11  ", "t3   ", "t4   ", "t5   ", "t6   "];
         for (i, reg) in self.m_regs.iter().enumerate() {
-            print!("x{:02} = {:016x}  ", i, reg);
+            print!("x{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
             if i % 4 == 3 {
                 print!("\n");
             }
@@ -334,7 +343,7 @@ impl EmuEnv {
                 let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
                 self.m_tcg_vec.append(&mut tcg_inst);
                 if self.m_arg_config.step {
-                    let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB)];
+                    let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB, None)];
                     self.m_tcg_vec.append(&mut exit_tcg);
                 }
                 if self.m_arg_config.dump_guest {
@@ -411,10 +420,11 @@ impl EmuEnv {
                     let be_data = *be;
                     self.m_tcg_tb_vec.push(be_data);
                 }
-                if self.m_arg_config.dump_host {
-                    disassemble_x86(mc_byte.as_slice(), self.m_tb_text_mem.data());
-                }
                 pc_address += mc_byte.len() as u64;
+            }
+
+            if self.m_arg_config.dump_host {
+                disassemble_x86(self.m_tcg_tb_vec.as_slice(), self.m_tb_text_mem.data());
             }
 
             unsafe {
@@ -580,6 +590,22 @@ impl EmuEnv {
             unsafe { self.helper_func.as_ptr().offset(csr_helper_idx as isize) as *const u8 };
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { csr_helper_func_ptr.offset_from(self_ptr) };
+        diff
+    }
+
+    pub fn calc_tlb_relat_address(&self) -> isize {
+        let tlb_ptr = self.m_tlb_vec.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let diff = unsafe { tlb_ptr.offset_from(self_ptr) };
+        println!("calc_tlb_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
+        diff
+    }
+
+    pub fn calc_tlb_addr_relat_address(&self) -> isize {
+        let tlb_ptr = self.m_tlb_addr_vec.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let diff = unsafe { tlb_ptr.offset_from(self_ptr) };
+        println!("calc_tlb_vec_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
         diff
     }
 
