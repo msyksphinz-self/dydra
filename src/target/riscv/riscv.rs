@@ -84,6 +84,7 @@ pub enum CALL_HELPER_IDX {
     CALL_FLOAT_LOAD32_IDX = 54,
     CALL_FLOAT_STORE64_IDX = 55,
     CALL_FLOAT_STORE32_IDX = 56,    
+    CALL_SFENCE_VMA_IDX = 57,
 }
 
 #[macro_export]

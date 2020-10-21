@@ -194,6 +194,12 @@ impl EmuEnv {
         return 0;
     }
 
-
+    pub fn helper_func_sfence_vma(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, _dummy: u64) -> usize {
+        // Clear TLB
+        for idx in 0..4096 {
+            emu.m_tlb_vec[idx] = 0xdeadbeef_01234567;
+        }
+        return 0;
+    }
 
 }

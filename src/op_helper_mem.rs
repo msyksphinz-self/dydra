@@ -146,7 +146,6 @@ impl EmuEnv {
         let rs2_data = emu.m_regs[rs2 as usize];
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
-        let mut guest_phy_addr: u64 = 0;
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
             Ok(guest_phy_addr) => { 
                 println!("store64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
