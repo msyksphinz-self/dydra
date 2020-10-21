@@ -1074,7 +1074,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_eq_eax_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
+        // let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
 
         let label = match &tcg.label {
@@ -1952,7 +1952,7 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_cmp_eq(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_cmp_eq(_emu: &EmuEnv, pc_address: u64, _tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
         // Compare Offset Table and address upper bit
