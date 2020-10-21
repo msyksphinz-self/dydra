@@ -1199,20 +1199,10 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, guestcode_addr as u64, mc);
         
         // Move Guest Memory from EAX to ECX
-        gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::MOV_GV_EV,
-            X86ModRM::MOD_11_DISP_RAX,
-            X86TargetRM::RCX,
-            mc,
-        );
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RCX, mc);
         
         // Load value from rs1
-        gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::MOV_GV_EV,
-            X86ModRM::MOD_10_DISP_RBP,
-            X86TargetRM::RAX,
-            mc,
-        );
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, X86TargetRM::RAX, mc);
         gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
         
         // rs1 + imm
@@ -1267,72 +1257,37 @@ impl TCG for TCGX86 {
         gen_size += match mem_size {
             MemOpType::LOAD_64BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_GV_EV,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             MemOpType::LOAD_32BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_GV_EV_32BIT,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV_32BIT, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             MemOpType::LOAD_16BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_2byte_64bit_out(
-                    X86Opcode::MOV_GV_EV_S_16BIT,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_2byte_64bit_out(X86Opcode::MOV_GV_EV_S_16BIT, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             MemOpType::LOAD_8BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_2byte_64bit_out(
-                    X86Opcode::MOV_GV_EV_S_8BIT,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_2byte_64bit_out(X86Opcode::MOV_GV_EV_S_8BIT, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             MemOpType::LOAD_U_32BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_32bit_out(
-                    X86Opcode::MOV_GV_EV,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_32bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             MemOpType::LOAD_U_16BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_2byte_32bit_out(
-                    X86Opcode::MOV_GV_EV_U_16BIT,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_2byte_32bit_out(X86Opcode::MOV_GV_EV_U_16BIT, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             MemOpType::LOAD_U_8BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_2byte_32bit_out(
-                    X86Opcode::MOV_GV_EV_U_8BIT,
-                    X86ModRM::MOD_00_DISP_RAX,
-                    X86TargetRM::RAX,
-                    mc,
-                );
+                gen_size += Self::tcg_modrm_2byte_32bit_out(X86Opcode::MOV_GV_EV_U_8BIT, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
                 gen_size
             }
             _ => panic!("Not supported load instruction."),
@@ -1352,107 +1307,106 @@ impl TCG for TCGX86 {
     }
 
     /* Memory Access : Store */
-    fn tcg_gen_store(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-        mem_size: MemOpType,
-        target_reg: RegisterType,
-    ) -> usize {
+    fn tcg_gen_store(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType, target_reg: RegisterType) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let rs1 = tcg.arg0.unwrap();
+        let rs2 = tcg.arg1.unwrap();
+        let imm = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
-        assert_eq!(arg2.t, TCGvType::Immediate);
+        assert_eq!(rs1.t, TCGvType::Register);
+        assert_eq!(rs2.t, TCGvType::Register);
+        assert_eq!(imm.t, TCGvType::Immediate);
 
         // Load Guest Memory Head into EAX
-        gen_size += Self::tcg_gen_imm_u64(
-            X86TargetRM::RAX,
-            emu.calc_guest_data_mem_address() as u64,
-            mc,
-        );
-
+        let guestcode_addr = emu.calc_guest_data_mem_address();
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, guestcode_addr as u64, mc);
+        
         // Move Guest Memory from EAX to ECX
-        gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::MOV_GV_EV,
-            X86ModRM::MOD_11_DISP_RAX,
-            X86TargetRM::RCX,
-            mc,
-        );
-
-        // Load value from rs1(addr)
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RCX, arg0.value, mc);
-
-        // Address Calculation (EAX)
-        gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::ADD_GV_EV,
-            X86ModRM::MOD_11_DISP_RCX,
-            X86TargetRM::RAX,
-            mc,
-        );
-
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RCX, mc);
+        
+        // Load value from rs1
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(rs1.value) as u64, 4, mc);
+        
+        // rs1 + imm
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::ADD_EV_IV, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(imm.value as u64, 4, mc);
+    
+        // Move RDX --> RSI (Base Address)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RSI, mc);
+    
+        // Extract lower 12-bit to search TLB table offset (RSI)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::AND_GV_IMM, X86ModRM::MOD_11_DISP_RSI, X86TargetRM::SIB, mc);
+        gen_size += Self::tcg_out(0x0fff, 4, mc);        
+    
+        // Shift right 12-bit to search TLB table (RCX)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::SRL_GV_IMM, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(12, 1, mc);
+    
+        // Extract lower 12-bit to search TLB table offset (RAX)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::AND_GV_IMM, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(0x0fff, 4, mc);
+    
+        // Right shift 3 bit to align 64-bit entry size (RAX)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::SLL_GV_IMM, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(3, 1, mc);
+    
+        // Move RAX --> RDX (Extracted Address Offset)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RDX, mc);
+    
+        // Move RBP --> RAX (Base Address)
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RBP, X86TargetRM::RAX, mc);
+        
+        // Load TLB Vector Address Base Address
+        Self::tcg_modrm_64bit_out(X86Opcode::ADD_EV_IV, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+        gen_size += Self::tcg_out(emu.calc_tlb_addr_relat_address() as u64, 4, mc);
+    
+        // Add TLB base address offset (RAX)
+        Self::tcg_modrm_64bit_out(X86Opcode::ADD_GV_EV, X86ModRM::MOD_11_DISP_RDX, X86TargetRM::RAX, mc);
+    
+        // Load Physical Address from TLB address table
+        Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RAX, mc);
+    
+        // Physical Address + 12bit offset in RSI
+        Self::tcg_modrm_64bit_out(X86Opcode::ADD_GV_EV, X86ModRM::MOD_11_DISP_RSI, X86TargetRM::RAX, mc);
+    
+        // Physical Address + Memory Head Address
+        Self::tcg_modrm_64bit_out(X86Opcode::ADD_GV_EV, X86ModRM::MOD_11_DISP_RCX, X86TargetRM::RAX, mc);
+    
         // Address Calculation : Sub Bias 0x8000_0000
         gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
-        gen_size += Self::tcg_out(0x8000_0000 as u64, 4, mc);
-
+        gen_size += Self::tcg_out(0x8000_0000 as u64, 4, mc);        
+        
         // Load value from rs2 (data)
         if target_reg == RegisterType::IntRegister {
-            gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RCX, arg1.value, mc);
+            gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RCX, rs2.value, mc);
         } else if target_reg == RegisterType::FloatRegister && mem_size == MemOpType::STORE_64BIT {
-            gen_size += Self::tcg_gen_load_fregs_64bit(emu, X86TargetRM::RCX, arg1.value, mc);
+            gen_size += Self::tcg_gen_load_fregs_64bit(emu, X86TargetRM::RCX, rs2.value, mc);
         } else if target_reg == RegisterType::FloatRegister && mem_size == MemOpType::STORE_32BIT {
-            gen_size += Self::tcg_gen_load_fregs_32bit(emu, X86TargetRM::RCX, arg1.value, mc);
+            gen_size += Self::tcg_gen_load_fregs_32bit(emu, X86TargetRM::RCX, rs2.value, mc);
         } else {
             panic!("Unknown Register read condition.")
         }
         gen_size += match mem_size {
             MemOpType::STORE_64BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_64bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RAX,
-                    X86TargetRM::RCX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RCX, mc);
                 gen_size
             }
             MemOpType::STORE_32BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_32bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RAX,
-                    X86TargetRM::RCX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+                gen_size += Self::tcg_modrm_32bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RCX, mc);
                 gen_size
             }
             MemOpType::STORE_16BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_16bit_out(
-                    X86Opcode::MOV_EV_GV,
-                    X86ModRM::MOD_10_DISP_RAX,
-                    X86TargetRM::RCX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+                gen_size += Self::tcg_modrm_16bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RCX, mc);
                 gen_size
             }
             MemOpType::STORE_8BIT => {
                 let mut gen_size = 0;
-                gen_size += Self::tcg_modrm_32bit_out(
-                    X86Opcode::MOV_EB_GB,
-                    X86ModRM::MOD_10_DISP_RAX,
-                    X86TargetRM::RCX,
-                    mc,
-                );
-                gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+                gen_size += Self::tcg_modrm_32bit_out(X86Opcode::MOV_EB_GB, X86ModRM::MOD_00_DISP_RAX, X86TargetRM::RCX, mc);
                 gen_size
             }
             _ => panic!("Unsupported memory size!"),
