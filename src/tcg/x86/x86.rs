@@ -1166,7 +1166,7 @@ impl TCG for TCGX86 {
         // let mut l = &mut *label.borrow_mut();
         let l2 = &mut *label.borrow_mut();
         l2.code_ptr_vec.push(host_code_ptr);
-        println!("Added offset. code_ptr = {:x}", host_code_ptr);
+        // println!("Added offset. code_ptr = {:x}", host_code_ptr);
         return 0;
     }
 
@@ -1175,7 +1175,7 @@ impl TCG for TCGX86 {
             Some(label) => {
                 let mut l = &mut *label.borrow_mut();
                 l.offset = pc_address;
-                println!("Offset is set {:x}", l.offset);
+                // println!("Offset is set {:x}", l.offset);
             }
             None => panic!("Unknown behavior"),
         }

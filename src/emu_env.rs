@@ -326,11 +326,12 @@ impl EmuEnv {
                 match self.convert_physical_address(self.m_pc[0], self.m_pc[0], MemAccType::Fetch) {
                     Ok(addr) => guest_phy_addr = addr,
                     Err(error) => {
-                        print!("Fetch Error: {:?}\n", error);
                         continue;
                     }
                 };
-                print!("  converted physical address = {:08x}\n", guest_phy_addr);
+                if self.m_arg_config.mmu_debug {
+                    print!("  converted physical address = {:08x}\n", guest_phy_addr);
+                }
                 let guest_inst = self.read_mem_4byte(guest_phy_addr);
 
                 let id = match decode_inst(guest_inst) {
@@ -405,10 +406,6 @@ impl EmuEnv {
             // let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
             // let host_cod_ptr = self.m_guest_mem.as_ptr();
 
-            println!("tb_address  = {:?}", tb_map_ptr);
-            // println!("pe_address  = {:?}", pe_map_ptr);
-            // println!("self.m_guest_mem = {:?}", host_cod_ptr);
-
             self.m_tcg_tb_vec.clear();
             for tcg in &self.m_tcg_vec {
                 if self.m_arg_config.dump_tcg {
@@ -440,17 +437,23 @@ impl EmuEnv {
                 match tcg.op {
                     Some(_) => {}
                     None => {
-                        println!("label found 2");
+                        if self.m_arg_config.debug {
+                            println!("label found 2");
+                        }
                         match &tcg.label {
                             Some(l) => {
                                 let l = &mut *l.borrow_mut();
-                                println!("label found. offset = {:x}", l.offset);
+                                if self.m_arg_config.debug {
+                                    println!("label found. offset = {:x}", l.offset);
+                                }
                                 for v_off in &l.code_ptr_vec {
                                     let diff = l.offset as usize - v_off - 4;
-                                    println!(
-                                        "replacement target is {:x}, data = {:x}",
-                                        v_off, diff
-                                    );
+                                    if self.m_arg_config.debug {
+                                        println!(
+                                            "replacement target is {:x}, data = {:x}",
+                                            v_off, diff
+                                        );
+                                    }
                                     let s = self.m_tb_text_mem.data();
                                     unsafe {
                                         *s.offset(*v_off as isize) = (diff & 0xff) as u8;
@@ -598,7 +601,7 @@ impl EmuEnv {
         let tlb_ptr = self.m_tlb_vec.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { tlb_ptr.offset_from(self_ptr) };
-        println!("calc_tlb_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
+        // println!("calc_tlb_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
         diff
     }
 
@@ -606,7 +609,7 @@ impl EmuEnv {
         let tlb_ptr = self.m_tlb_addr_vec.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { tlb_ptr.offset_from(self_ptr) };
-        println!("calc_tlb_vec_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
+        // println!("calc_tlb_vec_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
         diff
     }
 
@@ -621,11 +624,12 @@ impl EmuEnv {
     }
 
     pub fn generate_exception(&mut self, guest_pc: u64, code: ExceptCode, tval: i64) {
-        println!(
-            "<Info: Generate Exception Code={}, TVAL={:016x} PC={:016x}>",
-            code as u32, tval, guest_pc
-        );
-
+        if self.m_arg_config.debug {
+            println!(
+                "<Info: Generate Exception Code={}, TVAL={:016x} PC={:016x}>",
+                code as u32, tval, guest_pc
+            );
+        }
         let epc = guest_pc;
 
         let curr_priv: PrivMode = self.m_priv;
@@ -716,11 +720,13 @@ impl EmuEnv {
         // self.set_update_pc(true);
         self.m_pc[0] = tvec as u64;
 
-        println!(
-            "<Info: Exception. ChangeMode from {} to {}>",
-            curr_priv as u32, next_priv as u32
-        );
-        println!("<Info: Set Program Counter = 0x{:16x}>", self.m_pc[0]);
+        if self.m_arg_config.debug {
+            println!(
+                "<Info: Exception. ChangeMode from {} to {}>",
+                curr_priv as u32, next_priv as u32
+            );
+            println!("<Info: Set Program Counter = 0x{:16x}>", self.m_pc[0]);
+        }
         self.m_updated_pc = true;
 
         return;

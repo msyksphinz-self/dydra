@@ -179,8 +179,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
 
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
 
@@ -215,8 +216,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
 
@@ -251,8 +253,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
     pub fn translate_lb(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -286,8 +289,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
     pub fn translate_lwu(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -321,8 +325,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
 
     }
@@ -357,8 +362,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
 
     }
@@ -394,8 +400,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut load_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
 
@@ -431,8 +438,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut store_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
 
@@ -468,8 +476,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut store_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
     pub fn translate_sh(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -504,8 +513,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut store_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
     pub fn translate_sb(inst: &InstrInfo) -> Vec<TCGOp> {
@@ -540,8 +550,9 @@ impl TranslateRiscv {
         let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_label_load_excp, tcg_exit_tb2, tcg_label_tlb_match];
+        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
         vec_ops.append(&mut store_op);
+        vec_ops.push(tcg_label_load_excp);
         return vec_ops;
     }
 
