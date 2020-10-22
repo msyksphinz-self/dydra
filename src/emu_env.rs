@@ -18,6 +18,7 @@ use crate::tcg::x86::x86::TCGX86;
 use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
 
+use std::time::Instant;
 
 #[derive(Debug, Copy, Clone)]
 pub struct ArgConfig {
@@ -279,6 +280,8 @@ impl EmuEnv {
             }
         }
 
+        let start = Instant::now();
+
         // Make tb instruction region (temporary 1024byte)
         self.m_tb_text_mem = match MemoryMap::new(
             0x4000,
@@ -500,6 +503,8 @@ impl EmuEnv {
                 break;
             }
         }
+        let end = start.elapsed();
+        println!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
     }
 
     fn reflect(prologue_epilogue: &[u8]) -> mmap::MemoryMap {
