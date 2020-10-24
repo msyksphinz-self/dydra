@@ -329,7 +329,7 @@ impl EmuEnv {
                         Ok(m) => Rc::new(RefCell::new(m)),
                         Err(e) => panic!("Error: {}", e),
                     };
-                    // self.m_tb_text_hashmap.insert(self.m_pc[0], Rc::clone(&tb_text_mem));
+                    self.m_tb_text_hashmap.insert(self.m_pc[0], Rc::clone(&tb_text_mem));
                     self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
            
                     // let mut guest_pc = self.m_pc[0];
