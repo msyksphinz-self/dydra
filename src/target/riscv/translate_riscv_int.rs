@@ -609,4 +609,46 @@ impl TranslateRiscv {
     }
 
 
+    pub fn translate_mul(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::MUL_64BIT, inst)
+    }
+    pub fn translate_mulh(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::MULH_64BIT, inst)
+    }
+    pub fn translate_mulhu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::MULHU_64BIT, inst)
+    }
+    pub fn translate_mulhsu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::MULHSU_64BIT, inst)
+    }
+    pub fn translate_mulw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::MUL_32BIT, inst)
+    }
+
+    pub fn translate_div(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::DIV_64BIT, inst)
+    }
+    pub fn translate_divu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::DIVU_64BIT, inst)
+    }
+    pub fn translate_divw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::DIV_32BIT, inst)
+    }
+    pub fn translate_divuw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::DIVU_32BIT, inst)
+    }
+
+    pub fn translate_rem(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::REM_64BIT, inst)
+    }
+    pub fn translate_remu(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::REMU_64BIT, inst)
+    }
+    pub fn translate_remw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::REM_32BIT, inst)
+    }
+    pub fn translate_remuw(inst: &InstrInfo) -> Vec<TCGOp> {
+        Self::translate_rrr(TCGOpcode::REMU_32BIT, inst)
+    }
+
 }

@@ -306,6 +306,22 @@ impl TranslateRiscv {
             RiscvInstId::FSGNJN_S => TranslateRiscv::translate_fsgnjn_s(inst),   
             RiscvInstId::FSGNJX_S => TranslateRiscv::translate_fsgnjx_s(inst),
 
+            RiscvInstId::MUL    => TranslateRiscv::translate_mul(inst),
+            RiscvInstId::MULH   => TranslateRiscv::translate_mulh(inst),   
+            RiscvInstId::MULHU  => TranslateRiscv::translate_mulhu(inst),
+            RiscvInstId::MULHSU => TranslateRiscv::translate_mulhsu(inst),
+            RiscvInstId::MULW   => TranslateRiscv::translate_mulw(inst),
+
+            RiscvInstId::DIV   => TranslateRiscv::translate_div(inst),
+            RiscvInstId::DIVU  => TranslateRiscv::translate_divu(inst),   
+            RiscvInstId::DIVW  => TranslateRiscv::translate_divw(inst),
+            RiscvInstId::DIVUW => TranslateRiscv::translate_divuw(inst),
+
+            RiscvInstId::REM   => TranslateRiscv::translate_rem(inst),
+            RiscvInstId::REMU  => TranslateRiscv::translate_remu(inst),   
+            RiscvInstId::REMW  => TranslateRiscv::translate_remw(inst),
+            RiscvInstId::REMUW => TranslateRiscv::translate_remuw(inst),
+
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
     }
@@ -410,7 +426,5 @@ impl TranslateRiscv {
         let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
         return vec![tcg_inst];
     }
-
-
 
 }
