@@ -7,6 +7,10 @@ use crate::emu_env::EmuEnv;
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum TCGOpcode {
+    GET_GPR,
+    SET_GPR,
+    ADD_TEMP,
+
     HELPER_CALL_ARG0,
     HELPER_CALL_ARG1,
     HELPER_CALL_ARG2,
@@ -113,6 +117,7 @@ pub enum TCGvType {
     Register,
     Immediate,
     ProgramCounter,
+    TCGTemp,
 }
 
 #[derive(Debug, Clone)]
@@ -133,6 +138,32 @@ pub enum RegisterType {
 }
 
 impl TCGOp {
+    pub fn new_get_gpr (dest: TCGv, reg_addr: u32) -> TCGOp {
+        assert_eq!(dest.t, TCGvType::TCGTemp);
+        TCGOp {
+            op: Some(TCGOpcode::GET_GPR),
+            arg0: Some(dest),
+            arg1: Some(TCGv::new_reg(reg_addr as u64)),
+            arg2: None,
+            arg3: None,
+            label: None,
+            helper_idx: 0   
+        }
+    }
+
+    pub fn new_set_gpr (reg_addr: u32, source: TCGv) -> TCGOp {
+        assert_eq!(source.t, TCGvType::TCGTemp);
+        TCGOp {
+            op: Some(TCGOpcode::SET_GPR),
+            arg0: Some(TCGv::new_reg(reg_addr as u64)),
+            arg1: Some(source),
+            arg2: None,
+            arg3: None,
+            label: None,
+            helper_idx: 0   
+        }
+    }
+
     pub fn new_0op(opcode: TCGOpcode, label: Option<Rc<RefCell<TCGLabel>>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
@@ -296,6 +327,13 @@ impl TCGv {
         TCGv {
             t: TCGvType::ProgramCounter,
             value: 0,
+        }
+    }
+
+    pub fn new_temp(val: u64) -> TCGv {
+        TCGv {
+            t: TCGvType::TCGTemp, 
+            value: val,
         }
     }
 }

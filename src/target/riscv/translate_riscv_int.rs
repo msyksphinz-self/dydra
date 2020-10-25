@@ -90,8 +90,29 @@ impl TranslateRiscv {
         }
     }
 
-    pub fn translate_add(inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rrr(TCGOpcode::ADD_64BIT, inst)
+    pub fn translate_add(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+        let source1 = self.tcg_temp_new();
+        let source2 = self.tcg_temp_new();
+
+        let rs1_addr= get_rs1_addr!(inst.inst);
+        let rs2_addr= get_rs2_addr!(inst.inst);
+        let rd_addr = get_rd_addr!(inst.inst); 
+
+        if rd_addr == 0 {
+            return vec![];
+        }
+
+        let rs1_op = TCGOp::new_get_gpr(source1, rs1_addr);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2_op = TCGOp::new_get_gpr(source2, rs2_addr);  // Box::new(TCGv::new_reg(rs2_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_TEMP, source1, source1, source2);
+
+        let rd_op = TCGOp::new_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+
+        self.tcg_temp_free(source1);
+        self.tcg_temp_free(source2);
+
+        vec![rs1_op, rs2_op, tcg_inst, rd_op]
     }
     pub fn translate_sub(inst: &InstrInfo) -> Vec<TCGOp> {
         Self::translate_rrr(TCGOpcode::SUB_64BIT, inst)

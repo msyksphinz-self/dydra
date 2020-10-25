@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use super::super::super::instr_info::InstrInfo;
 use super::riscv_inst_id::RiscvInstId;
+use super::super::super::tcg::tcg::TCGvType;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 #[allow(dead_code)]
@@ -170,13 +171,32 @@ impl PrivMode {
     }
 }
 
-pub struct TranslateRiscv;
+pub type TCGRegType = u64;
+pub struct TranslateRiscv {
+    pub temp_list: TCGRegType,
+}
 
 impl TranslateRiscv {
-    pub fn translate(id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn new() -> TranslateRiscv {
+        TranslateRiscv {
+            temp_list: 0
+        }
+    }
+
+    pub fn tcg_temp_new(&mut self) -> TCGv {
+        let new_v = TCGv::new_temp(self.temp_list);
+        self.temp_list = self.temp_list + 1;
+        new_v
+    }
+
+    pub fn tcg_temp_free(&mut self, idx: TCGv) {
+        self.temp_list = self.temp_list - 1;
+    }
+
+    pub fn translate(&mut self, id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
         return match id {
             RiscvInstId::ADDI => TranslateRiscv::translate_addi(inst),
-            RiscvInstId::ADD => TranslateRiscv::translate_add(inst),
+            RiscvInstId::ADD => self.translate_add(inst),
             RiscvInstId::SUB => TranslateRiscv::translate_sub(inst),
             RiscvInstId::AND => TranslateRiscv::translate_and(inst),
             RiscvInstId::OR => TranslateRiscv::translate_or(inst),

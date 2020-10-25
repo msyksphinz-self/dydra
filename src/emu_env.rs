@@ -232,6 +232,7 @@ impl EmuEnv {
     }
 
     pub fn run(&mut self, filename: &String) {
+        let mut riscv_trans = TranslateRiscv::new();
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
             Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
@@ -361,7 +362,7 @@ impl EmuEnv {
                             inst: guest_inst,
                             addr: self.m_pc[0],
                         };
-                        let mut tcg_inst = TranslateRiscv::translate(id, &inst_info);
+                        let mut tcg_inst = riscv_trans.translate(id, &inst_info);
                         self.m_tcg_vec.append(&mut tcg_inst);
                         if self.m_arg_config.step {
                             let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB, None)];
