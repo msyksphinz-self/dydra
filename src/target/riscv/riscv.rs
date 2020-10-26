@@ -195,172 +195,195 @@ impl TranslateRiscv {
 
     pub fn translate(&mut self, id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
         return match id {
-            RiscvInstId::ADDI => TranslateRiscv::translate_addi(inst),
+            RiscvInstId::ADDI => self.translate_addi(inst),
             RiscvInstId::ADD => self.translate_add(inst),
-            RiscvInstId::SUB => TranslateRiscv::translate_sub(inst),
-            RiscvInstId::AND => TranslateRiscv::translate_and(inst),
-            RiscvInstId::OR => TranslateRiscv::translate_or(inst),
-            RiscvInstId::XOR => TranslateRiscv::translate_xor(inst),
-            RiscvInstId::ANDI => TranslateRiscv::translate_andi(inst),
-            RiscvInstId::ORI => TranslateRiscv::translate_ori(inst),
-            RiscvInstId::XORI => TranslateRiscv::translate_xori(inst),
-            RiscvInstId::ADDW => TranslateRiscv::translate_addw(inst),
-            RiscvInstId::SUBW => TranslateRiscv::translate_subw(inst),
+            RiscvInstId::SUB => self.translate_sub(inst),
+            RiscvInstId::AND => self.translate_and(inst),
+            RiscvInstId::OR => self.translate_or(inst),
+            RiscvInstId::XOR => self.translate_xor(inst),
+            RiscvInstId::ANDI => self.translate_andi(inst),
+            RiscvInstId::ORI => self.translate_ori(inst),
+            RiscvInstId::XORI => self.translate_xori(inst),
+            RiscvInstId::ADDW => self.translate_addw(inst),
+            RiscvInstId::SUBW => self.translate_subw(inst),
 
-            RiscvInstId::ADDIW => TranslateRiscv::translate_addiw(inst),
+            RiscvInstId::ADDIW => self.translate_addiw(inst),
 
-            RiscvInstId::LUI => TranslateRiscv::translate_lui(inst),
-            RiscvInstId::AUIPC => TranslateRiscv::translate_auipc(inst),
+            RiscvInstId::LUI => self.translate_lui(inst),
+            RiscvInstId::AUIPC => self.translate_auipc(inst),
 
-            RiscvInstId::BEQ => TranslateRiscv::translate_beq(inst),
-            RiscvInstId::BNE => TranslateRiscv::translate_bne(inst),
-            RiscvInstId::BLT => TranslateRiscv::translate_blt(inst),
-            RiscvInstId::BGE => TranslateRiscv::translate_bge(inst),
-            RiscvInstId::BLTU => TranslateRiscv::translate_bltu(inst),
-            RiscvInstId::BGEU => TranslateRiscv::translate_bgeu(inst),
+            RiscvInstId::BEQ => self.translate_beq(inst),
+            RiscvInstId::BNE => self.translate_bne(inst),
+            RiscvInstId::BLT => self.translate_blt(inst),
+            RiscvInstId::BGE => self.translate_bge(inst),
+            RiscvInstId::BLTU => self.translate_bltu(inst),
+            RiscvInstId::BGEU => self.translate_bgeu(inst),
 
-            RiscvInstId::LD => TranslateRiscv::translate_ld(inst),
-            RiscvInstId::LW => TranslateRiscv::translate_lw(inst),
-            RiscvInstId::LH => TranslateRiscv::translate_lh(inst),
-            RiscvInstId::LB => TranslateRiscv::translate_lb(inst),
-            RiscvInstId::LWU => TranslateRiscv::translate_lwu(inst),
-            RiscvInstId::LHU => TranslateRiscv::translate_lhu(inst),
-            RiscvInstId::LBU => TranslateRiscv::translate_lbu(inst),
-            RiscvInstId::SD => TranslateRiscv::translate_sd(inst),
-            RiscvInstId::SW => TranslateRiscv::translate_sw(inst),
-            RiscvInstId::SH => TranslateRiscv::translate_sh(inst),
-            RiscvInstId::SB => TranslateRiscv::translate_sb(inst),
+            RiscvInstId::LD => self.translate_ld(inst),
+            RiscvInstId::LW => self.translate_lw(inst),
+            RiscvInstId::LH => self.translate_lh(inst),
+            RiscvInstId::LB => self.translate_lb(inst),
+            RiscvInstId::LWU => self.translate_lwu(inst),
+            RiscvInstId::LHU => self.translate_lhu(inst),
+            RiscvInstId::LBU => self.translate_lbu(inst),
+            RiscvInstId::SD => self.translate_sd(inst),
+            RiscvInstId::SW => self.translate_sw(inst),
+            RiscvInstId::SH => self.translate_sh(inst),
+            RiscvInstId::SB => self.translate_sb(inst),
 
-            RiscvInstId::SLLI => TranslateRiscv::translate_slli(inst),
-            RiscvInstId::SRLI => TranslateRiscv::translate_srli(inst),
-            RiscvInstId::SRAI => TranslateRiscv::translate_srai(inst),
-            RiscvInstId::SLL => TranslateRiscv::translate_sll(inst),
-            RiscvInstId::SRL => TranslateRiscv::translate_srl(inst),
-            RiscvInstId::SRA => TranslateRiscv::translate_sra(inst),
+            RiscvInstId::SLLI => self.translate_slli(inst),
+            RiscvInstId::SRLI => self.translate_srli(inst),
+            RiscvInstId::SRAI => self.translate_srai(inst),
+            RiscvInstId::SLL => self.translate_sll(inst),
+            RiscvInstId::SRL => self.translate_srl(inst),
+            RiscvInstId::SRA => self.translate_sra(inst),
 
-            RiscvInstId::SLLIW => TranslateRiscv::translate_slliw(inst),
-            RiscvInstId::SRLIW => TranslateRiscv::translate_srliw(inst),
-            RiscvInstId::SRAIW => TranslateRiscv::translate_sraiw(inst),
-            RiscvInstId::SLLW => TranslateRiscv::translate_sllw(inst),
-            RiscvInstId::SRLW => TranslateRiscv::translate_srlw(inst),
-            RiscvInstId::SRAW => TranslateRiscv::translate_sraw(inst),
+            RiscvInstId::SLLIW => self.translate_slliw(inst),
+            RiscvInstId::SRLIW => self.translate_srliw(inst),
+            RiscvInstId::SRAIW => self.translate_sraiw(inst),
+            RiscvInstId::SLLW => self.translate_sllw(inst),
+            RiscvInstId::SRLW => self.translate_srlw(inst),
+            RiscvInstId::SRAW => self.translate_sraw(inst),
 
-            RiscvInstId::SLT => TranslateRiscv::translate_slt(inst),
-            RiscvInstId::SLTI => TranslateRiscv::translate_slti(inst),
-            RiscvInstId::SLTU => TranslateRiscv::translate_sltu(inst),
-            RiscvInstId::SLTIU => TranslateRiscv::translate_sltiu(inst),
+            RiscvInstId::SLT => self.translate_slt(inst),
+            RiscvInstId::SLTI => self.translate_slti(inst),
+            RiscvInstId::SLTU => self.translate_sltu(inst),
+            RiscvInstId::SLTIU => self.translate_sltiu(inst),
 
-            RiscvInstId::JALR => TranslateRiscv::translate_jalr(inst),
-            RiscvInstId::JAL => TranslateRiscv::translate_jal(inst),
+            RiscvInstId::JALR => self.translate_jalr(inst),
+            RiscvInstId::JAL => self.translate_jal(inst),
 
-            RiscvInstId::CSRRS => TranslateRiscv::translate_csrrs(inst),
-            RiscvInstId::CSRRW => TranslateRiscv::translate_csrrw(inst),
-            RiscvInstId::CSRRC => TranslateRiscv::translate_csrrc(inst),
-            RiscvInstId::CSRRSI => TranslateRiscv::translate_csrrsi(inst),
-            RiscvInstId::CSRRWI => TranslateRiscv::translate_csrrwi(inst),
-            RiscvInstId::CSRRCI => TranslateRiscv::translate_csrrci(inst),
+            RiscvInstId::CSRRS => self.translate_csrrs(inst),
+            RiscvInstId::CSRRW => self.translate_csrrw(inst),
+            RiscvInstId::CSRRC => self.translate_csrrc(inst),
+            RiscvInstId::CSRRSI => self.translate_csrrsi(inst),
+            RiscvInstId::CSRRWI => self.translate_csrrwi(inst),
+            RiscvInstId::CSRRCI => self.translate_csrrci(inst),
 
-            RiscvInstId::FENCE => TranslateRiscv::translate_fence(inst),
-            RiscvInstId::FENCE_I => TranslateRiscv::translate_fence_i(inst),
-            RiscvInstId::SFENCE_VMA => TranslateRiscv::translate_sfence_vma(inst),
-            RiscvInstId::MRET => TranslateRiscv::translate_mret(inst),
-            RiscvInstId::ECALL => TranslateRiscv::translate_ecall(inst),
-            RiscvInstId::SRET => TranslateRiscv::translate_sret(inst),
+            RiscvInstId::FENCE => self.translate_fence(inst),
+            RiscvInstId::FENCE_I => self.translate_fence_i(inst),
+            RiscvInstId::SFENCE_VMA => self.translate_sfence_vma(inst),
+            RiscvInstId::MRET => self.translate_mret(inst),
+            RiscvInstId::ECALL => self.translate_ecall(inst),
+            RiscvInstId::SRET => self.translate_sret(inst),
 
-            RiscvInstId::FLD => TranslateRiscv::translate_fld(inst),
-            RiscvInstId::FLW => TranslateRiscv::translate_flw(inst),
-            RiscvInstId::FSD => TranslateRiscv::translate_fsd(inst),
-            RiscvInstId::FSW => TranslateRiscv::translate_fsw(inst),
+            RiscvInstId::FLD => self.translate_fld(inst),
+            RiscvInstId::FLW => self.translate_flw(inst),
+            RiscvInstId::FSD => self.translate_fsd(inst),
+            RiscvInstId::FSW => self.translate_fsw(inst),
 
-            RiscvInstId::FADD_D => TranslateRiscv::translate_fadd_d(inst),
-            RiscvInstId::FSUB_D => TranslateRiscv::translate_fsub_d(inst),
-            RiscvInstId::FMUL_D => TranslateRiscv::translate_fmul_d(inst),
-            RiscvInstId::FDIV_D => TranslateRiscv::translate_fdiv_d(inst),
+            RiscvInstId::FADD_D => self.translate_fadd_d(inst),
+            RiscvInstId::FSUB_D => self.translate_fsub_d(inst),
+            RiscvInstId::FMUL_D => self.translate_fmul_d(inst),
+            RiscvInstId::FDIV_D => self.translate_fdiv_d(inst),
 
-            RiscvInstId::FMADD_D => TranslateRiscv::translate_fmadd_d(inst),
-            RiscvInstId::FMSUB_D => TranslateRiscv::translate_fmsub_d(inst),
-            RiscvInstId::FNMSUB_D => TranslateRiscv::translate_fnmsub_d(inst),
-            RiscvInstId::FNMADD_D => TranslateRiscv::translate_fnmadd_d(inst),
+            RiscvInstId::FMADD_D => self.translate_fmadd_d(inst),
+            RiscvInstId::FMSUB_D => self.translate_fmsub_d(inst),
+            RiscvInstId::FNMSUB_D => self.translate_fnmsub_d(inst),
+            RiscvInstId::FNMADD_D => self.translate_fnmadd_d(inst),
 
-            RiscvInstId::FSQRT_D => TranslateRiscv::translate_fsqrt_d(inst),
+            RiscvInstId::FSQRT_D => self.translate_fsqrt_d(inst),
 
-            RiscvInstId::FMV_X_D => TranslateRiscv::translate_fmv_x_d(inst),
-            RiscvInstId::FMV_D_X => TranslateRiscv::translate_fmv_d_x(inst),
+            RiscvInstId::FMV_X_D => self.translate_fmv_x_d(inst),
+            RiscvInstId::FMV_D_X => self.translate_fmv_d_x(inst),
 
-            RiscvInstId::FEQ_D => TranslateRiscv::translate_feq_d(inst),
-            RiscvInstId::FLT_D => TranslateRiscv::translate_flt_d(inst),
-            RiscvInstId::FLE_D => TranslateRiscv::translate_fle_d(inst),
-            RiscvInstId::FCLASS_D => TranslateRiscv::translate_fclass_d(inst),
+            RiscvInstId::FEQ_D => self.translate_feq_d(inst),
+            RiscvInstId::FLT_D => self.translate_flt_d(inst),
+            RiscvInstId::FLE_D => self.translate_fle_d(inst),
+            RiscvInstId::FCLASS_D => self.translate_fclass_d(inst),
 
-            RiscvInstId::FMIN_D => TranslateRiscv::translate_fmin_d(inst),
-            RiscvInstId::FMAX_D => TranslateRiscv::translate_fmax_d(inst),
+            RiscvInstId::FMIN_D => self.translate_fmin_d(inst),
+            RiscvInstId::FMAX_D => self.translate_fmax_d(inst),
 
-            RiscvInstId::FSGNJ_D  => TranslateRiscv::translate_fsgnj_d(inst),
-            RiscvInstId::FSGNJN_D => TranslateRiscv::translate_fsgnjn_d(inst),   
-            RiscvInstId::FSGNJX_D => TranslateRiscv::translate_fsgnjx_d(inst),
+            RiscvInstId::FSGNJ_D  => self.translate_fsgnj_d(inst),
+            RiscvInstId::FSGNJN_D => self.translate_fsgnjn_d(inst),   
+            RiscvInstId::FSGNJX_D => self.translate_fsgnjx_d(inst),
 
-            RiscvInstId::FADD_S => TranslateRiscv::translate_fadd_s(inst),
-            RiscvInstId::FSUB_S => TranslateRiscv::translate_fsub_s(inst),
-            RiscvInstId::FMUL_S => TranslateRiscv::translate_fmul_s(inst),
-            RiscvInstId::FDIV_S => TranslateRiscv::translate_fdiv_s(inst),
+            RiscvInstId::FADD_S => self.translate_fadd_s(inst),
+            RiscvInstId::FSUB_S => self.translate_fsub_s(inst),
+            RiscvInstId::FMUL_S => self.translate_fmul_s(inst),
+            RiscvInstId::FDIV_S => self.translate_fdiv_s(inst),
 
-            RiscvInstId::FMADD_S => TranslateRiscv::translate_fmadd_s(inst),
-            RiscvInstId::FMSUB_S => TranslateRiscv::translate_fmsub_s(inst),
-            RiscvInstId::FNMSUB_S => TranslateRiscv::translate_fnmsub_s(inst),
-            RiscvInstId::FNMADD_S => TranslateRiscv::translate_fnmadd_s(inst),
+            RiscvInstId::FMADD_S => self.translate_fmadd_s(inst),
+            RiscvInstId::FMSUB_S => self.translate_fmsub_s(inst),
+            RiscvInstId::FNMSUB_S => self.translate_fnmsub_s(inst),
+            RiscvInstId::FNMADD_S => self.translate_fnmadd_s(inst),
 
-            RiscvInstId::FSQRT_S => TranslateRiscv::translate_fsqrt_s(inst),
+            RiscvInstId::FSQRT_S => self.translate_fsqrt_s(inst),
 
-            RiscvInstId::FMV_X_W => TranslateRiscv::translate_fmv_x_w(inst),
-            RiscvInstId::FMV_W_X => TranslateRiscv::translate_fmv_w_x(inst),
+            RiscvInstId::FMV_X_W => self.translate_fmv_x_w(inst),
+            RiscvInstId::FMV_W_X => self.translate_fmv_w_x(inst),
 
-            RiscvInstId::FEQ_S => TranslateRiscv::translate_feq_s(inst),
-            RiscvInstId::FLT_S => TranslateRiscv::translate_flt_s(inst),
-            RiscvInstId::FLE_S => TranslateRiscv::translate_fle_s(inst),
-            RiscvInstId::FCLASS_S => TranslateRiscv::translate_fclass_s(inst),
+            RiscvInstId::FEQ_S => self.translate_feq_s(inst),
+            RiscvInstId::FLT_S => self.translate_flt_s(inst),
+            RiscvInstId::FLE_S => self.translate_fle_s(inst),
+            RiscvInstId::FCLASS_S => self.translate_fclass_s(inst),
 
-            RiscvInstId::FMIN_S => TranslateRiscv::translate_fmin_s(inst),
-            RiscvInstId::FMAX_S => TranslateRiscv::translate_fmax_s(inst),
+            RiscvInstId::FMIN_S => self.translate_fmin_s(inst),
+            RiscvInstId::FMAX_S => self.translate_fmax_s(inst),
 
-            RiscvInstId::FSGNJ_S  => TranslateRiscv::translate_fsgnj_s(inst),
-            RiscvInstId::FSGNJN_S => TranslateRiscv::translate_fsgnjn_s(inst),   
-            RiscvInstId::FSGNJX_S => TranslateRiscv::translate_fsgnjx_s(inst),
+            RiscvInstId::FSGNJ_S  => self.translate_fsgnj_s(inst),
+            RiscvInstId::FSGNJN_S => self.translate_fsgnjn_s(inst),   
+            RiscvInstId::FSGNJX_S => self.translate_fsgnjx_s(inst),
 
-            RiscvInstId::MUL    => TranslateRiscv::translate_mul(inst),
-            RiscvInstId::MULH   => TranslateRiscv::translate_mulh(inst),   
-            RiscvInstId::MULHU  => TranslateRiscv::translate_mulhu(inst),
-            RiscvInstId::MULHSU => TranslateRiscv::translate_mulhsu(inst),
-            RiscvInstId::MULW   => TranslateRiscv::translate_mulw(inst),
+            RiscvInstId::MUL    => self.translate_mul(inst),
+            RiscvInstId::MULH   => self.translate_mulh(inst),   
+            RiscvInstId::MULHU  => self.translate_mulhu(inst),
+            RiscvInstId::MULHSU => self.translate_mulhsu(inst),
+            RiscvInstId::MULW   => self.translate_mulw(inst),
 
-            RiscvInstId::DIV   => TranslateRiscv::translate_div(inst),
-            RiscvInstId::DIVU  => TranslateRiscv::translate_divu(inst),   
-            RiscvInstId::DIVW  => TranslateRiscv::translate_divw(inst),
-            RiscvInstId::DIVUW => TranslateRiscv::translate_divuw(inst),
+            RiscvInstId::DIV   => self.translate_div(inst),
+            RiscvInstId::DIVU  => self.translate_divu(inst),   
+            RiscvInstId::DIVW  => self.translate_divw(inst),
+            RiscvInstId::DIVUW => self.translate_divuw(inst),
 
-            RiscvInstId::REM   => TranslateRiscv::translate_rem(inst),
-            RiscvInstId::REMU  => TranslateRiscv::translate_remu(inst),   
-            RiscvInstId::REMW  => TranslateRiscv::translate_remw(inst),
-            RiscvInstId::REMUW => TranslateRiscv::translate_remuw(inst),
+            RiscvInstId::REM   => self.translate_rem(inst),
+            RiscvInstId::REMU  => self.translate_remu(inst),   
+            RiscvInstId::REMW  => self.translate_remw(inst),
+            RiscvInstId::REMUW => self.translate_remuw(inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
     }
 
-    pub fn translate_rrr(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+    pub fn translate_rrr(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let source1 = self.tcg_temp_new();
+        let source2 = self.tcg_temp_new();
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let rs1_addr= get_rs1_addr!(inst.inst);
+        let rs2_addr= get_rs2_addr!(inst.inst);
+        let rd_addr = get_rd_addr!(inst.inst); 
 
-        if rd_addr != 0 {
-            let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *rs2);
-            return vec![tcg_inst];
-        } else {
+        if rd_addr == 0 {
             return vec![];
         }
+
+        let rs1_op = TCGOp::new_get_gpr(source1, rs1_addr);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        let rs2_op = TCGOp::new_get_gpr(source2, rs2_addr);  // Box::new(TCGv::new_reg(rs2_addr as u64));
+
+        let tcg_inst = TCGOp::new_3op(op, source1, source1, source2);
+
+        let rd_op = TCGOp::new_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+
+        self.tcg_temp_free(source1);
+        self.tcg_temp_free(source2);
+
+        vec![rs1_op, rs2_op, tcg_inst, rd_op]
+
+        // let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        // let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
+        // let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+// 
+        // let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
+        // let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
+        // let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+// 
+        // if rd_addr != 0 {
+        //     let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *rs2);
+        //     return vec![tcg_inst];
+        // } else {
+        //     return vec![];
+        // }
     }
 
     pub fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {

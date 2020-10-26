@@ -13,7 +13,7 @@ use super::super::super::get_rd_addr;
 use super::riscv::TranslateRiscv;
 
 impl TranslateRiscv {
-    pub fn translate_fld(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fld(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -39,7 +39,7 @@ impl TranslateRiscv {
 
         // Self::translate_float_rri(TCGOpcode::LOAD_FLOAT_64BIT, inst)
     }
-    pub fn translate_flw(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_flw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -65,7 +65,7 @@ impl TranslateRiscv {
 
         // Self::translate_float_rri(TCGOpcode::LOAD_FLOAT_32BIT, inst)
     }
-    pub fn translate_fsd(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsd(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -91,7 +91,7 @@ impl TranslateRiscv {
 
         // Self::translate_store(TCGOpcode::STORE_FLOAT_64BIT, inst)
     }
-    pub fn translate_fsw(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -118,7 +118,7 @@ impl TranslateRiscv {
         // Self::translate_store(TCGOpcode::STORE_FLOAT_32BIT, inst)
     }
 
-    pub fn translate_fadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fadd_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -132,7 +132,7 @@ impl TranslateRiscv {
         vec![fadd_d]
     }
 
-    pub fn translate_fsub_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsub_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -146,7 +146,7 @@ impl TranslateRiscv {
         vec![fsub_d]
     }
 
-    pub fn translate_fmul_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmul_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -160,7 +160,7 @@ impl TranslateRiscv {
         vec![fmul_d]
     }
 
-    pub fn translate_fmadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmadd_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -181,7 +181,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fmsub_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmsub_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -202,7 +202,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fnmsub_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fnmsub_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -223,7 +223,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fnmadd_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fnmadd_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -244,7 +244,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fdiv_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fdiv_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -258,7 +258,7 @@ impl TranslateRiscv {
         vec![fdiv_d]
     }
 
-    pub fn translate_fsqrt_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsqrt_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -270,7 +270,7 @@ impl TranslateRiscv {
         vec![fdiv_d]
     }
 
-    pub fn translate_fmv_x_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmv_x_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -282,7 +282,7 @@ impl TranslateRiscv {
     }
 
 
-    pub fn translate_fmv_d_x(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmv_d_x(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -293,7 +293,7 @@ impl TranslateRiscv {
         vec![mov_x_d]
     }
 
-    pub fn translate_feq_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_feq_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -305,7 +305,7 @@ impl TranslateRiscv {
         let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FEQ_D_IDX as usize, *rd, *rs1, *rs2);
         vec![op]
     }
-    pub fn translate_flt_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_flt_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -317,7 +317,7 @@ impl TranslateRiscv {
         let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FLT_D_IDX as usize, *rd, *rs1, *rs2);
         vec![op]
     }
-    pub fn translate_fle_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fle_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -330,7 +330,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fclass_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fclass_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
 
@@ -341,7 +341,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fmax_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmax_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -354,7 +354,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fmin_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmin_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -367,7 +367,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fsgnj_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsgnj_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -380,7 +380,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fsgnjn_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsgnjn_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -393,7 +393,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fsgnjx_d(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsgnjx_d(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -406,7 +406,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fadd_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fadd_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -420,7 +420,7 @@ impl TranslateRiscv {
         vec![fadd_s]
     }
 
-    pub fn translate_fsub_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsub_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -434,7 +434,7 @@ impl TranslateRiscv {
         vec![fsub_s]
     }
 
-    pub fn translate_fmul_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmul_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -448,7 +448,7 @@ impl TranslateRiscv {
         vec![fmul_s]
     }
 
-    pub fn translate_fmadd_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmadd_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -469,7 +469,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fmsub_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmsub_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -490,7 +490,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fnmsub_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fnmsub_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -511,7 +511,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fnmadd_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fnmadd_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rs3_addr: usize = get_rs3_addr!(inst.inst) as usize;
@@ -532,7 +532,7 @@ impl TranslateRiscv {
         vec![fop]
     }
 
-    pub fn translate_fdiv_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fdiv_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -546,7 +546,7 @@ impl TranslateRiscv {
         vec![fdiv_s]
     }
 
-    pub fn translate_fsqrt_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsqrt_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -558,7 +558,7 @@ impl TranslateRiscv {
         vec![fdiv_s]
     }
 
-    pub fn translate_fmv_x_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmv_x_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -570,7 +570,7 @@ impl TranslateRiscv {
     }
 
 
-    pub fn translate_fmv_s_x(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmv_s_x(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -581,7 +581,7 @@ impl TranslateRiscv {
         vec![mov_x_s]
     }
 
-    pub fn translate_feq_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_feq_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -593,7 +593,7 @@ impl TranslateRiscv {
         let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FEQ_S_IDX as usize, *rd, *rs1, *rs2);
         vec![op]
     }
-    pub fn translate_flt_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_flt_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -605,7 +605,7 @@ impl TranslateRiscv {
         let op = TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_FLT_S_IDX as usize, *rd, *rs1, *rs2);
         vec![op]
     }
-    pub fn translate_fle_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fle_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -618,7 +618,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fclass_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fclass_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
 
@@ -629,7 +629,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fmv_x_w(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmv_x_w(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -641,7 +641,7 @@ impl TranslateRiscv {
     }
 
 
-    pub fn translate_fmv_w_x(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmv_w_x(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
 
@@ -652,7 +652,7 @@ impl TranslateRiscv {
         vec![mov_x_d]
     }
 
-    pub fn translate_fmax_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmax_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -665,7 +665,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fmin_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fmin_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -678,7 +678,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fsgnj_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsgnj_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -691,7 +691,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fsgnjn_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsgnjn_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -704,7 +704,7 @@ impl TranslateRiscv {
         vec![op]
     }
 
-    pub fn translate_fsgnjx_s(inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_fsgnjx_s(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
