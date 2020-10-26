@@ -347,9 +347,6 @@ impl TranslateRiscv {
     }
 
     pub fn translate_rrr(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let source1 = self.tcg_temp_new();
-        let source2 = self.tcg_temp_new();
-
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst); 
@@ -357,6 +354,9 @@ impl TranslateRiscv {
         if rd_addr == 0 {
             return vec![];
         }
+
+        let source1 = self.tcg_temp_new();
+        let source2 = self.tcg_temp_new();
 
         let rs1_op = TCGOp::new_get_gpr(source1, rs1_addr);  // Box::new(TCGv::new_reg(rs1_addr as u64));
         let rs2_op = TCGOp::new_get_gpr(source2, rs2_addr);  // Box::new(TCGv::new_reg(rs2_addr as u64));
@@ -369,38 +369,25 @@ impl TranslateRiscv {
         self.tcg_temp_free(source2);
 
         vec![rs1_op, rs2_op, tcg_inst, rd_op]
-
-        // let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
-        // let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-        // let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
-// 
-        // let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        // let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        // let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-// 
-        // if rd_addr != 0 {
-        //     let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *rs2);
-        //     return vec![tcg_inst];
-        // } else {
-        //     return vec![];
-        // }
     }
 
-    pub fn translate_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+    pub fn translate_rri(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr= get_rs1_addr!(inst.inst);
+        let rd_addr = get_rd_addr!(inst.inst); 
+
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let tcg_imm = TCGv::new_imm(imm_const);
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        if rd_addr != 0 {
-            let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
-            return vec![tcg_inst];
-        } else {
+        if rd_addr == 0 {
             return vec![];
         }
+
+        let source1 = self.tcg_temp_new();
+        let rs1_op = TCGOp::new_get_gpr(source1, rs1_addr);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        let tcg_inst = TCGOp::new_3op(op, source1, source1, tcg_imm);
+        let rd_op = TCGOp::new_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        self.tcg_temp_free(source1);
+        vec![rs1_op, tcg_inst, rd_op]
     }
 
     pub fn translate_shift_i(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {

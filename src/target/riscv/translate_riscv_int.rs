@@ -60,19 +60,21 @@ impl TranslateRiscv {
 
 
     pub fn translate_lui(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rd_addr = get_rd_addr!(inst.inst); 
+
         let imm_const: u64 = ((inst.inst as i32 as i64) & !0xfff) as u64;
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let tcg_imm = TCGv::new_imm(imm_const);
 
-        let rs1 = Box::new(TCGv::new_reg(0));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-
-        if rd_addr != 0 {
-            let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *rs1, *imm);
-            return vec![tcg_inst];
-        } else {
+        if rd_addr == 0 {
             return vec![];
         }
+
+        let source1 = self.tcg_temp_new();
+        let rs1_op = TCGOp::new_get_gpr(source1, 0);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, tcg_imm);
+        let rd_op = TCGOp::new_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        self.tcg_temp_free(source1);
+        vec![rs1_op, tcg_inst, rd_op]
     }
 
     pub fn translate_auipc(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -91,28 +93,7 @@ impl TranslateRiscv {
     }
 
     pub fn translate_add(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        let source1 = self.tcg_temp_new();
-        let source2 = self.tcg_temp_new();
-
-        let rs1_addr= get_rs1_addr!(inst.inst);
-        let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
-
-        if rd_addr == 0 {
-            return vec![];
-        }
-
-        let rs1_op = TCGOp::new_get_gpr(source1, rs1_addr);  // Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rs2_op = TCGOp::new_get_gpr(source2, rs2_addr);  // Box::new(TCGv::new_reg(rs2_addr as u64));
-
-        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_TEMP, source1, source1, source2);
-
-        let rd_op = TCGOp::new_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
-
-        self.tcg_temp_free(source1);
-        self.tcg_temp_free(source2);
-
-        vec![rs1_op, rs2_op, tcg_inst, rd_op]
+        self.translate_rrr(TCGOpcode::ADD_64BIT, inst)
     }
     pub fn translate_sub(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         self.translate_rrr(TCGOpcode::SUB_64BIT, inst)
@@ -128,20 +109,20 @@ impl TranslateRiscv {
     }
 
     pub fn translate_addi(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::ADD_64BIT, inst)
+        self.translate_rri(TCGOpcode::ADD_64BIT, inst)
     }
     pub fn translate_andi(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::AND_64BIT, inst)
+        self.translate_rri(TCGOpcode::AND_64BIT, inst)
     }
     pub fn translate_ori(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::OR_64BIT, inst)
+        self.translate_rri(TCGOpcode::OR_64BIT, inst)
     }
     pub fn translate_xori(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::XOR_64BIT, inst)
+        self.translate_rri(TCGOpcode::XOR_64BIT, inst)
     }
 
     pub fn translate_addiw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::ADD_32BIT, inst)
+        self.translate_rri(TCGOpcode::ADD_32BIT, inst)
     }
     pub fn translate_addw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         self.translate_rrr(TCGOpcode::ADD_32BIT, inst)
@@ -188,7 +169,7 @@ impl TranslateRiscv {
 
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
 
-        let mut load_op = Self::translate_rri(TCGOpcode::LOAD_64BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOAD_64BIT, inst);
 
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -225,7 +206,7 @@ impl TranslateRiscv {
         
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         
-        let mut load_op = Self::translate_rri(TCGOpcode::LOAD_32BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOAD_32BIT, inst);
         
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -262,7 +243,7 @@ impl TranslateRiscv {
         
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         
-        let mut load_op = Self::translate_rri(TCGOpcode::LOAD_16BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOAD_16BIT, inst);
         
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -298,7 +279,7 @@ impl TranslateRiscv {
         
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         
-        let mut load_op = Self::translate_rri(TCGOpcode::LOAD_8BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOAD_8BIT, inst);
         
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -334,7 +315,7 @@ impl TranslateRiscv {
         
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU32_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         
-        let mut load_op = Self::translate_rri(TCGOpcode::LOADU_32BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOADU_32BIT, inst);
         
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -371,7 +352,7 @@ impl TranslateRiscv {
         
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU16_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         
-        let mut load_op = Self::translate_rri(TCGOpcode::LOADU_16BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOADU_16BIT, inst);
         
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -409,7 +390,7 @@ impl TranslateRiscv {
         
         let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOADU8_IDX as usize, *rd, *rs1, *imm, *tcg_inst_addr);
         
-        let mut load_op = Self::translate_rri(TCGOpcode::LOADU_8BIT, inst);
+        let mut load_op = self.translate_rri(TCGOpcode::LOADU_8BIT, inst);
         
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
@@ -620,13 +601,13 @@ impl TranslateRiscv {
         self.translate_rrr(TCGOpcode::SLT_64BIT, inst)
     }
     pub fn translate_slti(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::SLT_64BIT, inst)
+        self.translate_rri(TCGOpcode::SLT_64BIT, inst)
     }
     pub fn translate_sltu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         self.translate_rrr(TCGOpcode::SLTU_64BIT, inst)
     }
     pub fn translate_sltiu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_rri(TCGOpcode::SLTU_64BIT, inst)
+        self.translate_rri(TCGOpcode::SLTU_64BIT, inst)
     }
 
 
