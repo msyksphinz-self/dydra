@@ -647,7 +647,7 @@ impl TCGX86 {
         gen_size
     }
 
-    fn ConvertX86Reg(temp: u64) -> X86TargetRM {
+    fn convert_x86_reg(temp: u64) -> X86TargetRM {
         return match temp {
             0 => X86TargetRM::RDX,
             1 => X86TargetRM::RBX,
@@ -666,8 +666,8 @@ impl TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        let source1_x86reg = Self::ConvertX86Reg(source1_reg.value);
-        let source2_x86reg = Self::ConvertX86Reg(source2_reg.value);
+        let source1_x86reg = Self::convert_x86_reg(source1_reg.value);
+        let source2_x86reg = Self::convert_x86_reg(source2_reg.value);
 
         gen_size += Self::tcg_modrm_64bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + source2_x86reg as u8, source1_x86reg as u8, mc);
 
@@ -689,7 +689,7 @@ impl TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        let source1_x86reg = Self::ConvertX86Reg(source1_reg.value);
+        let source1_x86reg = Self::convert_x86_reg(source1_reg.value);
 
         gen_size += Self::tcg_modrm_64bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, 0, mc);
         gen_size += Self::tcg_out(source2_imm.value, 4, mc);
@@ -709,8 +709,8 @@ impl TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        let source1_x86reg = Self::ConvertX86Reg(source1_reg.value);
-        let source2_x86reg = Self::ConvertX86Reg(source2_reg.value);
+        let source1_x86reg = Self::convert_x86_reg(source1_reg.value);
+        let source2_x86reg = Self::convert_x86_reg(source2_reg.value);
 
         gen_size += Self::tcg_modrm_32bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + source2_x86reg as u8, source1_x86reg as u8, mc);
 
@@ -728,7 +728,7 @@ impl TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        let source1_x86reg = Self::ConvertX86Reg(source1_reg.value);
+        let source1_x86reg = Self::convert_x86_reg(source1_reg.value);
 
         gen_size += Self::tcg_modrm_32bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, 0, mc);
         gen_size += Self::tcg_out(source2_imm.value, 4, mc);
@@ -856,7 +856,7 @@ impl TCG for TCGX86 {
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src_reg.t, TCGvType::Register);
 
-        let target_x86reg = Self::ConvertX86Reg(dest_reg.value);
+        let target_x86reg = Self::convert_x86_reg(dest_reg.value);
 
         let mut gen_size = pc_address as usize;
         gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
@@ -871,7 +871,7 @@ impl TCG for TCGX86 {
         assert_eq!(dest_reg.t, TCGvType::Register);
         assert_eq!(src_reg.t, TCGvType::TCGTemp);
 
-        let source_x86reg = Self::ConvertX86Reg(src_reg.value);
+        let source_x86reg = Self::convert_x86_reg(src_reg.value);
 
         let mut gen_size = pc_address as usize;
         gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, source_x86reg, mc);
@@ -1018,8 +1018,8 @@ impl TCG for TCGX86 {
 
         let mut gen_size: usize = pc_address as usize;
 
-        let dest_x86reg = Self::ConvertX86Reg(dest_reg.value);
-        let source1_x86reg = Self::ConvertX86Reg(source1_reg.value);
+        let dest_x86reg = Self::convert_x86_reg(dest_reg.value);
+        let source1_x86reg = Self::convert_x86_reg(source1_reg.value);
 
         gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV_32BIT, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, 
                 dest_x86reg as u8, mc);
