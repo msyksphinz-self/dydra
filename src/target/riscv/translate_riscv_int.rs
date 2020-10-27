@@ -122,7 +122,23 @@ impl TranslateRiscv {
     }
 
     pub fn translate_addiw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rri(TCGOpcode::ADD_32BIT, inst)
+        let rs1_addr= get_rs1_addr!(inst.inst);
+        let rd_addr = get_rd_addr!(inst.inst); 
+
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let tcg_imm = TCGv::new_imm(imm_const);
+
+        if rd_addr == 0 {
+            return vec![];
+        }
+
+        let source1 = self.tcg_temp_new();
+        let rs1_op = TCGOp::new_get_gpr(source1, rs1_addr);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_32BIT, source1, source1, tcg_imm);
+        let tcg_sign_ext = TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1);
+        let rd_op = TCGOp::new_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
+        self.tcg_temp_free(source1);
+        vec![rs1_op, tcg_inst, tcg_sign_ext, rd_op]
     }
     pub fn translate_addw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         self.translate_rrr(TCGOpcode::ADD_32BIT, inst)

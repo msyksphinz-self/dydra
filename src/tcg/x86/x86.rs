@@ -87,6 +87,8 @@ enum X86Opcode {
     IMUL_RDX_RAX_R = 0xaf_0f,
     IDIV_RDX_RAX_R = 0x38_f7,
 
+    // MOVSXD = 0x63,
+
     CQO = 0x99,
 
     SETB = 0x92_0f, // より下の場合バイトを設定します
@@ -819,6 +821,8 @@ impl TCG for TCGX86 {
                     TCGOpcode::MOV_IMM_64BIT => TCGX86::tcg_gen_mov_imm_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::MOV_64BIT => TCGX86::tcg_gen_mov_64bit(emu, pc_address, tcg, mc),
 
+                    TCGOpcode::SIGN_EXT_32_64 => TCGX86::tcg_gen_sign_ext_32_64(emu, pc_address, tcg, mc),
+
                     TCGOpcode::SGNJ_64BIT => TCGX86::tcg_gen_sgnj_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::SGNJN_64BIT => TCGX86::tcg_gen_sgnjn_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::SGNJX_64BIT => TCGX86::tcg_gen_sgnjx_64bit(emu, pc_address, tcg, mc),
@@ -1005,6 +1009,23 @@ impl TCG for TCGX86 {
         gen_size
     }
 
+    fn tcg_gen_sign_ext_32_64(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let dest_reg = tcg.arg0.unwrap();
+        let source1_reg = tcg.arg1.unwrap();
+
+        assert_eq!(dest_reg.t, TCGvType::TCGTemp);
+        assert_eq!(source1_reg.t, TCGvType::TCGTemp);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        let dest_x86reg = Self::ConvertX86Reg(dest_reg.value);
+        let source1_x86reg = Self::ConvertX86Reg(source1_reg.value);
+
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV_32BIT, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, 
+                dest_x86reg as u8, mc);
+
+        gen_size
+    }
 
     fn tcg_gen_srl_64bit(
         emu: &EmuEnv,
