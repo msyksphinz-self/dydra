@@ -406,12 +406,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_shift_r_64bit(
-        emu: &EmuEnv,
-        op: X86Opcode,
-        tcg: &tcg::TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen_shift_r_64bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -441,12 +436,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_shift_i_64bit(
-        emu: &EmuEnv,
-        op: X86Opcode,
-        tcg: &tcg::TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen_shift_i_64bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -469,12 +459,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_shift_r_32bit(
-        emu: &EmuEnv,
-        op: X86Opcode,
-        tcg: &tcg::TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen_shift_r_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -504,12 +489,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_shift_i_32bit(
-        emu: &EmuEnv,
-        op: X86Opcode,
-        tcg: &tcg::TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen_shift_i_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
@@ -541,12 +521,7 @@ impl TCGX86 {
         return byte_len;
     }
 
-    fn tcg_gen_jcc(
-        gen_size: usize,
-        x86_op: X86Opcode,
-        mc: &mut Vec<u8>,
-        label: &Rc<RefCell<tcg::TCGLabel>>,
-    ) -> usize {
+    fn tcg_gen_jcc(gen_size: usize, x86_op: X86Opcode, mc: &mut Vec<u8>, label: &Rc<RefCell<tcg::TCGLabel>>) -> usize {
         let mut gen_size = gen_size;
 
         gen_size += Self::tcg_out(x86_op as u64, 2, mc);
@@ -556,13 +531,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_cmp_branch(
-        emu: &EmuEnv,
-        pc_address: u64,
-        x86_op: X86Opcode,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen_cmp_branch(emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
 
@@ -591,13 +560,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_setcc(
-        emu: &EmuEnv,
-        pc_address: u64,
-        x86_op: X86Opcode,
-        tcg: &TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
+    fn tcg_gen_setcc(emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
