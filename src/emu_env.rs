@@ -313,7 +313,10 @@ impl EmuEnv {
 
             let tb_text_mem = match self.m_tb_text_hashmap.get(&self.m_pc[0]) {
                 Some(mem_map) => {
-                    // println!("HashMap search hit! {:016x}", &self.m_pc[0]);
+                    if self.m_arg_config.debug {
+                        println!("Search Hit! {:016x}", &self.m_pc[0]);
+                    }
+                    self.m_pc[0] = self.m_pc[0] + 4;
                     Rc::clone(&mem_map)
                 }
                 None => {

@@ -10,6 +10,12 @@ pub enum TCGOpcode {
     GET_GPR,
     SET_GPR,
     ADD_TEMP,
+    MOVE_STACK,
+    MEM_LOAD,
+    MEM_STORE,
+    ADD_TLBIDX_OFFSET,
+    ADD_TLBADDR_OFFSET,
+    ADD_MEM_OFFSET,
 
     HELPER_CALL_ARG0,
     HELPER_CALL_ARG1,
@@ -140,7 +146,7 @@ pub enum RegisterType {
 }
 
 impl TCGOp {
-    pub fn new_get_gpr (dest: TCGv, reg_addr: u32) -> TCGOp {
+    pub fn tcg_get_gpr (dest: TCGv, reg_addr: u32) -> TCGOp {
         assert_eq!(dest.t, TCGvType::TCGTemp);
         TCGOp {
             op: Some(TCGOpcode::GET_GPR),
@@ -153,7 +159,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_set_gpr (reg_addr: u32, source: TCGv) -> TCGOp {
+    pub fn tcg_set_gpr (reg_addr: u32, source: TCGv) -> TCGOp {
         assert_eq!(source.t, TCGvType::TCGTemp);
         TCGOp {
             op: Some(TCGOpcode::SET_GPR),
@@ -177,6 +183,19 @@ impl TCGOp {
             helper_idx: 0,
         }
     }
+
+    pub fn new_1op(opcode: TCGOpcode, a1: TCGv) -> TCGOp {
+        TCGOp {
+            op: Some(opcode),
+            arg0: Some(a1),
+            arg1: None,
+            arg2: None,
+            arg3: None,
+            label: None,
+            helper_idx: 0,
+        }
+    }
+
     pub fn new_2op(opcode: TCGOpcode, a1: TCGv, a2: TCGv) -> TCGOp {
         TCGOp {
             op: Some(opcode),
@@ -185,6 +204,18 @@ impl TCGOp {
             arg2: None,
             arg3: None,
             label: None,
+            helper_idx: 0,
+        }
+    }
+
+    pub fn new_2op_with_label(opcode: TCGOpcode, a1: TCGv, a2: TCGv, label: Rc<RefCell<TCGLabel>>) -> TCGOp {
+        TCGOp {
+            op: Some(opcode),
+            arg0: Some(a1),
+            arg1: Some(a2),
+            arg2: None,
+            arg3: None,
+            label: Some(label),
             helper_idx: 0,
         }
     }
@@ -201,13 +232,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_4op(
-        opcode: TCGOpcode,
-        a1: TCGv,
-        a2: TCGv,
-        a3: TCGv,
-        label: Rc<RefCell<TCGLabel>>,
-    ) -> TCGOp {
+    pub fn new_4op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv, label: Rc<RefCell<TCGLabel>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -360,6 +385,14 @@ pub trait TCG {
 
     fn tcg_gen_get_gpr(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_set_gpr(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_move_stack(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_mem_load(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_mem_store(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+
+    fn tcg_gen_tlbidx_offset(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_tlbaddr_offset(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_mem_offset(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_add_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_sub_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;

@@ -6,7 +6,7 @@ impl EmuEnv {
     pub fn helper_func_load64(emu: &mut EmuEnv,rd: u64,rs1: u64,imm: u64,guest_pc: u64) -> usize {
         let rs1_data = emu.m_regs[rs1 as usize];
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
-
+        println!("helper_func_load64 : address = {:016x}", addr);
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
             Ok(guest_phy_addr) => { 
                 if emu.m_arg_config.mmu_debug {

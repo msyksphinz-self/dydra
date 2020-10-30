@@ -117,7 +117,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_mret(emu: &mut EmuEnv, dest: u64, imm: u64, csr_addr: u64, _dummy: u64) -> usize {
+    pub fn helper_func_mret(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, _dummy: u64) -> usize {
         emu.m_pc[0] = emu.m_csr.csrrc(CsrAddr::Mepc, 0 as i64) as u64;
         return 0;
     }
