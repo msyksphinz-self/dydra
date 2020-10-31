@@ -419,6 +419,7 @@ impl TranslateRiscv {
         vec![rs1_op, tcg_inst, rd_op]
     }
 
+    /*
     pub fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = get_s_imm_field!(inst.inst);
@@ -434,7 +435,8 @@ impl TranslateRiscv {
 
         vec![tcg_inst]
     }
-
+    */
+    
     pub fn translate_branch(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
