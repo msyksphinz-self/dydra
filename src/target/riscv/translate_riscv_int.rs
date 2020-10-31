@@ -167,78 +167,78 @@ impl TranslateRiscv {
     }
 
     pub fn translate_ld(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr = get_rs1_addr!(inst.inst);
-        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
-        let rd_addr = get_rd_addr!(inst.inst);
+            let rs1_addr = get_rs1_addr!(inst.inst);
+            let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+            let rd_addr = get_rd_addr!(inst.inst);
 
-        let src_addr       = self.tcg_temp_new();
-        let vaddr_low12bit = self.tcg_temp_new();
-        let vaddr_tlb_idx  = self.tcg_temp_new();
-        let stack_reg      = self.tcg_temp_new();
-        let tlb_byte_addr  = self.tcg_temp_new();
+            let src_addr       = self.tcg_temp_new();
+            let vaddr_low12bit = self.tcg_temp_new();
+            let vaddr_tlb_idx  = self.tcg_temp_new();
+            let stack_reg      = self.tcg_temp_new();
+            let tlb_byte_addr  = self.tcg_temp_new();
 
-        let label_tlb_match = Rc::new(RefCell::new(TCGLabel::new()));
-        let tcg_label_tlb_match = TCGOp::new_label(Rc::clone(&label_tlb_match));
+            let label_tlb_match = Rc::new(RefCell::new(TCGLabel::new()));
+            let tcg_label_tlb_match = TCGOp::new_label(Rc::clone(&label_tlb_match));
 
-        let mut tcg_lists = vec![];
+            let mut tcg_lists = vec![];
 
-        // Read Register
-        tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, rs1_addr));
-        // Extract TLB Index and offset
-        if imm_const != 0 {
-            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(imm_const)));
-        }
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_low12bit, src_addr, TCGv::new_imm(0xfff)));
+            // Read Register
+            tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, rs1_addr));
+            // Extract TLB Index and offset
+            if imm_const != 0 {
+                tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(imm_const)));
+            }
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_low12bit, src_addr, TCGv::new_imm(0xfff)));
 
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, vaddr_tlb_idx, src_addr, TCGv::new_imm(12)));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_tlb_idx, vaddr_tlb_idx, TCGv::new_imm(0xfff)));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SLL_64BIT, vaddr_tlb_idx, vaddr_tlb_idx, TCGv::new_imm(3)));
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, vaddr_tlb_idx, src_addr, TCGv::new_imm(12)));
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_tlb_idx, vaddr_tlb_idx, TCGv::new_imm(0xfff)));
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::SLL_64BIT, vaddr_tlb_idx, vaddr_tlb_idx, TCGv::new_imm(3)));
 
-        // Make TLB Vaddr Index Address
-        tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBIDX_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
+            // Make TLB Vaddr Index Address
+            tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBIDX_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
 
-        // Make VAddr upper bit for compare TLB value
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, src_addr, src_addr, TCGv::new_imm(24)));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
-        tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
-        // if TLB not hit, jump helper function
-        tcg_lists.push(TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, 
-                                                   TCGv::new_reg(rd_addr as u64), 
-                                                   TCGv::new_reg(rs1_addr as u64), 
-                                                   TCGv::new_imm(imm_const), 
-                                                   TCGv::new_imm(inst.addr)));
+            // Make VAddr upper bit for compare TLB value
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, src_addr, src_addr, TCGv::new_imm(24)));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
+            tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
+            // if TLB not hit, jump helper function
+            tcg_lists.push(TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_LOAD64_IDX as usize, 
+                                                    TCGv::new_reg(rd_addr as u64), 
+                                                    TCGv::new_reg(rs1_addr as u64), 
+                                                    TCGv::new_imm(imm_const), 
+                                                    TCGv::new_imm(inst.addr)));
 
-        let zero = Box::new(TCGv::new_reg(0 as u64));
-        let dummy_addr = Box::new(TCGv::new_imm(0));
-        
-        let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
-        let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
+            let zero = Box::new(TCGv::new_reg(0 as u64));
+            let dummy_addr = Box::new(TCGv::new_imm(0));
+            
+            let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
+            let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
 
-        tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, src_addr, *zero, *dummy_addr, Rc::clone(&label_load_excp)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+            tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, src_addr, *zero, *dummy_addr, Rc::clone(&label_load_excp)));
+            tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
 
-        // Extract lower 12bit address and add with TLB address
-        tcg_lists.push(tcg_label_tlb_match);
-        tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBADDR_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB Paddr
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_low12bit));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, TCGv::new_imm(0x80000000)));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_MEM_OFFSET, tlb_byte_addr, tlb_byte_addr));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, tlb_byte_addr));
-        tcg_lists.push(tcg_label_load_excp);
+            // Extract lower 12bit address and add with TLB address
+            tcg_lists.push(tcg_label_tlb_match);
+            tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBADDR_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB Paddr
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_low12bit));
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, TCGv::new_imm(0x80000000)));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_MEM_OFFSET, tlb_byte_addr, tlb_byte_addr));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
+            tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, tlb_byte_addr));
+            tcg_lists.push(tcg_label_load_excp);
 
-        self.tcg_temp_free(src_addr      );
-        self.tcg_temp_free(vaddr_low12bit);
-        self.tcg_temp_free(vaddr_tlb_idx );
-        self.tcg_temp_free(stack_reg     );
-        self.tcg_temp_free(tlb_byte_addr );
+            self.tcg_temp_free(src_addr      );
+            self.tcg_temp_free(vaddr_low12bit);
+            self.tcg_temp_free(vaddr_tlb_idx );
+            self.tcg_temp_free(stack_reg     );
+            self.tcg_temp_free(tlb_byte_addr );
 
-        return tcg_lists;
+            return tcg_lists;
     }
 
     pub fn translate_lw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -463,41 +463,81 @@ impl TranslateRiscv {
     }
 
     pub fn translate_sd(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = get_s_imm_field!(inst.inst);
         let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
-        let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
-        
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const as u64));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        
-        let tcg_inst_addr = Box::new(TCGv::new_imm(inst.addr));
-        
+        let rs2_addr = get_rs2_addr!(inst.inst);
+
+        let src_addr       = self.tcg_temp_new();
+        let vaddr_low12bit = self.tcg_temp_new();
+        let vaddr_tlb_idx  = self.tcg_temp_new();
+        let stack_reg      = self.tcg_temp_new();
+        let tlb_byte_addr  = self.tcg_temp_new();
+
         let label_tlb_match = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_tlb_match = TCGOp::new_label(Rc::clone(&label_tlb_match));
-        
-        let tcg_match_op = TCGOp::new_2op(TCGOpcode::TLB_MATCH_CHECK, *rs1, *imm);
-        let tcg_tlb_tcg_reslut_excp_cmp_op = TCGOp::new_0op(TCGOpcode::CMP_EQ, Some(Rc::clone(&label_tlb_match)));
-        
-        let tcg_helper_call_op = TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, *rs2, *rs1, *imm, *tcg_inst_addr);
-        
-        let mut store_op = Self::translate_store(TCGOpcode::STORE_64BIT, inst);
-        
-        let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
-        let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
-        
+
+        let mut tcg_lists = vec![];
+
+        // Read Register
+        tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, rs1_addr));
+        // Extract TLB Index and offset
+        if imm_const != 0 {
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(imm_const as u64)));
+        }
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_low12bit, src_addr, TCGv::new_imm(0xfff)));
+
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, vaddr_tlb_idx, src_addr, TCGv::new_imm(12)));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_tlb_idx, vaddr_tlb_idx, TCGv::new_imm(0xfff)));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SLL_64BIT, vaddr_tlb_idx, vaddr_tlb_idx, TCGv::new_imm(3)));
+
+        // Make TLB Vaddr Index Address
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBIDX_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
+// 
+        // Make VAddr upper bit for compare TLB value
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, src_addr, src_addr, TCGv::new_imm(24)));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
+        tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
+        // if TLB not hit, jump helper function
+        tcg_lists.push(TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, 
+                                                            TCGv::new_reg(rs2_addr as u64), 
+                                                            TCGv::new_reg(rs1_addr as u64), 
+                                                            TCGv::new_imm(imm_const as u64), 
+                                                            TCGv::new_imm(inst.addr)));
+
         let zero = Box::new(TCGv::new_reg(0 as u64));
         let dummy_addr = Box::new(TCGv::new_imm(0));
         
-        let tcg_result_excp_cmp_op = TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, *rs1, *zero, *dummy_addr, Rc::clone(&label_load_excp));
-        let tcg_exit_tb1 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
-        let tcg_exit_tb2 = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
+        let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
+        let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
+
+        tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, src_addr, *zero, *dummy_addr, Rc::clone(&label_load_excp)));
+        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        self.tcg_temp_free(src_addr      );
+
+        // Extract lower 12bit address and add with TLB address
+        tcg_lists.push(tcg_label_tlb_match);
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
+        self.tcg_temp_free(stack_reg     );
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBADDR_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB Paddr
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_low12bit));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, TCGv::new_imm(0x80000000)));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_MEM_OFFSET, tlb_byte_addr, tlb_byte_addr));
+        let rs2_data = self.tcg_temp_new();
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_data, rs2_addr));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_STORE, rs2_data, tlb_byte_addr));
+        tcg_lists.push(tcg_label_load_excp);
+
+        self.tcg_temp_free(vaddr_low12bit);
+        self.tcg_temp_free(vaddr_tlb_idx );
+        self.tcg_temp_free(tlb_byte_addr );
+        self.tcg_temp_free(rs2_data);
         
-        let mut vec_ops = vec![tcg_match_op, tcg_tlb_tcg_reslut_excp_cmp_op, tcg_helper_call_op, tcg_result_excp_cmp_op, tcg_exit_tb1, tcg_exit_tb2, tcg_label_tlb_match];
-        vec_ops.append(&mut store_op);
-        vec_ops.push(tcg_label_load_excp);
-        return vec_ops;
+        return tcg_lists;
     }
 
     pub fn translate_sw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {

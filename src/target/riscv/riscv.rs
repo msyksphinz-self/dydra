@@ -1,6 +1,8 @@
 use super::super::super::tcg::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGv};
 use std::cell::RefCell;
 use std::rc::Rc;
+use bitmaps::Bitmap;
+use typenum::U10;
 
 use super::super::super::instr_info::InstrInfo;
 use super::riscv_inst_id::RiscvInstId;
@@ -173,24 +175,34 @@ impl PrivMode {
 
 pub type TCGRegType = u64;
 pub struct TranslateRiscv {
-    pub temp_list: TCGRegType,
+    pub reg_bitmap: Bitmap<U10>,
 }
 
 impl TranslateRiscv {
     pub fn new() -> TranslateRiscv {
-        TranslateRiscv {
-            temp_list: 0
+        let mut trans = TranslateRiscv {
+            reg_bitmap: Bitmap::new()
+        };
+        for idx in 0..5 {
+            trans.reg_bitmap.set(idx, true);
         }
+        trans
     }
 
     pub fn tcg_temp_new(&mut self) -> TCGv {
-        let new_v = TCGv::new_temp(self.temp_list);
-        self.temp_list = self.temp_list + 1;
+        let new_idx = match self.reg_bitmap.first_index() {
+            Some(idx) => {
+                self.reg_bitmap.set(idx, false);
+                idx
+            }
+            None => panic!("New temporaries not found."),
+        };
+        let new_v = TCGv::new_temp(new_idx as u64);
         new_v
     }
 
-    pub fn tcg_temp_free(&mut self, _idx: TCGv) {
-        self.temp_list = self.temp_list - 1;
+    pub fn tcg_temp_free(&mut self, idx: TCGv) {
+        self.reg_bitmap.set(idx.value as usize, true);
     }
 
     pub fn translate(&mut self, id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
