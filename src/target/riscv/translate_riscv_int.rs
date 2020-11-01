@@ -365,13 +365,13 @@ impl TranslateRiscv {
         self.translate_shift_i(TCGOpcode::SRA_64BIT, inst)
     }
     pub fn translate_sll(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SLL_64BIT, inst)
+        self.translate_shift_r(TCGOpcode::SLL_64BIT, inst)
     }
     pub fn translate_srl(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SRL_64BIT, inst)
+        self.translate_shift_r(TCGOpcode::SRL_64BIT, inst)
     }
     pub fn translate_sra(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SRA_64BIT, inst)
+        self.translate_shift_r(TCGOpcode::SRA_64BIT, inst)
     }
 
     pub fn translate_slliw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -384,13 +384,13 @@ impl TranslateRiscv {
         self.translate_shift_i(TCGOpcode::SRA_32BIT, inst)
     }
     pub fn translate_sllw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SLL_32BIT, inst)
+        self.translate_shift_r(TCGOpcode::SLL_32BIT, inst)
     }
     pub fn translate_srlw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SRL_32BIT, inst)
+        self.translate_shift_r(TCGOpcode::SRL_32BIT, inst)
     }
     pub fn translate_sraw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SRA_32BIT, inst)
+        self.translate_shift_r(TCGOpcode::SRA_32BIT, inst)
     }
 
     pub fn translate_slt(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
