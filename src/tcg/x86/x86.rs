@@ -204,6 +204,15 @@ impl TCGX86 {
         return 3;
     }
 
+    fn tcg_modrm_16bit_raw_out(op: X86Opcode, modrm: u8, tgt_rm: u8, mc: &mut Vec<u8>) -> usize {
+        Self::tcg_out(
+            ((modrm as u64 | ((tgt_rm as u64) << 3)) << 16) | (op as u64) << 8 | 0x66,
+            3,
+            mc,
+        );
+        return 3;
+    }
+
     fn tcg_modrm_2byte_32bit_out(op: X86Opcode, modrm: X86ModRM, tgt_rm: X86TargetRM, mc: &mut Vec<u8>) -> usize {
         Self::tcg_out(
             ((modrm as u64 | ((tgt_rm as u64) << 3)) << 16) | (op as u64) << 0,
@@ -733,7 +742,7 @@ impl TCG for TCGX86 {
 
                     TCGOpcode::MOVE_STACK => TCGX86::tcg_gen_move_stack(emu, pc_address, tcg, mc),
                     TCGOpcode::MEM_LOAD => TCGX86::tcg_gen_mem_load(emu, pc_address, tcg, mc, MemOpType::LOAD_64BIT),
-                    TCGOpcode::MEM_STORE => TCGX86::tcg_gen_mem_store(emu, pc_address, tcg, mc),
+                    TCGOpcode::MEM_STORE => TCGX86::tcg_gen_mem_store(emu, pc_address, tcg, mc, MemOpType::STORE_64BIT),
 
                     TCGOpcode::ADD_TLBIDX_OFFSET => TCGX86::tcg_gen_tlbidx_offset(emu, pc_address, tcg, mc),             
                     TCGOpcode::ADD_TLBADDR_OFFSET => TCGX86::tcg_gen_tlbaddr_offset(emu, pc_address, tcg, mc),                    
@@ -795,10 +804,10 @@ impl TCG for TCGX86 {
                     TCGOpcode::LOADU_32BIT => TCGX86::tcg_gen_mem_load(emu, pc_address, tcg, mc, MemOpType::LOAD_U_32BIT),
                     TCGOpcode::LOADU_16BIT => TCGX86::tcg_gen_mem_load(emu, pc_address, tcg, mc, MemOpType::LOAD_U_16BIT),
                     TCGOpcode::LOADU_8BIT  => TCGX86::tcg_gen_mem_load(emu, pc_address, tcg, mc, MemOpType::LOAD_U_8BIT ),
-                    TCGOpcode::STORE_64BIT => TCGX86::tcg_gen_store( emu, pc_address, tcg, mc, MemOpType::STORE_64BIT, RegisterType::IntRegister),
-                    TCGOpcode::STORE_32BIT => TCGX86::tcg_gen_store( emu, pc_address, tcg, mc, MemOpType::STORE_32BIT, RegisterType::IntRegister),
-                    TCGOpcode::STORE_16BIT => TCGX86::tcg_gen_store( emu, pc_address, tcg, mc, MemOpType::STORE_16BIT, RegisterType::IntRegister),
-                    TCGOpcode::STORE_8BIT => TCGX86::tcg_gen_store( emu, pc_address, tcg, mc, MemOpType::STORE_8BIT, RegisterType::IntRegister),
+                    TCGOpcode::STORE_64BIT => TCGX86::tcg_gen_mem_store(emu, pc_address, tcg, mc, MemOpType::STORE_64BIT),
+                    TCGOpcode::STORE_32BIT => TCGX86::tcg_gen_mem_store(emu, pc_address, tcg, mc, MemOpType::STORE_32BIT),
+                    TCGOpcode::STORE_16BIT => TCGX86::tcg_gen_mem_store(emu, pc_address, tcg, mc, MemOpType::STORE_16BIT),
+                    TCGOpcode::STORE_8BIT  => TCGX86::tcg_gen_mem_store(emu, pc_address, tcg, mc, MemOpType::STORE_8BIT ),
 
                     TCGOpcode::LOAD_FLOAT_64BIT => TCGX86::tcg_gen_load( emu, pc_address, tcg, mc, MemOpType::LOAD_64BIT, RegisterType::FloatRegister),
                     TCGOpcode::LOAD_FLOAT_32BIT => TCGX86::tcg_gen_load( emu, pc_address, tcg, mc, MemOpType::LOAD_32BIT, RegisterType::FloatRegister),
@@ -940,7 +949,7 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_mem_store(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_mem_store(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType) -> usize {
         let dest_reg = tcg.arg0.unwrap();
         let src_reg = tcg.arg1.unwrap();
 
@@ -951,7 +960,29 @@ impl TCG for TCGX86 {
         let source_x86reg = Self::convert_x86_reg(src_reg.value);
 
         let mut gen_size = pc_address as usize;
-        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX as u8 + source_x86reg as u8, target_x86reg as u8, mc);
+        gen_size += match mem_size {
+            MemOpType::STORE_64BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX as u8 + source_x86reg as u8, target_x86reg as u8, mc);
+                gen_size
+            }
+            MemOpType::STORE_32BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_32bit_raw_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX as u8 + source_x86reg as u8, target_x86reg as u8, mc);
+                gen_size
+            }
+            MemOpType::STORE_16BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_16bit_raw_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_00_DISP_RAX as u8 + source_x86reg as u8, target_x86reg as u8, mc);
+                gen_size
+            }
+            MemOpType::STORE_8BIT => {
+                let mut gen_size = 0;
+                gen_size += Self::tcg_modrm_32bit_raw_out(X86Opcode::MOV_EB_GB, X86ModRM::MOD_00_DISP_RAX as u8 + source_x86reg as u8, target_x86reg as u8, mc);
+                gen_size
+            }
+            _ => panic!("Unsupported memory size!"),
+        };
         return gen_size;
     }
 

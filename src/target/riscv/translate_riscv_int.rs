@@ -263,7 +263,7 @@ impl TranslateRiscv {
         self.translate_load(inst, TCGOpcode::LOADU_8BIT, CALL_HELPER_IDX::CALL_LOADU8_IDX)
     }
 
-    fn translate_store(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    fn translate_store(&mut self, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
         let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = get_s_imm_field!(inst.inst);
         let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
@@ -302,7 +302,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
         tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
         // if TLB not hit, jump helper function
-        tcg_lists.push(TCGOp::new_helper_call_arg4(CALL_HELPER_IDX::CALL_STORE64_IDX as usize, 
+        tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize, 
                                                             TCGv::new_reg(rs2_addr as u64), 
                                                             TCGv::new_reg(rs1_addr as u64), 
                                                             TCGv::new_imm(imm_const as u64), 
@@ -330,7 +330,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_MEM_OFFSET, tlb_byte_addr, tlb_byte_addr));
         let rs2_data = self.tcg_temp_new();
         tcg_lists.push(TCGOp::tcg_get_gpr(rs2_data, rs2_addr));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_STORE, rs2_data, tlb_byte_addr));
+        tcg_lists.push(TCGOp::new_2op(store_op, rs2_data, tlb_byte_addr));
         tcg_lists.push(tcg_label_load_excp);
 
         self.tcg_temp_free(vaddr_low12bit);
@@ -342,16 +342,16 @@ impl TranslateRiscv {
     }
 
     pub fn translate_sd(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_store(inst)
+        self.translate_store(inst, TCGOpcode::STORE_64BIT, CALL_HELPER_IDX::CALL_STORE64_IDX)
     }
     pub fn translate_sw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_store(inst)
+        self.translate_store(inst, TCGOpcode::STORE_32BIT, CALL_HELPER_IDX::CALL_STORE32_IDX)
     }
     pub fn translate_sh(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_store(inst)
+        self.translate_store(inst, TCGOpcode::STORE_16BIT, CALL_HELPER_IDX::CALL_STORE16_IDX)
     }
     pub fn translate_sb(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_store(inst)
+        self.translate_store(inst, TCGOpcode::STORE_8BIT, CALL_HELPER_IDX::CALL_STORE8_IDX)
     }
 
 
