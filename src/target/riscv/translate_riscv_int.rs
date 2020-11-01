@@ -141,10 +141,10 @@ impl TranslateRiscv {
         vec![rs1_op, tcg_inst, tcg_sign_ext, rd_op]
     }
     pub fn translate_addw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::ADD_32BIT, inst)
+        self.translate_rrr_32bit(TCGOpcode::ADD_32BIT, inst)
     }
     pub fn translate_subw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::SUB_32BIT, inst)
+        self.translate_rrr_32bit(TCGOpcode::SUB_32BIT, inst)
     }
 
     pub fn translate_beq(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
