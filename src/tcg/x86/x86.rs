@@ -509,24 +509,21 @@ impl TCGX86 {
     }
 
     fn tcg_gen_shift_i_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.unwrap();
+        let src1_reg = tcg.arg1.unwrap();
+        let imm = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
-        assert_eq!(arg2.t, TCGvType::Immediate);
+        assert_eq!(dest_reg.t, TCGvType::TCGTemp);
+        assert_eq!(src1_reg.t, TCGvType::TCGTemp);
+        assert_eq!(imm.t, TCGvType::Immediate);
 
         let mut gen_size: usize = 0;
 
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
+        let dest_x86reg = Self::convert_x86_reg(dest_reg.value);
+        let src1_x86reg = Self::convert_x86_reg(src1_reg.value);
 
-        // shift_op   imm,%eax
-        gen_size += Self::tcg_modrm_32bit_out(op, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
-        gen_size += Self::tcg_out(arg2.value as u64, 1, mc);
-
-        // mov    %eax,reg_offset(%rbp)
-        gen_size += Self::tcg_gen_store_gpr_32bit(emu, X86TargetRM::RAX, arg0.value, mc);
+        gen_size += Self::tcg_modrm_32bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, dest_x86reg as u8, mc);
+        gen_size += Self::tcg_out(imm.value as u64, 1, mc);
 
         return gen_size;
     }
@@ -1066,22 +1063,11 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sub_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
-
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert!(arg1.t == TCGvType::Register);
-
-        let mut gen_size: usize = pc_address as usize;
-
-        if arg2.t == tcg::TCGvType::Immediate {
+        if tcg.arg2.unwrap().t == TCGvType::Immediate {
             // xxxx: should be sub
-            gen_size += Self::tcg_gen_rri_32bit(emu, X86Opcode::ADD_EAX_IV, tcg, mc);
-            return gen_size;
+            Self::tcg_gen_op_32_temp_imm(pc_address, X86Opcode::ADD_GV_IMM, tcg, mc)
         } else {
-            gen_size += Self::tcg_gen_rrr_32bit(emu, X86Opcode::SUB_GV_EV, tcg, mc);
-            return gen_size;
+            Self::tcg_gen_op_32_temp(pc_address, X86Opcode::SUB_GV_EV, tcg, mc)
         }
     }
 
@@ -1851,22 +1837,17 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_srl_32bit(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &tcg::TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+    fn tcg_gen_srl_32bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let dest_reg = tcg.arg0.unwrap();
+        let src1_reg = tcg.arg1.unwrap();
+        let src2_reg = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(dest_reg.t, TCGvType::TCGTemp);
+        assert_eq!(src1_reg.t, TCGvType::TCGTemp);
 
         let mut gen_size: usize = pc_address as usize;
 
-        if arg2.t == tcg::TCGvType::Immediate {
+        if src2_reg.t == tcg::TCGvType::Immediate {
             gen_size += Self::tcg_gen_shift_i_32bit(emu, X86Opcode::SRL_GV_IMM, tcg, mc);
             return gen_size;
         } else {
@@ -1875,22 +1856,17 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_sll_32bit(
-        emu: &EmuEnv,
-        pc_address: u64,
-        tcg: &tcg::TCGOp,
-        mc: &mut Vec<u8>,
-    ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+    fn tcg_gen_sll_32bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let dest_temp = tcg.arg0.unwrap();
+        let src1_temp = tcg.arg1.unwrap();
+        let src2_temp = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(dest_temp.t,  TCGvType::TCGTemp);
+        assert_eq!(src1_temp.t, TCGvType::TCGTemp);
 
         let mut gen_size: usize = pc_address as usize;
 
-        if arg2.t == tcg::TCGvType::Immediate {
+        if src2_temp.t == tcg::TCGvType::Immediate {
             gen_size += Self::tcg_gen_shift_i_32bit(emu, X86Opcode::SLL_GV_IMM, tcg, mc);
             return gen_size;
         } else {
