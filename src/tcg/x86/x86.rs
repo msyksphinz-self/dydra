@@ -576,40 +576,28 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_setcc(emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+    fn tcg_gen_setcc(_emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let dest = tcg.arg0.unwrap();
+        let src1 = tcg.arg1.unwrap();
+        let src2 = tcg.arg2.unwrap();
 
         let mut gen_size: usize = pc_address as usize;
 
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
-        if arg2.t == TCGvType::Register {
-            gen_size += Self::tcg_modrm_64bit_out(
-                X86Opcode::CMP_GV_EV,
-                X86ModRM::MOD_10_DISP_RBP,
-                X86TargetRM::RAX,
-                mc,
-            );
-            gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
-        } else {
-            gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, arg2.value, mc);
-            gen_size += Self::tcg_modrm_64bit_out(
-                X86Opcode::CMP_GV_EV,
-                X86ModRM::MOD_11_DISP_RCX,
-                X86TargetRM::RAX,
-                mc,
-            );
-        }
-        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, 0, mc); // initialize format RAX
-        gen_size += Self::tcg_modrm_2byte_64bit_out(
-            x86_op,
-            X86ModRM::MOD_11_DISP_RAX,
-            X86TargetRM::RAX,
-            mc,
-        );
+        let dest_x86reg = Self::convert_x86_reg(dest.value);
+        let src1_x86reg = Self::convert_x86_reg(src1.value);
 
-        gen_size += Self::tcg_gen_store_gpr_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
+        if src2.t == TCGvType::TCGTemp {
+            let src2_x86reg = Self::convert_x86_reg(src2.value);
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, src1_x86reg as u8, mc);
+        } else {  // src2.t == Immediate
+            gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, src2.value, mc);
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, src1_x86reg as u8, mc);
+        }
+
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, 0, mc); // initialize format RAX
+        gen_size += Self::tcg_modrm_2byte_64bit_out(x86_op, X86ModRM::MOD_11_DISP_RAX, X86TargetRM::RAX, mc);
+
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, dest_x86reg as u8, mc);
 
         return gen_size;
     }
