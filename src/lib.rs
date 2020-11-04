@@ -10,9 +10,9 @@ pub mod op_helper_mem;
 
 use crate::emu_env::{EmuEnv, ArgConfig};
 
-pub fn run(filename: String, exp_gpr: &[u64; 32]) -> usize {
+pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
     let arg_config = ArgConfig {
-        step    : false,
+        step    : step,
         debug   : false,
         dump_gpr: false,
         dump_fpr: false,
@@ -34,9 +34,9 @@ pub fn run(filename: String, exp_gpr: &[u64; 32]) -> usize {
     return 0;
 }
 
-pub fn run_riscv_test(filename: String) -> u64 {
+pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
     let arg_config = ArgConfig {
-        step    : false,
+        step    : opt_step,
         debug   : false,
         dump_gpr: false,
         dump_fpr: false,
