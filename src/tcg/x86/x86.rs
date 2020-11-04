@@ -1263,14 +1263,16 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_jmpim(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
+        // let dest = tcg.arg0.unwrap();
         let imm = tcg.arg1.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
+        // assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(imm.t, TCGvType::Immediate);
         assert_eq!(op, TCGOpcode::JMPIM);
 
         let mut gen_size: usize = pc_address as usize;
+
+        // let src1_x86reg = Self::convert_x86_reg(dest.value);
 
         // Immediate Value --> RAX
         gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, imm.value as u64, mc);

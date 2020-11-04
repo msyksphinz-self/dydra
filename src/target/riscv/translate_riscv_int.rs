@@ -13,26 +13,24 @@ use super::riscv::{TranslateRiscv, CALL_HELPER_IDX};
 impl TranslateRiscv {
     pub fn translate_jal(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const = extract_j_field!(inst.inst);
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rd_addr = get_rd_addr!(inst.inst);
 
         let imm_const = ((imm_const as i32) << (32 - 21)) >> (32 - 21);
+        let imm = TCGv::new_imm(((imm_const as i64).wrapping_add(inst.addr as i64)) as u64);
 
-        let imm = Box::new(TCGv::new_imm(
-            ((imm_const as i64).wrapping_add(inst.addr as i64)) as u64,
-        ));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let mut tcg_lists = vec![];
 
-        let next_pc = Box::new(TCGv::new_imm(inst.addr.wrapping_add(4)));
-        let mov_inst = TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, *rd, *next_pc);
-        let tcg_inst = TCGOp::new_2op(TCGOpcode::JMPIM, *rd, *imm);
-
-        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
-
-        if rd_addr == 0 {
-            return vec![tcg_inst, exit_tb];
-        } else {
-            return vec![mov_inst, tcg_inst, exit_tb];
+        let dest_temp = self.tcg_temp_new();
+        let next_pc = TCGv::new_imm(inst.addr.wrapping_add(4));
+        if rd_addr != 0 {
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, dest_temp, next_pc));
+            tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest_temp));
         }
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::JMPIM, dest_temp, imm));
+        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        self.tcg_temp_free(dest_temp);
+
+        tcg_lists
     }
 
 
