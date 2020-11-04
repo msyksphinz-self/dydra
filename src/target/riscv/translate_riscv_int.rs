@@ -37,25 +37,33 @@ impl TranslateRiscv {
 
 
     pub fn translate_jalr(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
+        let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rd_addr  = get_rd_addr!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let imm = Box::new(TCGv::new_imm(imm_const));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let mut tcg_lists = vec![];
 
-        let zero = Box::new(TCGv::new_reg(0));
-        let next_pc = Box::new(TCGv::new_imm(inst.addr.wrapping_add(4)));
-        let mov_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, *rd, *zero, *next_pc);
-        let jmp_inst = TCGOp::new_3op(TCGOpcode::JMPR, *rd, *rs1, *imm);
+        let source1 = self.tcg_temp_new();
+        let dest = self.tcg_temp_new();
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
 
-        let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
-        if rd_addr == 0 {
-            return vec![jmp_inst, exit_tb];
-        } else {
-            return vec![mov_inst, jmp_inst, exit_tb];
+        let imm = TCGv::new_imm(imm_const);
+
+        if rd_addr != 0 {
+            let zero = self.tcg_temp_new();
+            tcg_lists.push(TCGOp::tcg_get_gpr(zero, 0));
+            let next_pc = TCGv::new_imm((inst.addr as u64).wrapping_add(4));
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, dest, next_pc));
+            self.tcg_temp_free(zero);
+            tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest));
         }
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, imm));
+        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+
+        self.tcg_temp_free(source1);
+        self.tcg_temp_free(dest);
+
+        tcg_lists
     }
 
 
@@ -79,17 +87,20 @@ impl TranslateRiscv {
 
     pub fn translate_auipc(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const = (((inst.inst as i32 as i64) & !0xfff) as u64).wrapping_add(inst.addr as u64);
-        let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
+        let rd_addr = get_rd_addr!(inst.inst);
 
-        let imm = Box::new(TCGv::new_imm(imm_const as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
+        let imm = TCGv::new_imm(imm_const as u64);
+
+        let mut tcg_lists = vec![];
+        let dest_temp = self.tcg_temp_new();
 
         if rd_addr != 0 {
-            let tcg_inst = TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, *rd, *imm);
-            return vec![tcg_inst];
-        } else {
-            return vec![];
+            tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, dest_temp, imm));
+            tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest_temp));
         }
+        self.tcg_temp_free(dest_temp);
+
+        tcg_lists
     }
 
     pub fn translate_add(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {

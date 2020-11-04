@@ -665,12 +665,20 @@ impl TCGX86 {
         let target_x86reg = Self::convert_x86_reg(dest_reg.value);
         let source1_x86reg = Self::convert_x86_reg(source1_reg.value);
 
-        if dest_reg.value != source1_reg.value {
-            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, target_x86reg as u8, mc);    
-        }
+        if source2_imm.value >> 32 != 0 && op == X86Opcode::ADD_GV_IMM{
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, X86TargetRM::RAX as u8, mc);    
+            gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
+            gen_size += Self::tcg_out(source2_imm.value, 4, mc);
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, source1_x86reg as u8, mc);    
 
-        gen_size += Self::tcg_modrm_64bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + target_x86reg as u8, 0, mc);
-        gen_size += Self::tcg_out(source2_imm.value, 4, mc);
+        } else {
+            if dest_reg.value != source1_reg.value {
+                gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + source1_x86reg as u8, target_x86reg as u8, mc);    
+            }
+
+            gen_size += Self::tcg_modrm_64bit_raw_out(op, X86ModRM::MOD_11_DISP_RAX as u8 + target_x86reg as u8, 0, mc);
+            gen_size += Self::tcg_out(source2_imm.value, 4, mc);
+        }
 
         gen_size
     }
@@ -1229,29 +1237,24 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_jmpr(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.unwrap();
+        let src1 = tcg.arg1.unwrap();
+        let src2 = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
-        assert_eq!(arg2.t, TCGvType::Immediate);
+        assert_eq!(dest.t, TCGvType::TCGTemp);
+        assert_eq!(src1.t, TCGvType::TCGTemp);
+        assert_eq!(src2.t, TCGvType::Immediate);
         assert_eq!(op, TCGOpcode::JMPR);
 
         let mut gen_size: usize = pc_address as usize;
 
-        // GPR --> RAX
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
-        // RAX + arg2.value --> RAX
+        let src1_x86reg = Self::convert_x86_reg(src1.value);
+
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
         gen_size += Self::tcg_64bit_out(X86Opcode::ADD_EAX_IV, mc);
-        gen_size += Self::tcg_out(arg2.value as u64, 4, mc);
+        gen_size += Self::tcg_out(src2.value as u64, 4, mc);
         // RAX --> PC
-        gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::MOV_EV_GV,
-            X86ModRM::MOD_10_DISP_RBP,
-            X86TargetRM::RAX,
-            mc,
-        );
+        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, X86TargetRM::RAX, mc);
         gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
         return gen_size;
@@ -1381,24 +1384,19 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_mov_imm_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let dest = tcg.arg0.unwrap();
+        let imm = tcg.arg1.unwrap();
 
         assert_eq!(op, TCGOpcode::MOV_IMM_64BIT);
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Immediate);
+        assert_eq!(dest.t, TCGvType::TCGTemp);
+        assert_eq!(imm.t, TCGvType::Immediate);
 
         let mut gen_size: usize = pc_address as usize;
 
-        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, arg1.value, mc);
+        let dest_x86reg = Self::convert_x86_reg(dest.value);
 
-        gen_size += Self::tcg_modrm_64bit_out(
-            X86Opcode::MOV_EV_GV,
-            X86ModRM::MOD_10_DISP_RBP,
-            X86TargetRM::RAX,
-            mc,
-        );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg0.value) as u64, 4, mc); // Set Program Counter
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, imm.value, mc);
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, dest_x86reg as u8, mc);
 
         return gen_size;
     }
