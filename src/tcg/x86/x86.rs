@@ -93,6 +93,9 @@ enum X86Opcode {
 
     SETB = 0x92_0f, // より下の場合バイトを設定します
     SETL = 0x9c_0f, // より小さい場合バイトを設定します
+
+    PUSH = 0x50,
+    POP = 0x58,
 }
 
 #[derive(PartialEq, Debug)]
@@ -154,6 +157,12 @@ impl TCGX86 {
     }
 
     fn tcg_64bit_out(op: X86Opcode, mc: &mut Vec<u8>) -> usize {
+        Self::tcg_out(((op as u64) << 8) | 0x48 << 0, 2, mc);
+        return 2;
+    }
+
+
+    fn tcg_64bit_raw_out(op: u8, mc: &mut Vec<u8>) -> usize {
         Self::tcg_out(((op as u64) << 8) | 0x48 << 0, 2, mc);
         return 2;
     }
@@ -1099,42 +1108,50 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_mul_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+    fn tcg_gen_mul_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let dest = tcg.arg0.unwrap();
+        let src1 = tcg.arg1.unwrap();
+        let src2 = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(dest.t, TCGvType::TCGTemp);
+        assert_eq!(src1.t, TCGvType::TCGTemp);
+        assert_eq!(src2.t, TCGvType::TCGTemp);
+
+        let dest_x86reg = Self::convert_x86_reg(dest.value);
+        let src1_x86reg = Self::convert_x86_reg(src1.value);
+        let src2_x86reg = Self::convert_x86_reg(src2.value);
 
         let mut gen_size: usize = pc_address as usize;
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
 
-        gen_size += Self::tcg_modrm_2byte_64bit_out(X86Opcode::IMUL_RDX_RAX_R, X86ModRM::MOD_10_DISP_RBP, X86TargetRM::RAX, mc);
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
-
-        gen_size += Self::tcg_gen_store_gpr_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
-
+        if dest.value != src1.value {
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, dest_x86reg as u8, mc);
+        }
+        gen_size += Self::tcg_modrm_2byte_64bit_raw_out(X86Opcode::IMUL_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, dest_x86reg as u8, mc);
 
         gen_size
     }
 
     fn tcg_gen_div_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.unwrap();
+        let src1 = tcg.arg1.unwrap();
+        let src2 = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(dest.t, TCGvType::TCGTemp);
+        assert_eq!(src1.t, TCGvType::TCGTemp);
+        assert_eq!(src2.t, TCGvType::TCGTemp);
+
+        let dest_x86reg = Self::convert_x86_reg(dest.value);
+        let src1_x86reg = Self::convert_x86_reg(src1.value);
+        let src2_x86reg = Self::convert_x86_reg(src2.value);
 
         let mut gen_size: usize = pc_address as usize;
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
+
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
 
         gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
-        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::IDIV_RDX_RAX_R, X86ModRM::MOD_10_DISP_RBP, X86TargetRM::RDI, mc);
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg2.value) as u64, 4, mc);
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::IDIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, X86TargetRM::RAX as u8, mc);
 
-        gen_size += Self::tcg_gen_store_gpr_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, dest_x86reg as u8, mc);
 
 
         gen_size
@@ -2138,6 +2155,10 @@ impl TCG for TCGX86 {
 
         let src1 = tcg.arg0.unwrap();
         let src2 = tcg.arg1.unwrap();
+        let label = match &tcg.label {
+            Some(l) => l,
+            None => panic!("Label is not defined."),
+        };
 
         assert_eq!(src1.t, TCGvType::TCGTemp);
         assert_eq!(src2.t, TCGvType::TCGTemp);
@@ -2149,7 +2170,9 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::CMP_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, src2_x86reg as u8, mc);
 
         gen_size += Self::tcg_out(X86Opcode::JE_rel16_32 as u64, 2, mc);
-        gen_size += Self::tcg_out(0x4a as u64, 4, mc);
+        // gen_size += Self::tcg_out(0x4a as u64, 4, mc);
+        gen_size += Self::tcg_out(0 as u64, 4, mc);
+        gen_size += Self::tcg_out_reloc(gen_size - 4, &label);
 
         gen_size
     }

@@ -447,10 +447,6 @@ impl EmuEnv {
                         pc_address += mc_byte.len() as u64;
                     }
                 
-                    if self.m_arg_config.dump_host {
-                        disassemble_x86(self.m_tcg_tb_vec.as_slice(), Rc::clone(&tb_text_mem).borrow().data());
-                    }
-                    
                     unsafe {
                         std::ptr::copy(
                             self.m_tcg_tb_vec.as_ptr(),
@@ -491,6 +487,18 @@ impl EmuEnv {
                             }
                         }
                     }
+                    if self.m_arg_config.dump_host {
+                        unsafe {
+                            std::ptr::copy(
+                                tb_text_mem.borrow_mut().data(),
+                                self.m_tcg_tb_vec.as_mut_ptr(),
+                                self.m_tcg_tb_vec.len(),
+                            );
+                        }
+    
+                        disassemble_x86(self.m_tcg_tb_vec.as_slice(), Rc::clone(&tb_text_mem).borrow().data());
+                    }
+                    
                     Rc::clone(&tb_text_mem)
                 }
             };
