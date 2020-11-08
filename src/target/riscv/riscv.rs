@@ -88,7 +88,56 @@ pub enum CALL_HELPER_IDX {
     CALL_FLOAT_STORE64_IDX = 55,
     CALL_FLOAT_STORE32_IDX = 56,    
     CALL_SFENCE_VMA_IDX = 57,
+    CALL_FCVT_IDX = 58,
 }
+
+#[allow(non_camel_case_types)]
+pub enum CallFcvtIdx {
+    W_S  = 0,
+    WU_S = 1,
+    S_W  = 2,
+    S_WU = 3,
+    S_D  = 4,
+    D_S  = 5,
+    W_D  = 6,
+    WU_D = 7,
+    D_W  = 8,
+    D_WU = 9,
+    L_S  = 10,
+    LU_S = 11,
+    S_L  = 12,
+    S_LU = 13,
+    L_D  = 14,
+    LU_D = 15,
+    D_L  = 16,
+    D_LU = 17,
+}
+impl CallFcvtIdx {
+    pub fn from_u64(from_bits: u64) -> CallFcvtIdx {
+        match from_bits {
+            0  => CallFcvtIdx::W_S , 
+            1  => CallFcvtIdx::WU_S, 
+            2  => CallFcvtIdx::S_W , 
+            3  => CallFcvtIdx::S_WU, 
+            4  => CallFcvtIdx::S_D , 
+            5  => CallFcvtIdx::D_S , 
+            6  => CallFcvtIdx::W_D , 
+            7  => CallFcvtIdx::WU_D, 
+            8  => CallFcvtIdx::D_W , 
+            9  => CallFcvtIdx::D_WU, 
+            10 => CallFcvtIdx::L_S , 
+            11 => CallFcvtIdx::LU_S, 
+            12 => CallFcvtIdx::S_L , 
+            13 => CallFcvtIdx::S_LU, 
+            14 => CallFcvtIdx::L_D , 
+            15 => CallFcvtIdx::LU_D, 
+            16 => CallFcvtIdx::D_L , 
+            17 => CallFcvtIdx::D_LU,     
+            _ => panic!("Unknown CallFcvtIdx : {:}", from_bits),    
+        }
+    }
+}
+
 
 #[macro_export]
 macro_rules! get_rs1_addr {
@@ -353,6 +402,26 @@ impl TranslateRiscv {
             RiscvInstId::REMU  => self.translate_remu(inst),   
             RiscvInstId::REMW  => self.translate_remw(inst),
             RiscvInstId::REMUW => self.translate_remuw(inst),
+
+            RiscvInstId::FCVT_W_S  => self.translate_fcvt_w_s(inst),
+            RiscvInstId::FCVT_WU_S => self.translate_fcvt_wu_s(inst),
+            RiscvInstId::FCVT_S_W  => self.translate_fcvt_s_w(inst),
+            RiscvInstId::FCVT_S_WU => self.translate_fcvt_s_wu(inst),
+            RiscvInstId::FCVT_S_D  => self.translate_fcvt_s_d(inst),
+            RiscvInstId::FCVT_D_S  => self.translate_fcvt_d_s(inst),
+            RiscvInstId::FCVT_W_D  => self.translate_fcvt_w_d(inst),
+            RiscvInstId::FCVT_WU_D => self.translate_fcvt_wu_d(inst),
+            RiscvInstId::FCVT_D_W  => self.translate_fcvt_d_w(inst),
+            RiscvInstId::FCVT_D_WU => self.translate_fcvt_d_wu(inst),
+            RiscvInstId::FCVT_L_S  => self.translate_fcvt_l_s(inst),
+            RiscvInstId::FCVT_LU_S => self.translate_fcvt_lu_s(inst),
+            RiscvInstId::FCVT_S_L  => self.translate_fcvt_s_l(inst),
+            RiscvInstId::FCVT_S_LU => self.translate_fcvt_s_lu(inst),
+            RiscvInstId::FCVT_L_D  => self.translate_fcvt_l_d(inst),
+            RiscvInstId::FCVT_LU_D => self.translate_fcvt_lu_d(inst),
+            RiscvInstId::FCVT_D_L  => self.translate_fcvt_d_l(inst),
+            RiscvInstId::FCVT_D_LU => self.translate_fcvt_d_lu(inst),
+        
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };

@@ -7,6 +7,7 @@ pub mod op_helper;
 pub mod op_helper_fp_d;
 pub mod op_helper_fp_s;
 pub mod op_helper_mem;
+pub mod op_helper_fcvt;
 
 use crate::emu_env::{EmuEnv, ArgConfig};
 

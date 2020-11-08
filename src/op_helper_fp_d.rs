@@ -4,7 +4,6 @@ use crate::emu_env::EmuEnv;
 
 impl EmuEnv {
     pub fn helper_func_fadd_d(emu: &mut EmuEnv, fd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
-        println!("fadd(emu, {:}, {:}, {:}) is called!", fd, fs1, fs2);
         let fs1_data = F64::from_bits(emu.m_fregs[fs1 as usize]);
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();

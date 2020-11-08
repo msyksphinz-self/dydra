@@ -48,7 +48,7 @@ pub struct EmuEnv {
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
-    helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 58],
+    helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 59],
 
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
@@ -143,6 +143,7 @@ impl EmuEnv {
                 Self::helper_func_float_store64,
                 Self::helper_func_float_store32,
                 Self::helper_func_sfence_vma,
+                Self::helper_func_fcvt,
             ],
             // m_inst_vec: vec![],
             m_tcg_vec: vec![],
@@ -219,8 +220,12 @@ impl EmuEnv {
     }
 
     pub fn dump_fpr(&self) {
+        let abi_reg_name = ["ft0  ", "ft1  ", "ft2  ", "ft3  ", "ft4  ", "ft5  ", "ft6  ", "ft7  ",
+                                     "fs0  ", "fs1  ", "fa0  ", "fa1  ", "fa2  ", "fa3  ", "fa4  ", "fa5  ", 
+                                     "fa6  ", "fa7  ", "fs2  ", "fs3  ", "fs4  ", "fs5  ", "fs6  ", "fs7  ", 
+                                     "fs8  ", "fs9  ", "fs10 ", "fs11 ", "ft8  ", "ft9  ", "ft10 ", "ft11 "];
         for (i, reg) in self.m_fregs.iter().enumerate() {
-            print!("f{:02} = {:016x}  ", i, reg);
+            print!("f{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
             if i % 4 == 3 {
                 print!("\n");
             }

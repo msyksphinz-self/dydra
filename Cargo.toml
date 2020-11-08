@@ -9,7 +9,7 @@ mmap = "*"
 libc = "*"
 num = "*"
 memmap = "*"
-softfloat-wrapper = { version = "0.1.3", default-features = false, features = ["riscv"] }
+softfloat-wrapper = { version="0.1.4-pre", default-features = false, features = ["riscv"], path = "../softfloat-wrapper/"}
 spike-dasm-wrapper = "*"
 clap = "3.0.0-beta.1"
 iced-x86 = "1.8.0"
