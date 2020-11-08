@@ -42,7 +42,7 @@ pub struct EmuEnv {
 
     pub m_priv: PrivMode,
 
-    pub m_regs: [u64; 32],  // Integer Registers
+    pub m_iregs: [u64; 32],  // Integer Registers
     pub m_fregs: [u64; 32], // Floating Point Registers
     pub m_pc: [u64; 1],
 
@@ -79,7 +79,7 @@ impl EmuEnv {
             head: [0xdeadbeef; 1],
             m_priv: PrivMode::Machine,
 
-            m_regs: [0; 32],
+            m_iregs: [0; 32],
             m_fregs: [0; 32],
             m_pc: [0x8000_0000; 1],
             m_csr: RiscvCsr::new(),
@@ -210,7 +210,7 @@ impl EmuEnv {
                             "s0/fp", "s1   ", "a0   ", "a1   ", "a2   ", "a3   ", "a4   ", "a5   ", 
                             "a6   ", "a7   ", "s2   ", "s3   ", "s4   ", "s5   ", "s6   ", "s7   ", 
                             "s8   ", "s9   ", "s10  ", "s11  ", "t3   ", "t4   ", "t5   ", "t6   "];
-        for (i, reg) in self.m_regs.iter().enumerate() {
+        for (i, reg) in self.m_iregs.iter().enumerate() {
             print!("x{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
             if i % 4 == 3 {
                 print!("\n");
@@ -233,7 +233,7 @@ impl EmuEnv {
     }
 
     pub fn get_gpr(&self) -> [u64; 32] {
-        return self.m_regs;
+        return self.m_iregs;
     }
 
     pub fn run(&mut self, filename: &String) {
@@ -594,7 +594,7 @@ impl EmuEnv {
     }
 
     pub fn calc_gpr_relat_address(&self, gpr_addr: u64) -> isize {
-        let guestcode_ptr = self.m_regs.as_ptr() as *const u8;
+        let guestcode_ptr = self.m_iregs.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
         let mut diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
         diff += gpr_addr as isize * mem::size_of::<u64>() as isize;

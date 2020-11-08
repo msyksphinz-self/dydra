@@ -11,12 +11,12 @@ impl EmuEnv {
         csr_addr: u64,
         _dummy: u64,
     ) -> usize {
-        let data = emu.m_regs[source as usize];
+        let data = emu.m_iregs[source as usize];
         let reg_data = emu
             .m_csr
             .csrrw(CsrAddr::from_u64(csr_addr as u64), data as i64);
         if dest != 0 {
-            emu.m_regs[dest as usize] = reg_data as u64;
+            emu.m_iregs[dest as usize] = reg_data as u64;
         }
         return 0;
     }
@@ -28,12 +28,12 @@ impl EmuEnv {
         csr_addr: u64,
         _dummy: u64,
     ) -> usize {
-        let data = emu.m_regs[source as usize];
+        let data = emu.m_iregs[source as usize];
         let reg_data = emu
             .m_csr
             .csrrs(CsrAddr::from_u64(csr_addr as u64), data as i64);
         if dest != 0 {
-            emu.m_regs[dest as usize] = reg_data as u64;
+            emu.m_iregs[dest as usize] = reg_data as u64;
         }
         return 0;
     }
@@ -45,12 +45,12 @@ impl EmuEnv {
         csr_addr: u64,
         _dummy: u64,
     ) -> usize {
-        let data = emu.m_regs[source as usize];
+        let data = emu.m_iregs[source as usize];
         let reg_data = emu
             .m_csr
             .csrrc(CsrAddr::from_u64(csr_addr as u64), data as i64);
         if dest != 0 {
-            emu.m_regs[dest as usize] = reg_data as u64;
+            emu.m_iregs[dest as usize] = reg_data as u64;
         }
         return 0;
     }
@@ -66,7 +66,7 @@ impl EmuEnv {
             .m_csr
             .csrrw(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         if dest != 0 {
-            emu.m_regs[dest as usize] = reg_data as u64;
+            emu.m_iregs[dest as usize] = reg_data as u64;
         }
         return 0;
     }
@@ -82,7 +82,7 @@ impl EmuEnv {
             .m_csr
             .csrrs(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         if dest != 0 {
-            emu.m_regs[dest as usize] = reg_data as u64;
+            emu.m_iregs[dest as usize] = reg_data as u64;
         }
         return 0;
     }
@@ -98,7 +98,7 @@ impl EmuEnv {
             .m_csr
             .csrrc(CsrAddr::from_u64(csr_addr as u64), imm as i64);
         if dest != 0 {
-            emu.m_regs[dest as usize] = reg_data as u64;
+            emu.m_iregs[dest as usize] = reg_data as u64;
         }
         return 0;
     }

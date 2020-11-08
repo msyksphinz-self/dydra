@@ -182,7 +182,7 @@ impl EmuEnv {
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_regs[rd as usize] = fs1_data.eq(fs2_data) as u64;
+        emu.m_iregs[rd as usize] = fs1_data.eq(fs2_data) as u64;
         flag.get();
         let ret_flag = flag.bits();
         println!("feq(emu, {:}, {:}, {:}) => {:} is called!", rd, fs1, fs2, ret_flag);
@@ -195,7 +195,7 @@ impl EmuEnv {
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_regs[rd as usize] = fs1_data.lt(fs2_data) as u64;
+        emu.m_iregs[rd as usize] = fs1_data.lt(fs2_data) as u64;
         flag.get();
         let ret_flag = flag.bits();
         println!("flt(emu, {:}, {:}, {:}) is called! => {:}", rd, fs1, fs2, ret_flag);
@@ -209,7 +209,7 @@ impl EmuEnv {
         let fs2_data = F64::from_bits(emu.m_fregs[fs2 as usize]);
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_regs[rd as usize] = fs1_data.le(fs2_data) as u64;
+        emu.m_iregs[rd as usize] = fs1_data.le(fs2_data) as u64;
         flag.get();
         let ret_flag = flag.bits();
         emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
@@ -245,7 +245,7 @@ impl EmuEnv {
         } else {
             result = 1 << 6;
         }
-        emu.m_regs[rd as usize] = result as u64;
+        emu.m_iregs[rd as usize] = result as u64;
         return 0;
     }
 
