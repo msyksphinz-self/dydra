@@ -526,12 +526,28 @@ impl EmuEnv {
                 self.dump_fpr();
             }
             if self.get_mem(0x1000) != 0 {
-                break;
+                if self.get_mem(0x1000) & 0x01 == 1 {
+                    break;
+                }
+                self.sys_write(self.read_mem_8byte(0x80001000));
+                self.write_mem_4byte(0x80001000, 0);
+                self.write_mem_4byte(0x80001040, 1);
             }
         }
         let end = start.elapsed();
         // println!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
         println!("{:?} ns finished", end.subsec_nanos() as f64 / 1_000_000.0);      
+    }
+
+    fn sys_write(&mut self, tohost: u64) {
+        let fd = self.read_mem_8byte(tohost + 8);
+        let pbuf = self.read_mem_8byte(tohost + 16);
+        let len = self.read_mem_8byte(tohost + 24);
+
+        println!("sys_write() = {:x} ,tohost = {:x}", pbuf, tohost);
+        for idx in 0..len {
+            print!("{}", self.read_mem_1byte(pbuf.wrapping_add(idx)) as char);
+        }
     }
 
     fn reflect(prologue_epilogue: &[u8]) -> mmap::MemoryMap {
