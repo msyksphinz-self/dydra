@@ -422,6 +422,26 @@ impl TranslateRiscv {
             RiscvInstId::FCVT_D_L  => self.translate_fcvt_d_l(inst),
             RiscvInstId::FCVT_D_LU => self.translate_fcvt_d_lu(inst),
         
+            RiscvInstId::AMOSWAP_D => self.translate_amoswap_d(inst),
+            RiscvInstId::AMOADD_D  => self.translate_amoadd_d (inst),
+            RiscvInstId::AMOXOR_D  => self.translate_amoxor_d (inst),
+            RiscvInstId::AMOAND_D  => self.translate_amoand_d (inst),
+            RiscvInstId::AMOOR_D   => self.translate_amoor_d  (inst),
+            RiscvInstId::AMOMIN_D  => self.translate_amomin_d (inst),
+            RiscvInstId::AMOMAX_D  => self.translate_amomax_d (inst),
+            RiscvInstId::AMOMINU_D => self.translate_amominu_d(inst),
+            RiscvInstId::AMOMAXU_D => self.translate_amomaxu_d(inst),
+
+            RiscvInstId::AMOSWAP_W => self.translate_amoswap_w(inst),
+            RiscvInstId::AMOADD_W  => self.translate_amoadd_w (inst),
+            RiscvInstId::AMOXOR_W  => self.translate_amoxor_w (inst),
+            RiscvInstId::AMOAND_W  => self.translate_amoand_w (inst),
+            RiscvInstId::AMOOR_W   => self.translate_amoor_w  (inst),
+            RiscvInstId::AMOMIN_W  => self.translate_amomin_w (inst),
+            RiscvInstId::AMOMAX_W  => self.translate_amomax_w (inst),
+            RiscvInstId::AMOMINU_W => self.translate_amominu_w(inst),
+            RiscvInstId::AMOMAXU_W => self.translate_amomaxu_w(inst),
+        
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
