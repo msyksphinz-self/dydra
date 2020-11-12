@@ -536,7 +536,7 @@ impl EmuEnv {
         }
         let end = start.elapsed();
         // println!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
-        println!("{:?} ns finished", end.subsec_nanos() as f64 / 1_000_000.0);      
+        println!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
     }
 
     fn sys_write(&mut self, tohost: u64) {
