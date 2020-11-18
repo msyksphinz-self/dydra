@@ -86,7 +86,7 @@ pub enum CALL_HELPER_IDX {
     CALL_FLOAT_LOAD64_IDX = 53,
     CALL_FLOAT_LOAD32_IDX = 54,
     CALL_FLOAT_STORE64_IDX = 55,
-    CALL_FLOAT_STORE32_IDX = 56,    
+    CALL_FLOAT_STORE32_IDX = 56,
     CALL_SFENCE_VMA_IDX = 57,
     CALL_FCVT_IDX = 58,
 }
@@ -115,25 +115,25 @@ pub enum CallFcvtIdx {
 impl CallFcvtIdx {
     pub fn from_u64(from_bits: u64) -> CallFcvtIdx {
         match from_bits {
-            0  => CallFcvtIdx::W_S , 
-            1  => CallFcvtIdx::WU_S, 
-            2  => CallFcvtIdx::S_W , 
-            3  => CallFcvtIdx::S_WU, 
-            4  => CallFcvtIdx::S_D , 
-            5  => CallFcvtIdx::D_S , 
-            6  => CallFcvtIdx::W_D , 
-            7  => CallFcvtIdx::WU_D, 
-            8  => CallFcvtIdx::D_W , 
-            9  => CallFcvtIdx::D_WU, 
-            10 => CallFcvtIdx::L_S , 
-            11 => CallFcvtIdx::LU_S, 
-            12 => CallFcvtIdx::S_L , 
-            13 => CallFcvtIdx::S_LU, 
-            14 => CallFcvtIdx::L_D , 
-            15 => CallFcvtIdx::LU_D, 
-            16 => CallFcvtIdx::D_L , 
-            17 => CallFcvtIdx::D_LU,     
-            _ => panic!("Unknown CallFcvtIdx : {:}", from_bits),    
+            0  => CallFcvtIdx::W_S ,
+            1  => CallFcvtIdx::WU_S,
+            2  => CallFcvtIdx::S_W ,
+            3  => CallFcvtIdx::S_WU,
+            4  => CallFcvtIdx::S_D ,
+            5  => CallFcvtIdx::D_S ,
+            6  => CallFcvtIdx::W_D ,
+            7  => CallFcvtIdx::WU_D,
+            8  => CallFcvtIdx::D_W ,
+            9  => CallFcvtIdx::D_WU,
+            10 => CallFcvtIdx::L_S ,
+            11 => CallFcvtIdx::LU_S,
+            12 => CallFcvtIdx::S_L ,
+            13 => CallFcvtIdx::S_LU,
+            14 => CallFcvtIdx::L_D ,
+            15 => CallFcvtIdx::LU_D,
+            16 => CallFcvtIdx::D_L ,
+            17 => CallFcvtIdx::D_LU,
+            _ => panic!("Unknown CallFcvtIdx : {:}", from_bits),
         }
     }
 }
@@ -357,7 +357,7 @@ impl TranslateRiscv {
             RiscvInstId::FMAX_D => self.translate_fmax_d(inst),
 
             RiscvInstId::FSGNJ_D  => self.translate_fsgnj_d(inst),
-            RiscvInstId::FSGNJN_D => self.translate_fsgnjn_d(inst),   
+            RiscvInstId::FSGNJN_D => self.translate_fsgnjn_d(inst),
             RiscvInstId::FSGNJX_D => self.translate_fsgnjx_d(inst),
 
             RiscvInstId::FADD_S => self.translate_fadd_s(inst),
@@ -384,22 +384,22 @@ impl TranslateRiscv {
             RiscvInstId::FMAX_S => self.translate_fmax_s(inst),
 
             RiscvInstId::FSGNJ_S  => self.translate_fsgnj_s(inst),
-            RiscvInstId::FSGNJN_S => self.translate_fsgnjn_s(inst),   
+            RiscvInstId::FSGNJN_S => self.translate_fsgnjn_s(inst),
             RiscvInstId::FSGNJX_S => self.translate_fsgnjx_s(inst),
 
             RiscvInstId::MUL    => self.translate_mul(inst),
-            RiscvInstId::MULH   => self.translate_mulh(inst),   
+            RiscvInstId::MULH   => self.translate_mulh(inst),
             RiscvInstId::MULHU  => self.translate_mulhu(inst),
             RiscvInstId::MULHSU => self.translate_mulhsu(inst),
             RiscvInstId::MULW   => self.translate_mulw(inst),
 
             RiscvInstId::DIV   => self.translate_div(inst),
-            RiscvInstId::DIVU  => self.translate_divu(inst),   
+            RiscvInstId::DIVU  => self.translate_divu(inst),
             RiscvInstId::DIVW  => self.translate_divw(inst),
             RiscvInstId::DIVUW => self.translate_divuw(inst),
 
             RiscvInstId::REM   => self.translate_rem(inst),
-            RiscvInstId::REMU  => self.translate_remu(inst),   
+            RiscvInstId::REMU  => self.translate_remu(inst),
             RiscvInstId::REMW  => self.translate_remw(inst),
             RiscvInstId::REMUW => self.translate_remuw(inst),
 
@@ -421,7 +421,51 @@ impl TranslateRiscv {
             RiscvInstId::FCVT_LU_D => self.translate_fcvt_lu_d(inst),
             RiscvInstId::FCVT_D_L  => self.translate_fcvt_d_l(inst),
             RiscvInstId::FCVT_D_LU => self.translate_fcvt_d_lu(inst),
-        
+
+            RiscvInstId::C_ADDI4SPN => self.translate_c_addi4spn(inst),
+            // RiscvInstId::C_FLD      => self.translate_c_fld     (inst),
+            // RiscvInstId::C_LW       => self.translate_c_lw      (inst),
+            // RiscvInstId::C_FLW      => self.translate_c_flw     (inst),
+            // RiscvInstId::C_LD       => self.translate_c_ld      (inst),
+            // RiscvInstId::C_FSD      => self.translate_c_fsd     (inst),
+            // RiscvInstId::C_SW       => self.translate_c_sw      (inst),
+            // RiscvInstId::C_FSW      => self.translate_c_fsw     (inst),
+            // RiscvInstId::C_SD       => self.translate_c_sd      (inst),
+            // RiscvInstId::C_NOP      => self.translate_c_nop     (inst),
+            // RiscvInstId::C_ADDI     => self.translate_c_addi    (inst),
+            // RiscvInstId::C_JAL      => self.translate_c_jal     (inst),
+            // RiscvInstId::C_ADDIW    => self.translate_c_addiw   (inst),
+            // RiscvInstId::C_LI       => self.translate_c_li      (inst),
+            // RiscvInstId::C_ADDI16SP => self.translate_c_addi16sp(inst),
+            // RiscvInstId::C_LUI      => self.translate_c_lui     (inst),
+            // RiscvInstId::C_SRLI     => self.translate_c_srli    (inst),
+            // RiscvInstId::C_SRLI64   => self.translate_c_srli64  (inst),
+            // RiscvInstId::C_SRAI     => self.translate_c_srai    (inst),
+            // RiscvInstId::C_SRAI64   => self.translate_c_srai64  (inst),
+            // RiscvInstId::C_ANDI     => self.translate_c_andi    (inst),
+            // RiscvInstId::C_SUB      => self.translate_c_sub     (inst),
+            // RiscvInstId::C_XOR      => self.translate_c_xor     (inst),
+            // RiscvInstId::C_OR       => self.translate_c_or      (inst),
+            // RiscvInstId::C_AND      => self.translate_c_and     (inst),
+            // RiscvInstId::C_SUBW     => self.translate_c_subw    (inst),
+            // RiscvInstId::C_ADDW     => self.translate_c_addw    (inst),
+            // RiscvInstId::C_J        => self.translate_c_j       (inst),
+            // RiscvInstId::C_BEQZ     => self.translate_c_beqz    (inst),
+            // RiscvInstId::C_BNEZ     => self.translate_c_bnez    (inst),
+            // RiscvInstId::C_SLLI     => self.translate_c_slli    (inst),
+            // RiscvInstId::C_FLDSP    => self.translate_c_fldsp   (inst),
+            // RiscvInstId::C_LWSP     => self.translate_c_lwsp    (inst),
+            // RiscvInstId::C_FLWSP    => self.translate_c_flwsp   (inst),
+            // RiscvInstId::C_LDSP     => self.translate_c_ldsp    (inst),
+            // RiscvInstId::C_JR       => self.translate_c_jr      (inst),
+            // RiscvInstId::C_MV       => self.translate_c_mv      (inst),
+            // RiscvInstId::C_EBREAK   => self.translate_c_ebreak  (inst),
+            // RiscvInstId::C_JALR     => self.translate_c_jalr    (inst),
+            // RiscvInstId::C_ADD      => self.translate_c_add     (inst),
+            // RiscvInstId::C_FSDSP    => self.translate_c_fsdsp   (inst),
+            // RiscvInstId::C_SWSP     => self.translate_c_swsp    (inst),
+            // RiscvInstId::C_FSWSP    => self.translate_c_fswsp   (inst),
+            // RiscvInstId::C_SDSP     => self.translate_c_sdsp    (inst),
 
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
@@ -430,7 +474,7 @@ impl TranslateRiscv {
     pub fn translate_rrr(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
             return vec![];
@@ -439,12 +483,12 @@ impl TranslateRiscv {
         let source1 = self.tcg_temp_new();
         let source2 = self.tcg_temp_new();
 
-        let rs1_op = TCGOp::tcg_get_gpr(source1, rs1_addr); 
+        let rs1_op = TCGOp::tcg_get_gpr(source1, rs1_addr);
         let rs2_op = TCGOp::tcg_get_gpr(source2, rs2_addr);  // Box::new(TCGv::new_reg(rs2_addr as u64));
 
         let tcg_inst = TCGOp::new_3op(op, source1, source1, source2);
 
-        let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1); 
+        let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);
 
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
@@ -455,7 +499,7 @@ impl TranslateRiscv {
     pub fn translate_rrr_32bit(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
             return vec![];
@@ -466,12 +510,12 @@ impl TranslateRiscv {
 
         let mut tcg_list = vec![];
 
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rs1_addr)); 
+        tcg_list.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_list.push(TCGOp::tcg_get_gpr(source2, rs2_addr));
 
         tcg_list.push(TCGOp::new_3op(op, source1, source1, source2));
         tcg_list.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1));
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
 
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
@@ -482,7 +526,7 @@ impl TranslateRiscv {
 
     pub fn translate_rri(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr= get_rs1_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let tcg_imm = TCGv::new_imm(imm_const);
@@ -492,9 +536,9 @@ impl TranslateRiscv {
         }
 
         let source1 = self.tcg_temp_new();
-        let rs1_op = TCGOp::tcg_get_gpr(source1, rs1_addr); 
+        let rs1_op = TCGOp::tcg_get_gpr(source1, rs1_addr);
         let tcg_inst = TCGOp::new_3op(op, source1, source1, tcg_imm);
-        let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1); 
+        let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);
         self.tcg_temp_free(source1);
         vec![rs1_op, tcg_inst, rd_op]
     }
@@ -502,7 +546,7 @@ impl TranslateRiscv {
     pub fn translate_shift_r(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
             return vec![];
@@ -513,14 +557,14 @@ impl TranslateRiscv {
 
         let mut tcg_list = vec![];
 
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rs1_addr)); 
+        tcg_list.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_list.push(TCGOp::tcg_get_gpr(source2, rs2_addr));
 
         tcg_list.push(TCGOp::new_3op(op, source1, source1, source2));
         if op != TCGOpcode::SLL_64BIT && op != TCGOpcode::SRA_64BIT && op != TCGOpcode::SRL_64BIT {
             tcg_list.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1));
         }
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
 
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
@@ -541,14 +585,14 @@ impl TranslateRiscv {
         let mut tcg_list = vec![];
 
         let source1 = self.tcg_temp_new();
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rs1_addr)); 
+        tcg_list.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_list.push(TCGOp::new_3op(op, source1, source1, TCGv::new_imm(imm_const)));
         if op != TCGOpcode::SLL_64BIT && op != TCGOpcode::SRA_64BIT && op != TCGOpcode::SRL_64BIT {
             tcg_list.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1));
         }
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
         self.tcg_temp_free(source1);
-        
+
         tcg_list
     }
 
@@ -569,7 +613,7 @@ impl TranslateRiscv {
         vec![tcg_inst]
     }
     */
-    
+
     pub fn translate_branch(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;

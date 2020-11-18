@@ -362,8 +362,8 @@ impl EmuEnv {
                         }
                         let guest_inst = self.read_mem_4byte(guest_phy_addr);
                     
-                        let id = match decode_inst(guest_inst) {
-                            Some(id) => id,
+                        let (id, inst_byte) = match decode_inst(guest_inst) {
+                            Some((id, inst_byte)) => (id, inst_byte),
                             _ => panic!("Decode Failed"),
                         };
                         let inst_info = InstrInfo {
@@ -396,7 +396,7 @@ impl EmuEnv {
                         {
                             break;
                         }
-                        self.m_pc[0] = self.m_pc[0] + 4;
+                        self.m_pc[0] = self.m_pc[0] + inst_byte as u64;
                     
                         if id == RiscvInstId::FENCE_I {
                             break;
