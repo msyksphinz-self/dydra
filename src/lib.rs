@@ -1,3 +1,5 @@
+use std::{env, process};
+
 pub mod elf_loader;
 pub mod emu_env;
 pub mod instr_info;
@@ -47,7 +49,15 @@ pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
         dump_host: false,
     };
 
+    let riscv_path = match env::var("RISCV") {
+            Ok(val) => val,
+            Err(err) => {
+                println!("{}: RISCV", err);
+                process::exit(1);
+            },
+        };
+
     let mut emu = EmuEnv::new(arg_config);
-    emu.run(&filename);
+    emu.run(&(riscv_path + &filename));
     return emu.get_mem(0x1000) as u64;
 }
