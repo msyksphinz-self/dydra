@@ -33,6 +33,16 @@ macro_rules! get_c_rd_addr {
     }
 }
 
+macro_rules! get_nzimm {
+    ($inst: expr) => {
+        ((((($inst >>12) & 0x1) << 5) |
+          ((($inst >> 3) & 0x3) << 3) |
+          ((($inst >> 5) & 0x1) << 2) |
+          ((($inst >> 2) & 0x1) << 1) |
+          ((($inst >> 6) & 0x1) << 0)) << 4) as u64
+    }
+}
+
 impl TranslateRiscv {
     pub fn translate_c_addi4spn(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const: u64 = get_nzuimm!(inst.inst as i32);
@@ -54,4 +64,26 @@ impl TranslateRiscv {
         self.tcg_temp_free(source1);
         tcg_lists
     }
+
+    pub fn translate_c_addi16sp(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+        let imm_const: u64 = get_nzimm!(inst.inst as i32);
+        let rs1_addr= 2;  // sp
+        let rd_addr = 2;  // sp
+
+        let mut tcg_lists = vec![];
+
+        let source1 = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, TCGv::new_imm(imm_const)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+
+        self.tcg_temp_free(source1);
+        tcg_lists
+    }
+
+    pub fn translate_c_nop(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+        vec![]
+    }
+
 }
