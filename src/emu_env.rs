@@ -406,36 +406,8 @@ impl EmuEnv {
                             break;      // When self.m_arg_config.debug Mode, break for each instruction
                         }
                     }
-                
-                
-                    // {
-                    //     for (i, b) in self.m_tcg_raw_vec.iter().enumerate() {
-                    //         print!("{:02x} ", b);
-                    //         if i % 16 == 15 {
-                    //             print!("\n");
-                    //         }
-                    //     }
-                    //     print!("\n");
-                    // }
-                    
-                    // // Make tb instruction region (temporary 1024byte)
-                    // tb_text_mem = match MemoryMap::new(
-                    //     0x4000,
-                    //     &[
-                    //         MapOption::MapReadable,
-                    //         MapOption::MapWritable,
-                    //         MapOption::MapExecutable,
-                    //     ],
-                    // ) {
-                    //     Ok(m) => m,
-                    //     Err(e) => panic!("Error: {}", e),
-                    // };
-                    
+                                    
                     let mut pc_address = 0;
-                    
-                    // let tb_map_ptr = tb_text_mem.data() as *const u64;
-                    // let pe_map_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
-                    // let host_cod_ptr = self.m_guest_mem.as_ptr();
                     
                     self.m_tcg_tb_vec.clear();
                     for tcg in &self.m_tcg_vec {
