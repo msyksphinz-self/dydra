@@ -175,11 +175,7 @@ impl TranslateRiscv {
         Self::translate_branch(TCGOpcode::GEU_64BIT, inst)
     }
 
-    fn translate_load(&mut self, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
-        let rs1_addr = get_rs1_addr!(inst.inst);
-        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
-        let rd_addr = get_rd_addr!(inst.inst);
-
+    pub fn translate_raw_load(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
         let src_addr       = self.tcg_temp_new();
         let vaddr_low12bit = self.tcg_temp_new();
         let vaddr_tlb_idx  = self.tcg_temp_new();
@@ -192,10 +188,10 @@ impl TranslateRiscv {
         let mut tcg_lists = vec![];
 
         // Read Register
-        tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, rs1_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, base_reg));
         // Extract TLB Index and offset
-        if imm_const != 0 {
-            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(imm_const)));
+        if offset != 0 {
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(offset as u64)));
         }
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_low12bit, src_addr, TCGv::new_imm(0xfff)));
 
@@ -214,10 +210,10 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
         // if TLB not hit, jump helper function
         tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize, 
-                                                TCGv::new_reg(rd_addr as u64), 
-                                                TCGv::new_reg(rs1_addr as u64), 
-                                                TCGv::new_imm(imm_const), 
-                                                TCGv::new_imm(inst.addr)));
+                                                   TCGv::new_reg(dest_reg as u64), 
+                                                   TCGv::new_reg(base_reg as u64), 
+                                                   TCGv::new_imm(offset as u64), 
+                                                   TCGv::new_imm(inst.addr)));
 
         let zero = Box::new(TCGv::new_reg(0 as u64));
         let dummy_addr = Box::new(TCGv::new_imm(0));
@@ -238,7 +234,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, TCGv::new_imm(0x80000000)));
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_MEM_OFFSET, tlb_byte_addr, tlb_byte_addr));
         tcg_lists.push(TCGOp::new_2op(load_op, tlb_byte_addr, tlb_byte_addr));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, tlb_byte_addr));
+        tcg_lists.push(TCGOp::tcg_set_gpr(dest_reg, tlb_byte_addr));
         tcg_lists.push(tcg_label_load_excp);
 
         self.tcg_temp_free(src_addr      );
@@ -248,6 +244,13 @@ impl TranslateRiscv {
         self.tcg_temp_free(tlb_byte_addr );
 
         return tcg_lists;
+    }
+    fn translate_load(&mut self, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
+        let rs1_addr = get_rs1_addr!(inst.inst);
+        let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
+        let rd_addr = get_rd_addr!(inst.inst);
+
+        self.translate_raw_load(rs1_addr, imm_const, rd_addr, inst, load_op, helper_op)
     }
 
     pub fn translate_ld(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -272,12 +275,7 @@ impl TranslateRiscv {
         self.translate_load(inst, TCGOpcode::LOADU_8BIT, CALL_HELPER_IDX::CALL_LOADU8_IDX)
     }
 
-    fn translate_store(&mut self, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
-        let rs1_addr = get_rs1_addr!(inst.inst);
-        let imm_const: u64 = get_s_imm_field!(inst.inst);
-        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
-        let rs2_addr = get_rs2_addr!(inst.inst);
-
+    pub fn translate_raw_store(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
         let src_addr       = self.tcg_temp_new();
         let vaddr_low12bit = self.tcg_temp_new();
         let vaddr_tlb_idx  = self.tcg_temp_new();
@@ -290,10 +288,10 @@ impl TranslateRiscv {
         let mut tcg_lists = vec![];
 
         // Read Register
-        tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, rs1_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(src_addr, base_reg));
         // Extract TLB Index and offset
-        if imm_const != 0 {
-            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(imm_const as u64)));
+        if offset != 0 {
+            tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, src_addr, src_addr, TCGv::new_imm(offset as u64)));
         }
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, vaddr_low12bit, src_addr, TCGv::new_imm(0xfff)));
 
@@ -312,9 +310,9 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
         // if TLB not hit, jump helper function
         tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize, 
-                                                            TCGv::new_reg(rs2_addr as u64), 
-                                                            TCGv::new_reg(rs1_addr as u64), 
-                                                            TCGv::new_imm(imm_const as u64), 
+                                                            TCGv::new_reg(dest_reg as u64), 
+                                                            TCGv::new_reg(base_reg as u64), 
+                                                            TCGv::new_imm(offset as u64), 
                                                             TCGv::new_imm(inst.addr)));
 
         let zero = Box::new(TCGv::new_reg(0 as u64));
@@ -338,7 +336,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, TCGv::new_imm(0x80000000)));
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_MEM_OFFSET, tlb_byte_addr, tlb_byte_addr));
         let rs2_data = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_data, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_data, dest_reg));
         tcg_lists.push(TCGOp::new_2op(store_op, rs2_data, tlb_byte_addr));
         tcg_lists.push(tcg_label_load_excp);
 
@@ -348,6 +346,16 @@ impl TranslateRiscv {
         self.tcg_temp_free(rs2_data);
         
         return tcg_lists;
+    }
+
+
+    fn translate_store(&mut self, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
+        let rs1_addr = get_rs1_addr!(inst.inst);
+        let imm_const: u64 = get_s_imm_field!(inst.inst);
+        let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
+        let rs2_addr = get_rs2_addr!(inst.inst);
+
+        self.translate_raw_store(rs1_addr, imm_const as u64, rs2_addr, inst, store_op, helper_op)
     }
 
     pub fn translate_sd(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
