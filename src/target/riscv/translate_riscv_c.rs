@@ -137,8 +137,36 @@ impl TranslateRiscv {
         tcg_lists
     }
     pub fn translate_c_jal  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_addiw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_li   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_addiw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm_const = get_nzimm!(inst.inst as i32);
+        let rd_addr = get_rd_addr!(inst.inst); 
+
+        let mut tcg_lists = vec![];
+
+        let source1 = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rd_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_32BIT, source1, source1, TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+        self.tcg_temp_free(source1);
+        
+        tcg_lists
+    }
+    pub fn translate_c_li   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm_const = get_nzimm!(inst.inst as i32);
+        let rd_addr  = get_rd_addr!(inst.inst);
+        println!("c.li addr = {:}", rd_addr);
+        let mut tcg_lists = vec![];
+
+        let dest_tmp = self.tcg_temp_new();
+        tcg_lists.push(TCGOp::tcg_get_gpr(dest_tmp, 0));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, dest_tmp, dest_tmp, TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest_tmp));
+
+        self.tcg_temp_free(dest_tmp);
+        tcg_lists
+    }
 
 
     pub fn translate_c_addi16sp(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
