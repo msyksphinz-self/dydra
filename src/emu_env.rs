@@ -746,6 +746,7 @@ impl EmuEnv {
                 || id == RiscvInstId::ECALL
                 || id == RiscvInstId::MRET
                 || id == RiscvInstId::SRET
+                || id == RiscvInstId::C_J
             {
                 break;
             }

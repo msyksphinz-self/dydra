@@ -164,7 +164,7 @@ impl TranslateRiscv {
     }
 
 
-    pub fn translate_c_li   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+    pub fn translate_c_li (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let imm_const = get_nzimm!(inst.inst as i32);
         let rd_addr  = get_rd_addr!(inst.inst);
         let mut tcg_lists = vec![];
@@ -179,7 +179,7 @@ impl TranslateRiscv {
     }
 
 
-    pub fn translate_c_addi16sp(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_c_addi16sp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         let imm_const = get_nzimm_addi16sp!(inst.inst as i32);
         let rs1_addr= 2;  // sp
         let rd_addr = 2;  // sp
@@ -291,9 +291,8 @@ impl TranslateRiscv {
 
 
     pub fn translate_c_sub   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
-        let imm_const = get_nzimm!(inst.inst as i32);
-        let rd_addr   = get_rd_addr!(inst.inst);
-        let rs2_addr  = (inst.inst >> 2) & 0x1f;
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
 
         let mut tcg_lists = vec![];
 
@@ -313,24 +312,177 @@ impl TranslateRiscv {
     }
 
 
-    pub fn translate_c_xor   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_or    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_and   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_subw  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_addw  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_j     (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_xor   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+
+        let mut tcg_lists = vec![];
+
+        let rd_tmp = self.tcg_temp_new();
+        let rs2_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::XOR_64BIT, rd_tmp, rd_tmp, rs2_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+
+        self.tcg_temp_free(rd_tmp);
+        self.tcg_temp_free(rs2_tmp);
+
+        tcg_lists
+
+    }
+    pub fn translate_c_or    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+
+        let mut tcg_lists = vec![];
+
+        let rd_tmp = self.tcg_temp_new();
+        let rs2_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::OR_64BIT, rd_tmp, rd_tmp, rs2_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+
+        self.tcg_temp_free(rd_tmp);
+        self.tcg_temp_free(rs2_tmp);
+
+        tcg_lists
+    }
+    pub fn translate_c_and   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+
+        let mut tcg_lists = vec![];
+
+        let rd_tmp = self.tcg_temp_new();
+        let rs2_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, rd_tmp, rd_tmp, rs2_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+
+        self.tcg_temp_free(rd_tmp);
+        self.tcg_temp_free(rs2_tmp);
+
+        tcg_lists
+    }
+
+
+    pub fn translate_c_subw  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+
+        let mut tcg_lists = vec![];
+
+        let rd_tmp = self.tcg_temp_new();
+        let rs2_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SUB_32BIT, rd_tmp, rd_tmp, rs2_tmp));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, rd_tmp, rd_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+
+        self.tcg_temp_free(rd_tmp);
+        self.tcg_temp_free(rs2_tmp);
+        
+        tcg_lists
+    }
+
+
+    pub fn translate_c_addw  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+
+        let mut tcg_lists = vec![];
+
+        let rd_tmp = self.tcg_temp_new();
+        let rs2_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_32BIT, rd_tmp, rd_tmp, rs2_tmp));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, rd_tmp, rd_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+
+        self.tcg_temp_free(rd_tmp);
+        self.tcg_temp_free(rs2_tmp);
+        
+        tcg_lists
+    }
+    pub fn translate_c_j (&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+        let jmp_const = (((inst.inst >> 12) & 0x1) << 11) |
+                        (((inst.inst >> 11) & 0x1) <<  4) |
+                        (((inst.inst >>  9) & 0x3) <<  8) |
+                        (((inst.inst >>  8) & 0x1) << 10) |
+                        (((inst.inst >>  7) & 0x1) <<  6) |
+                        (((inst.inst >>  6) & 0x1) <<  7) |
+                        (((inst.inst >>  3) & 0x7) <<  1) |
+                        (((inst.inst >>  2) & 0x1) <<  5);
+        let jmp_const = extend_sign(jmp_const as u64, 11);
+
+        let mut tcg_lists = vec![];
+
+        let dest_temp = self.tcg_temp_new();
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::JMPIM, dest_temp, TCGv::new_imm(inst.addr.wrapping_add(4))));
+        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        self.tcg_temp_free(dest_temp);
+
+        tcg_lists
+    }
     pub fn translate_c_beqz  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_bnez  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_slli  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_slli  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+                let shamt    = get_nzimm!(inst.inst);
+        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+
+        let mut tcg_list = vec![];
+
+        let source1 = self.tcg_temp_new();
+        tcg_list.push(TCGOp::tcg_get_gpr(source1, rd_addr));
+        tcg_list.push(TCGOp::new_3op(TCGOpcode::SLL_64BIT, source1, source1, TCGv::new_imm(shamt as u64)));
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+        self.tcg_temp_free(source1);
+
+        tcg_list
+    }
     pub fn translate_c_fldsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_lwsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_flwsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_ldsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_jr    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_mv    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_ebreak(&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_ebreak (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_jalr  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_add   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+
+    pub fn translate_c_add   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm_const = get_nzimm!(inst.inst as i32);
+        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
+        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+
+        let mut tcg_lists = vec![];
+
+        let rd_tmp = self.tcg_temp_new();
+        let rs2_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, rd_tmp, rd_tmp, rs2_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+
+        self.tcg_temp_free(rd_tmp);
+        self.tcg_temp_free(rs2_tmp);
+
+        tcg_lists
+    }
     pub fn translate_c_fsdsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_swsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_fswsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
