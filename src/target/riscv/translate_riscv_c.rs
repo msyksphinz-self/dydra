@@ -437,8 +437,47 @@ impl TranslateRiscv {
 
         tcg_lists
     }
-    pub fn translate_c_beqz  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_bnez  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_beqz  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rs1_addr: usize = get_c_reg_addr!((inst.inst >> 7) & 0x7) as usize;
+
+        let target = (((inst.inst >> 12) & 0x1) << 8) |
+                     (((inst.inst >> 10) & 0x3) << 3) |
+                     (((inst.inst >>  5) & 0x3) << 6) |
+                     (((inst.inst >>  3) & 0x3) << 1) |
+                     (((inst.inst >>  2) & 0x1) << 5);
+        let target = extend_sign (target as u64, 8);
+        let target = inst.addr.wrapping_add(target as u64);
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let mut tcg_lists = vec![];
+
+        tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_64BIT, TCGv::new_reg(rs1_addr as u64), TCGv::new_reg(0), TCGv::new_imm(target as u64), Rc::clone(&label)));
+        tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4)));
+        tcg_lists.push(TCGOp::new_label(Rc::clone(&label)));
+        tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
+
+        tcg_lists
+    }
+    pub fn translate_c_bnez  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rs1_addr: usize = get_c_reg_addr!((inst.inst >> 7) & 0x7) as usize;
+        let target = (((inst.inst >> 12) & 0x1) << 8) |
+                     (((inst.inst >> 10) & 0x3) << 3) |
+                     (((inst.inst >>  5) & 0x3) << 6) |
+                     (((inst.inst >>  3) & 0x3) << 1) |
+                     (((inst.inst >>  2) & 0x1) << 5);
+        let target = extend_sign (target as u64, 8);
+        let target = inst.addr.wrapping_add(target as u64);
+        let label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        let mut tcg_lists = vec![];
+
+        tcg_lists.push(TCGOp::new_4op(TCGOpcode::NE_64BIT, TCGv::new_reg(rs1_addr as u64), TCGv::new_reg(0), TCGv::new_imm(target as u64), Rc::clone(&label)));
+        tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4)));
+        tcg_lists.push(TCGOp::new_label(Rc::clone(&label)));
+        tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
+
+        tcg_lists
+    }
     pub fn translate_c_slli  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
                 let shamt    = get_nzimm!(inst.inst);
         let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
