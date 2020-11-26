@@ -478,6 +478,8 @@ impl TranslateRiscv {
 
         tcg_lists
     }
+
+
     pub fn translate_c_slli  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
                 let shamt    = get_nzimm!(inst.inst);
         let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
@@ -493,7 +495,16 @@ impl TranslateRiscv {
         tcg_list
     }
     pub fn translate_c_fldsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_lwsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_lwsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm = (((inst.inst >> 12) & 0x1) << 5) |
+                  (((inst.inst >>  4) & 0x7) << 2) |
+                  (((inst.inst >>  2) & 0x3) << 6);
+
+        self.translate_raw_load(get_c_reg_addr!((inst.inst >> 7) & 0x7), 
+                                imm as u64, 
+                                get_c_reg_addr!((inst.inst >> 2) & 0x7), 
+                                inst, TCGOpcode::LOAD_64BIT, CALL_HELPER_IDX::CALL_LOAD32_IDX)
+    }
     pub fn translate_c_flwsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_ldsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_jr    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
