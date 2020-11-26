@@ -361,6 +361,12 @@ impl EmuEnv {
                 self.write_mem_4byte(0x80001000, 0);
                 self.write_mem_4byte(0x80001040, 1);
             }
+            // if self.get_mem(0x3000) != 0 {
+            //     if self.get_mem(0x3000) & 0x01 == 1 {
+            //         println!("0x3000 finished.");
+            //         break;
+            //     }
+            // }
         }
         let end = start.elapsed();
         // println!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      

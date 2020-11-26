@@ -497,16 +497,25 @@ impl TranslateRiscv {
     pub fn translate_c_fldsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_lwsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let imm = (((inst.inst >> 12) & 0x1) << 5) |
-                  (((inst.inst >>  4) & 0x7) << 2) |
-                  (((inst.inst >>  2) & 0x3) << 6);
+                      (((inst.inst >>  4) & 0x7) << 2) |
+                      (((inst.inst >>  2) & 0x3) << 6);
 
-        self.translate_raw_load(get_c_reg_addr!((inst.inst >> 7) & 0x7), 
+        self.translate_raw_load(2, 
                                 imm as u64, 
-                                get_c_reg_addr!((inst.inst >> 2) & 0x7), 
-                                inst, TCGOpcode::LOAD_64BIT, CALL_HELPER_IDX::CALL_LOAD32_IDX)
+                                get_rd_addr!(inst.inst),
+                                inst, TCGOpcode::LOAD_32BIT, CALL_HELPER_IDX::CALL_LOAD32_IDX)
     }
     pub fn translate_c_flwsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_ldsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_ldsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm = (((inst.inst >> 12) & 0x1) << 5) |
+                      (((inst.inst >>  4) & 0x7) << 2) |
+                      (((inst.inst >>  2) & 0x3) << 6);
+
+        self.translate_raw_load(2,
+                                imm as u64, 
+                                get_rd_addr!(inst.inst),
+                                inst, TCGOpcode::LOAD_64BIT, CALL_HELPER_IDX::CALL_LOAD64_IDX)
+    }
     pub fn translate_c_jr    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let rs1_addr = get_rd_addr!(inst.inst);   // src1 is 11-7 bitfield
 
@@ -525,7 +534,27 @@ impl TranslateRiscv {
 
         tcg_lists
     }
-    pub fn translate_c_mv    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_mv    (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let rd_addr   = (inst.inst >> 7) & 0x1f;
+        let rs2_addr  = (inst.inst >> 2) & 0x1f;
+
+        let mut tcg_lists = vec![];
+
+        let zero_tmp = self.tcg_temp_new();
+        let val_tmp = self.tcg_temp_new();
+
+        tcg_lists.push(TCGOp::tcg_get_gpr(zero_tmp, 0));
+        tcg_lists.push(TCGOp::tcg_get_gpr(val_tmp, rs2_addr));
+        
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, val_tmp, val_tmp, zero_tmp));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, val_tmp));
+
+        self.tcg_temp_free(val_tmp);
+        self.tcg_temp_free(zero_tmp);
+
+        tcg_lists
+
+    }
     pub fn translate_c_ebreak (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_jalr  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let rs1_addr = get_rd_addr!(inst.inst);   // src1 is 11-7 bitfield
@@ -553,9 +582,8 @@ impl TranslateRiscv {
     }
 
     pub fn translate_c_add   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
-        let imm_const = get_nzimm!(inst.inst as i32);
-        let rd_addr   = get_c_reg_addr!((inst.inst >> 7) & 0x7);
-        let rs2_addr  = get_c_reg_addr!((inst.inst >> 2) & 0x7);
+        let rd_addr   = (inst.inst >> 7) & 0x1f;
+        let rs2_addr  = (inst.inst >> 2) & 0x1f;
 
         let mut tcg_lists = vec![];
 
@@ -574,9 +602,25 @@ impl TranslateRiscv {
         tcg_lists
     }
     pub fn translate_c_fsdsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_swsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_swsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm = (((inst.inst >> 9) & 0xf) << 2) |
+                      (((inst.inst >> 7) & 0x3) << 6);
+
+        self.translate_raw_store(2,
+                          imm as u64, 
+                          ((inst.inst >> 2) & 0x1f), 
+                                 inst, TCGOpcode::STORE_32BIT, CALL_HELPER_IDX::CALL_STORE32_IDX)
+    }
     pub fn translate_c_fswsp (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
-    pub fn translate_c_sdsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
+    pub fn translate_c_sdsp  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
+        let imm = (((inst.inst >> 9) & 0xf) << 2) |
+                      (((inst.inst >> 7) & 0x3) << 6);
+
+        self.translate_raw_store(2,
+                          imm as u64, 
+                          ((inst.inst >> 2) & 0x1f), 
+                          inst, TCGOpcode::STORE_64BIT, CALL_HELPER_IDX::CALL_STORE64_IDX)
+    }
 
 
 }
