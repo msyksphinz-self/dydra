@@ -374,7 +374,7 @@ impl EmuEnv {
     }
 
     fn sys_write(&mut self, tohost: u64) {
-        let fd = self.read_mem_8byte(tohost + 8);
+        let _fd = self.read_mem_8byte(tohost + 8);
         let pbuf = self.read_mem_8byte(tohost + 16);
         let len = self.read_mem_8byte(tohost + 24);
 
@@ -712,7 +712,7 @@ impl EmuEnv {
             let mut guest_phy_addr = 0;
             match self.convert_physical_address(self.m_pc[0], self.m_pc[0], MemAccType::Fetch) {
                 Ok(addr) => guest_phy_addr = addr,
-                Err(error) => {
+                Err(_error) => {
                     continue;
                 }
             };

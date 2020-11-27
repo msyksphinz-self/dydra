@@ -103,7 +103,7 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_ecall(emu: &mut EmuEnv, dest: u64, imm: u64, csr_addr: u64, guest_pc: u64) -> usize {
+    pub fn helper_func_ecall(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, guest_pc: u64) -> usize {
         emu.m_csr.csrrw(CsrAddr::Mepc, emu.m_pc[0] as i64); // MEPC
 
         let current_priv: PrivMode = emu.m_priv;

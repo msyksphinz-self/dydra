@@ -161,7 +161,7 @@ impl TCGX86 {
         return 2;
     }
 
-
+    #[allow(dead_code)]
     fn tcg_64bit_raw_out(op: u8, mc: &mut Vec<u8>) -> usize {
         Self::tcg_out(((op as u64) << 8) | 0x48 << 0, 2, mc);
         return 2;
@@ -240,7 +240,7 @@ impl TCGX86 {
         return 3;
     }
 
-
+    #[allow(dead_code)]
     fn tcg_gen_mov_gpr_imm_64bit(emu: &EmuEnv, dest: u64, imm: u64, mc: &mut Vec<u8>) -> usize {
         let mut gen_size = 0;
 
@@ -256,6 +256,7 @@ impl TCGX86 {
         return gen_size;
     }
 
+    #[allow(dead_code)]
     fn tcg_gen_mov_gpr_gpr_64bit(emu: &EmuEnv, dest: u64, source: u64, mc: &mut Vec<u8>) -> usize {
         let mut gen_size = 0;
         gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, source, mc);
@@ -355,6 +356,7 @@ impl TCGX86 {
         return gen_size;
     }
 
+    #[allow(dead_code)]
     fn tcg_gen_rrr_64bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -377,6 +379,7 @@ impl TCGX86 {
         return gen_size;
     }
 
+    #[allow(dead_code)]
     fn tcg_gen_rri_64bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -399,6 +402,7 @@ impl TCGX86 {
         return gen_size;
     }
 
+    #[allow(dead_code)]
     fn tcg_gen_rrr_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -421,6 +425,7 @@ impl TCGX86 {
         return gen_size;
     }
 
+    #[allow(dead_code)]
     fn tcg_gen_rri_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
@@ -490,7 +495,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_shift_r_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_shift_r_32bit(_emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let dest_reg = tcg.arg0.unwrap();
         let src1_reg = tcg.arg1.unwrap();
         let src2_reg = tcg.arg2.unwrap();
@@ -514,7 +519,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_shift_i_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_shift_i_32bit(_emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let dest_reg = tcg.arg0.unwrap();
         let src1_reg = tcg.arg1.unwrap();
         let imm = tcg.arg2.unwrap();
@@ -897,7 +902,7 @@ impl TCG for TCGX86 {
     }
 
 
-    fn tcg_gen_mem_load(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType) -> usize {
+    fn tcg_gen_mem_load(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType) -> usize {
         let dest_reg = tcg.arg0.unwrap();
         let src_reg = tcg.arg1.unwrap();
 
@@ -1067,7 +1072,7 @@ impl TCG for TCGX86 {
         }
     }
 
-    fn tcg_gen_sub_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_sub_32bit(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         if tcg.arg2.unwrap().t == TCGvType::Immediate {
             // xxxx: should be sub
             Self::tcg_gen_op_32_temp_imm(pc_address, X86Opcode::ADD_GV_IMM, tcg, mc)
@@ -1131,7 +1136,7 @@ impl TCG for TCGX86 {
         gen_size
     }
 
-    fn tcg_gen_div_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_div_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let dest = tcg.arg0.unwrap();
         let src1 = tcg.arg1.unwrap();
         let src2 = tcg.arg2.unwrap();
@@ -1401,7 +1406,7 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_mov_imm_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_mov_imm_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
         let dest = tcg.arg0.unwrap();
         let imm = tcg.arg1.unwrap();

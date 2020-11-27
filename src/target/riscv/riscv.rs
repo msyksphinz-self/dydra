@@ -6,7 +6,6 @@ use typenum::U10;
 
 use super::super::super::instr_info::InstrInfo;
 use super::riscv_inst_id::RiscvInstId;
-use super::super::super::tcg::tcg::TCGvType;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 #[allow(dead_code)]
