@@ -1167,8 +1167,8 @@ impl TCG for TCGX86 {
         let arg1 = tcg.arg1.unwrap();
         let arg2 = tcg.arg2.unwrap();
 
-        assert_eq!(arg0.t, TCGvType::Register);
-        assert_eq!(arg1.t, TCGvType::Register);
+        assert_eq!(arg0.t, TCGvType::TCGTemp);
+        assert_eq!(arg1.t, TCGvType::TCGTemp);
 
         let mut gen_size: usize = pc_address as usize;
         gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg1.value, mc);
