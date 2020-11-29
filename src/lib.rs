@@ -11,6 +11,8 @@ pub mod op_helper_fp_s;
 pub mod op_helper_mem;
 pub mod op_helper_fcvt;
 
+use emu_env::MachineEnum;
+
 use crate::emu_env::{EmuEnv, ArgConfig};
 
 pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
@@ -23,6 +25,7 @@ pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
         mmu_debug: false,
         dump_guest: false,
         dump_host: false,
+        machine : MachineEnum::RiscvVirt,
     };
 
     let mut emu = EmuEnv::new(arg_config);
@@ -47,6 +50,7 @@ pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
         mmu_debug : false,
         dump_guest: false,
         dump_host: false,
+        machine : MachineEnum::RiscvVirt,
     };
 
     let riscv_path = match env::var("RISCV") {

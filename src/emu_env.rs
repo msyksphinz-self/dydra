@@ -24,6 +24,12 @@ use crate::instr_info::InstrInfo;
 
 use std::time::Instant;
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum MachineEnum {
+    RiscvVirt,
+    RiscvSiFiveU,
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct ArgConfig {
     pub debug: bool, 
@@ -34,6 +40,7 @@ pub struct ArgConfig {
     pub mmu_debug: bool,
     pub dump_guest: bool,
     pub dump_host: bool,
+    pub machine: MachineEnum,
 }
 
 
@@ -353,7 +360,7 @@ impl EmuEnv {
             if self.m_arg_config.dump_fpr {
                 self.dump_fpr();
             }
-            if self.get_mem(0x1000) != 0 {
+            if self.m_arg_config.machine == MachineEnum::RiscvVirt && self.get_mem(0x1000) != 0 {
                 if self.get_mem(0x1000) & 0x01 == 1 {
                     break;
                 }

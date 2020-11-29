@@ -1,4 +1,6 @@
 use clap::{App,Arg};
+use emu_env::MachineEnum;
+
 extern crate mmap;
 extern crate clap;
 
@@ -28,6 +30,13 @@ fn main() {
         .short('e')
         .long("elf-file")
         .required(true),
+    )
+    .arg(
+        Arg::new("machine")
+        .about("specify machine")
+        .value_name("Machine Name")
+        .long("machine")
+        .required(true)
     )
     .arg(
         Arg::new("debug")
@@ -90,6 +99,12 @@ fn main() {
     let arg_config_dump_guest = matches.is_present("dump-guest");
     let arg_config_dump_host = matches.is_present("dump-host");
     let arg_config_debug    = matches.is_present("debug") || arg_config_dump_gpr || arg_config_dump_fpr || arg_config_dump_tcg;
+    let arg_config_machine_string = matches.values_of("machine").unwrap().next().unwrap().to_string();
+    let arg_config_machine = match &*arg_config_machine_string {
+        "virt" => MachineEnum::RiscvVirt,
+        "sifive_u" => MachineEnum::RiscvSiFiveU,
+        _ => panic!("-machine not specified"),
+    };
     let arg_config = ArgConfig {
         step    : arg_config_step,
         debug   : arg_config_debug,
@@ -99,6 +114,7 @@ fn main() {
         mmu_debug: arg_config_mmu_debug,
         dump_guest: arg_config_dump_guest,
         dump_host: arg_config_dump_host,
+        machine: arg_config_machine,
     };
 
     let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();
