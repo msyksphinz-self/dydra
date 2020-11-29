@@ -325,7 +325,6 @@ impl EmuEnv {
             if self.m_arg_config.debug {
                 println!("========= BLOCK START =========");
             }
-            println!("BLOCK PC Address = {:08x}", &self.m_pc[0]);
             let tb_text_mem = if self.m_arg_config.debug {
                 self.decode_and_run()
             } else {
@@ -347,12 +346,14 @@ impl EmuEnv {
             let emu_ptr: *const [u64; 1] = &self.head;
 
             unsafe {
+                println!("transmute start: {:p}", self.m_prologue_epilogue_mem.data());
                 let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
                     mem::transmute(self.m_prologue_epilogue_mem.data());
-
+                println!("data = {:p}", tb_text_mem.borrow_mut().data());
                 let tb_host_data = tb_text_mem.borrow_mut().data();
 
                 let _ans = func(emu_ptr, tb_host_data);
+                println!("_ans = {:x}", _ans);
             }
 
             if self.m_arg_config.dump_gpr {
@@ -777,7 +778,6 @@ impl EmuEnv {
             }
         }
         
-        println!("total_inst_byte = {:}", total_inst_byte);
         self.m_tb_text_hashmap.insert(init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
         self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
         
