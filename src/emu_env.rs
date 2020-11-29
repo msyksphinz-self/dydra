@@ -79,6 +79,8 @@ pub struct EmuEnv {
     // Configuration
     pub m_arg_config: ArgConfig,
 
+    pub m_notify_exit: bool,
+
     loop_idx: usize,
 }
 
@@ -202,6 +204,7 @@ impl EmuEnv {
             m_arg_config: arg_config,
 
             loop_idx: 0,
+            m_notify_exit: false,
         }
     }
 
@@ -222,12 +225,12 @@ impl EmuEnv {
                             "a6   ", "a7   ", "s2   ", "s3   ", "s4   ", "s5   ", "s6   ", "s7   ", 
                             "s8   ", "s9   ", "s10  ", "s11  ", "t3   ", "t4   ", "t5   ", "t6   "];
         for (i, reg) in self.m_iregs.iter().enumerate() {
-            print!("x{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
+            eprint!("x{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
             if i % 4 == 3 {
-                print!("\n");
+                eprint!("\n");
             }
         }
-        print!("\n");
+        eprint!("\n");
     }
 
     pub fn dump_fpr(&self) {
@@ -236,9 +239,9 @@ impl EmuEnv {
                                      "fa6  ", "fa7  ", "fs2  ", "fs3  ", "fs4  ", "fs5  ", "fs6  ", "fs7  ", 
                                      "fs8  ", "fs9  ", "fs10 ", "fs11 ", "ft8  ", "ft9  ", "ft10 ", "ft11 "];
         for (i, reg) in self.m_fregs.iter().enumerate() {
-            print!("f{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
+            eprint!("f{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
             if i % 4 == 3 {
-                print!("\n");
+                eprint!("\n");
             }
         }
     }
@@ -277,7 +280,7 @@ impl EmuEnv {
         }
 
         for sh_header in sh_headers {
-            println!("sh_flags = {:}", sh_header.sh_flags);
+            eprintln!("sh_flags = {:}", sh_header.sh_flags);
             if sh_header.sh_flags & 0x7 != 0 && sh_header.sh_type != 8 {   // SectionType = NOBITS => Skip
                 sh_header.dump();
                 if sh_header.sh_flags & 4 != 0 {
@@ -319,11 +322,11 @@ impl EmuEnv {
             Self::reflect(v)
         };
 
-        let loop_max = 100000;
+        let loop_max = 10000000;
         self.loop_idx = 5;
         while self.loop_idx < loop_max {
             if self.m_arg_config.debug {
-                println!("========= BLOCK START =========");
+                eprintln!("========= BLOCK START =========");
             }
 
             let tb_text_mem = if self.m_arg_config.debug {
@@ -332,7 +335,7 @@ impl EmuEnv {
                 match self.m_tb_text_hashmap.get(&self.m_pc[0]) {
                     Some((inst_size, mem_map)) => {
                         if self.m_arg_config.debug {
-                            println!("Search Hit! {:016x}", &self.m_pc[0]);
+                            eprintln!("Search Hit! {:016x}", &self.m_pc[0]);
                         }
 
                         self.m_pc[0] = self.m_pc[0] + *inst_size as u64;
@@ -369,16 +372,19 @@ impl EmuEnv {
                 self.write_mem_4byte(0x80001000, 0);
                 self.write_mem_4byte(0x80001040, 1);
             }
+            if self.m_arg_config.machine == MachineEnum::RiscvSiFiveU && self.m_notify_exit {
+                break;
+            }
             // if self.get_mem(0x3000) != 0 {
             //     if self.get_mem(0x3000) & 0x01 == 1 {
-            //         println!("0x3000 finished.");
+            //         eprintln!("0x3000 finished.");
             //         break;
             //     }
             // }
         }
         let end = start.elapsed();
-        // println!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
-        println!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
+        // eprintln!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
+        eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
     }
 
     fn sys_write(&mut self, tohost: u64) {
@@ -386,9 +392,9 @@ impl EmuEnv {
         let pbuf = self.read_mem_8byte(tohost + 16);
         let len = self.read_mem_8byte(tohost + 24);
 
-        println!("sys_write() = {:x} ,tohost = {:x}", pbuf, tohost);
+        eprintln!("sys_write() = {:x} ,tohost = {:x}", pbuf, tohost);
         for idx in 0..len {
-            print!("{}", self.read_mem_1byte(pbuf.wrapping_add(idx)) as char);
+            eprint!("{}", self.read_mem_1byte(pbuf.wrapping_add(idx)) as char);
         }
     }
 
@@ -432,14 +438,14 @@ impl EmuEnv {
     //                 addr: (idx - 3) as u64,
     //             });
     //             self.m_inst_vec.push(*inst_info);
-    //             print!("{:08x} ", inst_32);
+    //             eprint!("{:08x} ", inst_32);
     //             if idx % 32 == 32 - 1 {
-    //                 print!("\n");
+    //                 eprint!("\n");
     //             }
     //             inst_32 = 0;
     //         }
     //     }
-    //     print!("\n");
+    //     eprint!("\n");
     // }
 
     pub fn calc_epilogue_address(&self) -> isize {
@@ -491,7 +497,7 @@ impl EmuEnv {
         let tlb_ptr = self.m_tlb_vec.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { tlb_ptr.offset_from(self_ptr) };
-        // println!("calc_tlb_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
+        // eprintln!("calc_tlb_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
         diff
     }
 
@@ -499,7 +505,7 @@ impl EmuEnv {
         let tlb_ptr = self.m_tlb_addr_vec.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { tlb_ptr.offset_from(self_ptr) };
-        // println!("calc_tlb_vec_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
+        // eprintln!("calc_tlb_vec_relat_address tlb_ptr = {:p}, self_ptr = {:p}, diff = {:08x}", tlb_ptr, self_ptr, diff);
         diff
     }
 
@@ -515,7 +521,7 @@ impl EmuEnv {
 
     pub fn generate_exception(&mut self, guest_pc: u64, code: ExceptCode, tval: i64) {
         if self.m_arg_config.debug {
-            println!(
+            eprintln!(
                 "<Info: Generate Exception Code={}, TVAL={:016x} PC={:016x}>",
                 code as u32, tval, guest_pc
             );
@@ -546,7 +552,7 @@ impl EmuEnv {
             self.m_csr.csrrw(CsrAddr::Mtval, tval as i64);
 
             tvec = self.m_csr.csrrs(CsrAddr::Mtvec, 0 as i64);
-            print!("tvec = {:016x}\n", tvec);
+            eprint!("tvec = {:016x}\n", tvec);
         }
 
         // Update status CSR
@@ -611,11 +617,11 @@ impl EmuEnv {
         self.m_pc[0] = tvec as u64;
 
         if self.m_arg_config.debug {
-            println!(
+            eprintln!(
                 "<Info: Exception. ChangeMode from {} to {}>",
                 curr_priv as u32, next_priv as u32
             );
-            println!("<Info: Set Program Counter = 0x{:16x}>", self.m_pc[0]);
+            eprintln!("<Info: Set Program Counter = 0x{:16x}>", self.m_pc[0]);
         }
         self.m_updated_pc = true;
 
@@ -692,7 +698,7 @@ impl EmuEnv {
     fn decode_and_run(&mut self) -> Rc<RefCell<MemoryMap>> {
         let mut riscv_trans = TranslateRiscv::new();
 
-        // println!("HashMap search miss! {:016x}", &self.m_pc[0]);
+        // eprintln!("HashMap search miss! {:016x}", &self.m_pc[0]);
         // Make tb instruction region (temporary 1024byte)
         let tb_text_mem = match MemoryMap::new(
             0x4000,
@@ -709,7 +715,7 @@ impl EmuEnv {
         // let mut guest_pc = self.m_pc[0];
         self.m_tcg_vec.clear();
         if self.m_arg_config.debug {
-            print!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
+            eprint!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
         }
 
         let mut total_inst_byte = 0;
@@ -726,7 +732,7 @@ impl EmuEnv {
                 }
             };
             if self.m_arg_config.mmu_debug {
-                print!("  converted physical address = {:08x}\n", guest_phy_addr);
+                eprint!("  converted physical address = {:08x}\n", guest_phy_addr);
             }
             let guest_inst = self.read_mem_4byte(guest_phy_addr);
         
@@ -748,8 +754,10 @@ impl EmuEnv {
                 self.m_tcg_vec.append(&mut exit_tcg);
             }
             if self.m_arg_config.dump_guest {
-                print!(" {:016x}:{:016x} Hostcode {:08x} : {}\n",  self.m_pc[0], guest_phy_addr, inst_info.inst, disassemble_riscv(guest_inst));
+                eprint!(" {:016x}:{:016x} Hostcode {:08x} : {}\n",  self.m_pc[0], guest_phy_addr, inst_info.inst, disassemble_riscv(guest_inst));
             }
+            total_inst_byte += inst_byte;
+
             if id == RiscvInstId::JALR
                 || id == RiscvInstId::JAL
                 || id == RiscvInstId::BEQ
@@ -762,11 +770,13 @@ impl EmuEnv {
                 || id == RiscvInstId::MRET
                 || id == RiscvInstId::SRET
                 || id == RiscvInstId::C_J
+                || id == RiscvInstId::C_JAL
+                || id == RiscvInstId::C_JALR
+                || id == RiscvInstId::C_JR
             {
                 break;
             }
             self.m_pc[0] = self.m_pc[0] + inst_byte as u64;
-            total_inst_byte += inst_byte;
 
             if id == RiscvInstId::FENCE_I {
                 break;
@@ -777,7 +787,7 @@ impl EmuEnv {
             }
         }
         
-        println!("total_inst_byte = {:}", total_inst_byte);
+        // eprintln!("total_inst_byte = {:}", total_inst_byte);
         self.m_tb_text_hashmap.insert(init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
         self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
         
@@ -786,7 +796,7 @@ impl EmuEnv {
         self.m_tcg_tb_vec.clear();
         for tcg in &self.m_tcg_vec {
             if self.m_arg_config.dump_tcg {
-                println!("tcg_inst = {:?}", &tcg);
+                eprintln!("tcg_inst = {:?}", &tcg);
             }
         
             let mut mc_byte = vec![];
@@ -811,18 +821,18 @@ impl EmuEnv {
                 Some(_) => {}
                 None => {
                     if self.m_arg_config.debug {
-                        println!("label found 2");
+                        eprintln!("label found 2");
                     }
                     match &tcg.label {
                         Some(l) => {
                             let l = &mut *l.borrow_mut();
                             if self.m_arg_config.debug {
-                                println!("label found. offset = {:x}", l.offset);
+                                eprintln!("label found. offset = {:x}", l.offset);
                             }
                             for v_off in &l.code_ptr_vec {
                                 let diff = l.offset as usize - v_off - 4;
                                 if self.m_arg_config.debug {
-                                    println!(
+                                    eprintln!(
                                         "replacement target is {:x}, data = {:x}",
                                         v_off, diff
                                     );
