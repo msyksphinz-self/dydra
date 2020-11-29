@@ -108,7 +108,7 @@ impl TranslateRiscv {
         let imm = extend_sign((((((inst.inst >> 10) & 0x7) << 3) |
                                 (((inst.inst >>  5) & 0x3) << 6))) as u64, 6);
 
-        self.translate_raw_load(get_c_reg_addr!((inst.inst >> 7) & 0x7), imm as u64, get_c_reg_addr!((inst.inst >> 2) & 0x7), inst, TCGOpcode::LOAD_64BIT, CALL_HELPER_IDX::CALL_LOAD32_IDX)
+        self.translate_raw_load(get_c_reg_addr!((inst.inst >> 7) & 0x7), imm as u64, get_c_reg_addr!((inst.inst >> 2) & 0x7), inst, TCGOpcode::LOAD_64BIT, CALL_HELPER_IDX::CALL_LOAD64_IDX)
     }
     pub fn translate_c_fsd  (&mut self, _inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_sw   (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
@@ -124,7 +124,7 @@ impl TranslateRiscv {
         let imm = extend_sign((((((inst.inst >> 10) & 0x7) << 3) |
                                 (((inst.inst >>  5) & 0x3) << 6))) as u64, 6);
 
-        self.translate_raw_store(get_c_reg_addr!((inst.inst >> 7) & 0x7), imm as u64, get_c_reg_addr!((inst.inst >> 2) & 0x7), inst, TCGOpcode::STORE_64BIT, CALL_HELPER_IDX::CALL_STORE32_IDX)
+        self.translate_raw_store(get_c_reg_addr!((inst.inst >> 7) & 0x7), imm as u64, get_c_reg_addr!((inst.inst >> 2) & 0x7), inst, TCGOpcode::STORE_64BIT, CALL_HELPER_IDX::CALL_STORE64_IDX)
     }
     pub fn translate_c_nop  (&mut self, _inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
     pub fn translate_c_addi (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
@@ -210,7 +210,7 @@ impl TranslateRiscv {
 
     pub fn translate_c_srli  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let shamt    = get_nzimm!(inst.inst);
-        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+        let rd_addr  = get_c_reg_addr!((inst.inst >> 7) & 0x7);
 
         let mut tcg_list = vec![];
 
@@ -226,7 +226,7 @@ impl TranslateRiscv {
 
     pub fn translate_c_srli64 (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let shamt    = get_nzimm!(inst.inst);
-        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+        let rd_addr  = get_c_reg_addr!((inst.inst >> 7) & 0x7);
 
         let mut tcg_list = vec![];
 
@@ -241,7 +241,7 @@ impl TranslateRiscv {
 
     pub fn translate_c_srai  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let shamt    = get_nzimm!(inst.inst);
-        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+        let rd_addr  = get_c_reg_addr!((inst.inst >> 7) & 0x7);
 
         let mut tcg_list = vec![];
 
@@ -257,7 +257,7 @@ impl TranslateRiscv {
 
     pub fn translate_c_srai64 (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let shamt    = get_nzimm!(inst.inst);
-        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+        let rd_addr  = get_c_reg_addr!((inst.inst >> 7) & 0x7);
 
         let mut tcg_list = vec![];
 
@@ -273,7 +273,7 @@ impl TranslateRiscv {
 
     pub fn translate_c_andi  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
         let imm_const = get_nzimm!(inst.inst as i32);
-        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+        let rd_addr  = get_c_reg_addr!((inst.inst >> 7) & 0x7);
 
         let mut tcg_lists = vec![];
 
@@ -479,8 +479,8 @@ impl TranslateRiscv {
 
 
     pub fn translate_c_slli  (&mut self, inst: &InstrInfo) -> Vec<TCGOp> { 
-                let shamt    = get_nzimm!(inst.inst);
-        let rd_addr  = get_c_reg_addr!((inst.inst >> 6) & 0x7);
+        let shamt    = get_nzimm!(inst.inst);
+        let rd_addr  = get_rd_addr!(inst.inst);
 
         let mut tcg_list = vec![];
 
