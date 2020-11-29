@@ -57,6 +57,8 @@ pub struct EmuEnv {
 
     helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 59],
 
+    pub m_riscv_trans: TranslateRiscv,
+
     // m_inst_vec: Vec<InstrInfo>,
     // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
     m_tcg_vec: Vec<TCGOp>,
@@ -156,7 +158,8 @@ impl EmuEnv {
                 Self::helper_func_sfence_vma,
                 Self::helper_func_fcvt,
             ],
-            // m_inst_vec: vec![],
+            m_riscv_trans: TranslateRiscv::new(),
+
             m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
             m_tcg_tb_vec: vec![],
@@ -696,12 +699,9 @@ impl EmuEnv {
     }
 
     fn decode_and_run(&mut self) -> Rc<RefCell<MemoryMap>> {
-        let mut riscv_trans = TranslateRiscv::new();
-
-        // eprintln!("HashMap search miss! {:016x}", &self.m_pc[0]);
         // Make tb instruction region (temporary 1024byte)
         let tb_text_mem = match MemoryMap::new(
-            0x4000,
+            0x2000,
             &[
                 MapOption::MapReadable,
                 MapOption::MapWritable,
@@ -744,9 +744,9 @@ impl EmuEnv {
                 inst: guest_inst,
                 addr: self.m_pc[0],
             };
-            let mut tcg_inst = riscv_trans.translate(id, &inst_info);
+            let mut tcg_inst = self.m_riscv_trans.translate(id, &inst_info);
             for idx in 0..5 {
-                assert_eq!(riscv_trans.reg_bitmap.get(idx), true);
+                assert_eq!(self.m_riscv_trans.reg_bitmap.get(idx), true);
             }
             self.m_tcg_vec.append(&mut tcg_inst);
             if self.m_arg_config.step {
