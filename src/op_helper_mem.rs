@@ -1,4 +1,4 @@
-use crate::emu_env::EmuEnv;
+use crate::emu_env::{EmuEnv, MachineEnum};
 use crate::target::riscv::mmu::{MemAccType, MemResult};
 use crate::target::riscv::riscv::ExceptCode;
 
@@ -35,6 +35,20 @@ impl EmuEnv {
             Ok(guest_phy_addr) => { 
                 if emu.m_arg_config.mmu_debug {
                     println!("load32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
+                }
+                if emu.m_arg_config.machine == MachineEnum::RiscvSiFiveU && (guest_phy_addr & !0xfff) == 0x1000_0000 {
+                    if emu.m_arg_config.debug {
+                        println!("UART Access : {:08x}", guest_phy_addr);
+                    }
+                    // region : 0x1000_0000 - 0x1000_0fff
+                    match guest_phy_addr {
+                        0x1000_0000 => { emu.m_iregs[rd as usize] = 0; },       // txdata
+                        0x1000_0004 => { emu.m_iregs[rd as usize] = 0; },       // rxdata
+                        0x1000_0008 => { emu.m_iregs[rd as usize] = 0; },       // txctrl
+                        0x1000_000c => { emu.m_iregs[rd as usize] = 0; },       // rxctrl
+                        _ => {},
+                    }                  
+                    return MemResult::NoExcept as usize;
                 }
                 emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);
                 emu.m_tlb_addr_vec[((addr >> 12) & 0xfff) as usize] = guest_phy_addr & !0xfff;
@@ -224,6 +238,20 @@ impl EmuEnv {
             Ok(guest_phy_addr) => { 
                 if emu.m_arg_config.mmu_debug {
                     println!("store32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
+                }
+                if emu.m_arg_config.machine == MachineEnum::RiscvSiFiveU && (guest_phy_addr & !0xfff) == 0x1000_0000 {
+                    if emu.m_arg_config.debug {
+                        println!("UART Access : {:08x}", guest_phy_addr);
+                    }
+                    // region : 0x1000_0000 - 0x1000_0fff
+                    match guest_phy_addr {
+                        0x1000_0000 => { println!("store data = {:?}", (rs2_data & 0xff) as u8 as char) },       // txdata
+                        0x1000_0004 => { },       // rxdata
+                        0x1000_0008 => { },       // txctrl
+                        0x1000_000c => { },       // rxctrl
+                        _ => {},
+                    }                  
+                    return MemResult::NoExcept as usize;
                 }
                 emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);
                 emu.m_tlb_addr_vec[((addr >> 12) & 0xfff) as usize] = guest_phy_addr & !0xfff;

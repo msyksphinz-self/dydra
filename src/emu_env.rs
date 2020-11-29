@@ -66,7 +66,7 @@ pub struct EmuEnv {
     pub m_prologue_epilogue_mem: MemoryMap,
     pub m_guest_mem: MemoryMap,
 
-    pub m_tb_text_hashmap: HashMap<u64, Rc<RefCell<MemoryMap>>>,
+    pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
 
     pub m_host_prologue: [u8; 15],
@@ -325,16 +325,17 @@ impl EmuEnv {
             if self.m_arg_config.debug {
                 println!("========= BLOCK START =========");
             }
-
+            println!("BLOCK PC Address = {:08x}", &self.m_pc[0]);
             let tb_text_mem = if self.m_arg_config.debug {
                 self.decode_and_run()
             } else {
                 match self.m_tb_text_hashmap.get(&self.m_pc[0]) {
-                    Some(mem_map) => {
+                    Some((inst_size, mem_map)) => {
                         if self.m_arg_config.debug {
                             println!("Search Hit! {:016x}", &self.m_pc[0]);
                         }
-                        self.m_pc[0] = self.m_pc[0] + 4;
+                        println!("Search Hit! {:016x}, Size = {:x}", &self.m_pc[0], inst_size);
+                        self.m_pc[0] = self.m_pc[0] + *inst_size as u64;
                         Rc::clone(&mem_map)
                     }
                     None => {
@@ -704,14 +705,15 @@ impl EmuEnv {
             Ok(m) => Rc::new(RefCell::new(m)),
             Err(e) => panic!("Error: {}", e),
         };
-        self.m_tb_text_hashmap.insert(self.m_pc[0], Rc::clone(&tb_text_mem));
-        self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
-        
+
         // let mut guest_pc = self.m_pc[0];
         self.m_tcg_vec.clear();
-        if self.m_arg_config.debug {
+        // if self.m_arg_config.debug {
             print!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
-        }
+        // }
+
+        let mut total_inst_byte = 0;
+        let init_pc = self.m_pc[0];
         #[allow(while_true)]
         while true {
             self.loop_idx += 1;
@@ -730,7 +732,7 @@ impl EmuEnv {
         
             let (id, inst_byte) = match decode_inst(guest_inst) {
                 Some((id, inst_byte)) => (id, inst_byte),
-                _ => panic!("Decode Failed"),
+                _ => panic!("Decode Failed. {:08x}", guest_inst),
             };
             let inst_info = InstrInfo {
                 inst: guest_inst,
@@ -764,7 +766,8 @@ impl EmuEnv {
                 break;
             }
             self.m_pc[0] = self.m_pc[0] + inst_byte as u64;
-        
+            total_inst_byte += inst_byte;
+
             if id == RiscvInstId::FENCE_I {
                 break;
             }
@@ -773,7 +776,11 @@ impl EmuEnv {
                 break;      // When self.m_arg_config.debug Mode, break for each instruction
             }
         }
-                        
+        
+        println!("total_inst_byte = {:}", total_inst_byte);
+        self.m_tb_text_hashmap.insert(init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
+        self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
+        
         let mut pc_address = 0;
         
         self.m_tcg_tb_vec.clear();
