@@ -223,13 +223,7 @@ impl EmuEnv {
         };
     }
 
-    pub fn helper_func_store32(
-        emu: &mut EmuEnv,
-        rs2: u64,
-        rs1: u64,
-        imm: u64,
-        guest_pc: u64,
-    ) -> usize {
+    pub fn helper_func_store32(emu: &mut EmuEnv, rs2: u64, rs1: u64, imm: u64, guest_pc: u64) -> usize {
         let rs1_data = emu.m_iregs[rs1 as usize];
         let rs2_data = emu.m_iregs[rs2 as usize];
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
@@ -245,7 +239,7 @@ impl EmuEnv {
                     }
                     // region : 0x1000_0000 - 0x1000_0fff
                     match guest_phy_addr {
-                        0x1000_0000 => { println!("store data = {:?}", (rs2_data & 0xff) as u8 as char) },       // txdata
+                        0x1000_0000 => { eprint!("{}", (rs2_data & 0xff) as u8 as char) },       // txdata
                         0x1000_0004 => { },       // rxdata
                         0x1000_0008 => { },       // txctrl
                         0x1000_000c => { },       // rxctrl

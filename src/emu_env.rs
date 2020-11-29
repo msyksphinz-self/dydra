@@ -325,7 +325,7 @@ impl EmuEnv {
             if self.m_arg_config.debug {
                 println!("========= BLOCK START =========");
             }
-            println!("BLOCK PC Address = {:08x}", &self.m_pc[0]);
+
             let tb_text_mem = if self.m_arg_config.debug {
                 self.decode_and_run()
             } else {
@@ -334,7 +334,7 @@ impl EmuEnv {
                         if self.m_arg_config.debug {
                             println!("Search Hit! {:016x}", &self.m_pc[0]);
                         }
-                        println!("Search Hit! {:016x}, Size = {:x}", &self.m_pc[0], inst_size);
+
                         self.m_pc[0] = self.m_pc[0] + *inst_size as u64;
                         Rc::clone(&mem_map)
                     }
@@ -708,9 +708,9 @@ impl EmuEnv {
 
         // let mut guest_pc = self.m_pc[0];
         self.m_tcg_vec.clear();
-        // if self.m_arg_config.debug {
+        if self.m_arg_config.debug {
             print!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
-        // }
+        }
 
         let mut total_inst_byte = 0;
         let init_pc = self.m_pc[0];
