@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use mmap::{MapOption, MemoryMap};
-use std::collections::HashMap;
+use fnv::FnvHashMap;
 use std::mem;
 
 use crate::elf_loader::{ELFLoader};
@@ -68,7 +68,7 @@ pub struct EmuEnv {
     pub m_prologue_epilogue_mem: MemoryMap,
     pub m_guest_mem: MemoryMap,
 
-    pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
+    pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
 
     pub m_host_prologue: [u8; 15],
@@ -167,7 +167,7 @@ impl EmuEnv {
                 Ok(m) => m,
                 Err(e) => panic!("Error: {}", e),
             },
-            m_tb_text_hashmap: HashMap::new(),
+            m_tb_text_hashmap: FnvHashMap::default(),
             m_curr_tb_text_mem: match MemoryMap::new(1, &[]) {
                 Ok(m) => Rc::new(RefCell::new(m)),
                 Err(e) => panic!("Error: {}", e),
