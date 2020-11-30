@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use mmap::{MapOption, MemoryMap};
+// use std::collections::HashMap;
 use fnv::FnvHashMap;
 use std::mem;
 
@@ -69,6 +70,7 @@ pub struct EmuEnv {
     pub m_guest_mem: MemoryMap,
 
     pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
+    // pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
 
     pub m_host_prologue: [u8; 15],
@@ -168,6 +170,7 @@ impl EmuEnv {
                 Err(e) => panic!("Error: {}", e),
             },
             m_tb_text_hashmap: FnvHashMap::default(),
+            // m_tb_text_hashmap: HashMap::default(),
             m_curr_tb_text_mem: match MemoryMap::new(1, &[]) {
                 Ok(m) => Rc::new(RefCell::new(m)),
                 Err(e) => panic!("Error: {}", e),
