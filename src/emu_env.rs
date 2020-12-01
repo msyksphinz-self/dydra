@@ -3,7 +3,8 @@ use std::rc::Rc;
 
 use mmap::{MapOption, MemoryMap};
 // use std::collections::HashMap;
-use fnv::FnvHashMap;
+use arr_macro::arr;
+// use fnv::FnvHashMap;
 use std::mem;
 
 use crate::elf_loader::{ELFLoader};
@@ -24,6 +25,11 @@ use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
 
 use std::time::Instant;
+
+const TCG_HASH_SIZE:usize = 1024;
+fn calc_hash_func(addr: u64) -> usize {
+    ((addr >> 1) & 0x3ff) as usize
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MachineEnum {
@@ -69,8 +75,12 @@ pub struct EmuEnv {
     pub m_prologue_epilogue_mem: MemoryMap,
     pub m_guest_mem: MemoryMap,
 
-    pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
+    // pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     // pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
+    pub m_tb_text_hash_address: [u64; TCG_HASH_SIZE],
+    pub m_tb_text_hash_inst_size: [usize; TCG_HASH_SIZE],
+    pub m_tb_text_hash_memmap: [Rc<RefCell<MemoryMap>>; TCG_HASH_SIZE],
+
     pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
 
     pub m_host_prologue: [u8; 15],
@@ -78,8 +88,8 @@ pub struct EmuEnv {
 
     m_updated_pc : bool,
 
-    pub m_tlb_vec: [u64; 4096],
-    pub m_tlb_addr_vec: [u64; 4096],
+    pub m_tlb_vec: [u64; TCG_HASH_SIZE],
+    pub m_tlb_addr_vec: [u64; TCG_HASH_SIZE],
     // Configuration
     pub m_arg_config: ArgConfig,
 
@@ -169,8 +179,11 @@ impl EmuEnv {
                 Ok(m) => m,
                 Err(e) => panic!("Error: {}", e),
             },
-            m_tb_text_hashmap: FnvHashMap::default(),
-            // m_tb_text_hashmap: HashMap::default(),
+            // m_tb_text_hashmap: FnvHashMap::with_capacity_and_hasher (0, Default::default()),
+            m_tb_text_hash_address: [0; TCG_HASH_SIZE],
+            m_tb_text_hash_inst_size: [0; TCG_HASH_SIZE],
+            m_tb_text_hash_memmap: arr![Rc::new(RefCell::new(MemoryMap::new(1, &[]).unwrap())); 1024],
+
             m_curr_tb_text_mem: match MemoryMap::new(1, &[]) {
                 Ok(m) => Rc::new(RefCell::new(m)),
                 Err(e) => panic!("Error: {}", e),
@@ -205,8 +218,8 @@ impl EmuEnv {
             m_updated_pc: false,
 
             // TLB format
-            m_tlb_vec: [0xdeadbeef_01234567; 4096],
-            m_tlb_addr_vec: [0x0; 4096],
+            m_tlb_vec: [0xdeadbeef_01234567; TCG_HASH_SIZE],
+            m_tlb_addr_vec: [0x0; TCG_HASH_SIZE],
             m_arg_config: arg_config,
 
             loop_idx: 0,
@@ -338,18 +351,15 @@ impl EmuEnv {
             let tb_text_mem = if self.m_arg_config.debug {
                 self.decode_and_run()
             } else {
-                match self.m_tb_text_hashmap.get(&self.m_pc[0]) {
-                    Some((inst_size, mem_map)) => {
-                        if self.m_arg_config.debug {
-                            eprintln!("Search Hit! {:016x}", &self.m_pc[0]);
-                        }
+                let hash_key = calc_hash_func(self.m_pc[0]);
+                if self.m_tb_text_hash_address[hash_key] == self.m_pc[0] {
+                    let inst_size = self.m_tb_text_hash_inst_size[hash_key];
+                    let mem_map = &self.m_tb_text_hash_memmap[hash_key];
 
-                        self.m_pc[0] = self.m_pc[0] + *inst_size as u64;
-                        Rc::clone(&mem_map)
-                    }
-                    None => {
-                        self.decode_and_run()
-                    }
+                    self.m_pc[0] = self.m_pc[0] + inst_size as u64;
+                    Rc::clone(mem_map)
+                } else {
+                    self.decode_and_run()
                 }
             };
 
@@ -790,8 +800,11 @@ impl EmuEnv {
             }
         }
         
-        // eprintln!("total_inst_byte = {:}", total_inst_byte);
-        self.m_tb_text_hashmap.insert(init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
+        let hash_key = calc_hash_func(init_pc);
+        self.m_tb_text_hash_address[hash_key] = init_pc;
+        self.m_tb_text_hash_inst_size[hash_key] = total_inst_byte;
+        self.m_tb_text_hash_memmap[hash_key] = Rc::clone(&tb_text_mem);
+
         self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
         
         let mut pc_address = 0;
