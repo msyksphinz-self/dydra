@@ -165,7 +165,10 @@ impl EmuEnv {
         for idx in 0..4096 {
             emu.m_tlb_vec[idx] = 0xdeadbeef_01234567;
         }
-        // emu.m_tb_text_hashmap.clear();
+
+        for addr in emu.m_tb_text_hash_address.iter_mut() {
+            *addr = 0xdeadbeef;
+        }
         return 0;
     }
 

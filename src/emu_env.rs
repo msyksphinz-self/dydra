@@ -31,6 +31,8 @@ fn calc_hash_func(addr: u64) -> usize {
     ((addr >> 1) & 0x3ff) as usize
 }
 
+const TLB_SIZE: usize = 4096;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MachineEnum {
     RiscvVirt,
@@ -88,8 +90,8 @@ pub struct EmuEnv {
 
     m_updated_pc : bool,
 
-    pub m_tlb_vec: [u64; TCG_HASH_SIZE],
-    pub m_tlb_addr_vec: [u64; TCG_HASH_SIZE],
+    pub m_tlb_vec: [u64; TLB_SIZE],
+    pub m_tlb_addr_vec: [u64; TLB_SIZE],
     // Configuration
     pub m_arg_config: ArgConfig,
 
@@ -218,8 +220,8 @@ impl EmuEnv {
             m_updated_pc: false,
 
             // TLB format
-            m_tlb_vec: [0xdeadbeef_01234567; TCG_HASH_SIZE],
-            m_tlb_addr_vec: [0x0; TCG_HASH_SIZE],
+            m_tlb_vec: [0xdeadbeef_01234567; TLB_SIZE],
+            m_tlb_addr_vec: [0x0; TLB_SIZE],
             m_arg_config: arg_config,
 
             loop_idx: 0,
