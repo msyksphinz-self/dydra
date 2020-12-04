@@ -157,22 +157,22 @@ impl TranslateRiscv {
     }
 
     pub fn translate_beq(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::EQ_64BIT, inst)
+        self.translate_branch(TCGOpcode::EQ_64BIT, inst)
     }
     pub fn translate_bne(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::NE_64BIT, inst)
+        self.translate_branch(TCGOpcode::NE_64BIT, inst)
     }
     pub fn translate_blt(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::LT_64BIT, inst)
+        self.translate_branch(TCGOpcode::LT_64BIT, inst)
     }
     pub fn translate_bge(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::GE_64BIT, inst)
+        self.translate_branch(TCGOpcode::GE_64BIT, inst)
     }
     pub fn translate_bltu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::LTU_64BIT, inst)
+        self.translate_branch(TCGOpcode::LTU_64BIT, inst)
     }
     pub fn translate_bgeu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        Self::translate_branch(TCGOpcode::GEU_64BIT, inst)
+        self.translate_branch(TCGOpcode::GEU_64BIT, inst)
     }
 
     pub fn translate_raw_load(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {

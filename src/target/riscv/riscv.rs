@@ -613,25 +613,36 @@ impl TranslateRiscv {
     }
     */
 
-    pub fn translate_branch(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_branch(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let target: u64 = get_sb_field!(inst.inst);
         let target = ((target as i64) << (64 - 13)) >> (64 - 13);
         let target = inst.addr.wrapping_add(target as u64);
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rs2 = Box::new(TCGv::new_reg(rs2_addr as u64));
-        let addr = Box::new(TCGv::new_imm(target as u64));
+        // let rs1 = TCGv::new_reg(rs1_addr as u64);
+        // let rs2 = TCGv::new_reg(rs2_addr as u64);
+        let addr = TCGv::new_imm(target as u64);
 
         let label = Rc::new(RefCell::new(TCGLabel::new()));
 
-        let tcg_inst = TCGOp::new_4op(op, *rs1, *rs2, *addr, Rc::clone(&label));
-        let tcg_true_tb = TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4));
-        let tcg_set_label = TCGOp::new_label(Rc::clone(&label));
-        let tcg_false_tb = TCGOp::new_goto_tb(TCGv::new_imm(target  as u64));
+        let rs1 = self.tcg_temp_new();
+        let rs2 = self.tcg_temp_new();
 
-        vec![tcg_inst, tcg_true_tb, tcg_set_label, tcg_false_tb]
+        let mut tcg_list = vec![];
+
+        tcg_list.push(TCGOp::tcg_get_gpr(rs1, rs1_addr as u32));
+        tcg_list.push(TCGOp::tcg_get_gpr(rs2, rs2_addr as u32));
+
+        tcg_list.push(TCGOp::new_4op(op, rs1, rs2, addr, Rc::clone(&label)));
+        tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4)));
+        tcg_list.push(TCGOp::new_label(Rc::clone(&label)));
+        tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
+
+        self.tcg_temp_free(rs1);
+        self.tcg_temp_free(rs2);
+
+        tcg_list
     }
 
     pub fn translate_float_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
