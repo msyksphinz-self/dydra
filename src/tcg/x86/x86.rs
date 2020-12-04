@@ -570,19 +570,21 @@ impl TCGX86 {
             None => panic!("Label is not defined."),
         };
 
+        assert_eq!(arg0.t, TCGvType::TCGTemp);
+        assert_eq!(arg1.t, TCGvType::TCGTemp);
+
         let mut gen_size: usize = pc_address as usize;
 
-        // mov    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RAX, arg0.value, mc);
+        let arg0_x86reg = Self::convert_x86_reg(arg0.value);
+        let arg1_x86reg = Self::convert_x86_reg(arg1.value);
 
         // cmp    reg_offset(%rbp),%eax
-        gen_size += Self::tcg_modrm_64bit_out(
+        gen_size += Self::tcg_modrm_64bit_raw_out(
             X86Opcode::CMP_GV_EV,
-            X86ModRM::MOD_10_DISP_RBP,
-            X86TargetRM::RAX,
+            X86ModRM::MOD_11_DISP_RAX as u8 + arg1_x86reg as u8,
+            X86TargetRM::RAX as u8 + arg0_x86reg as u8,
             mc,
         );
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(arg1.value) as u64, 4, mc);
 
         gen_size = Self::tcg_gen_jcc(gen_size, x86_op, mc, label);
         // je     label
