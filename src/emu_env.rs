@@ -20,7 +20,7 @@ use crate::target::riscv::mmu::{MemAccType};
 use crate::target::riscv::riscv_disassemble::{disassemble_riscv};
 
 use crate::tcg::tcg::{TCGOp, TCG, TCGOpcode};
-use crate::tcg::x86::x86::TCGX86;
+use crate::tcg::x86::x86::{TCGX86, X86TargetRM};
 use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
 
@@ -68,8 +68,6 @@ pub struct EmuEnv {
 
     pub m_riscv_trans: TranslateRiscv,
 
-    // m_inst_vec: Vec<InstrInfo>,
-    // m_tcg_vec: Vec<Box<tcg::TCGOp>>,
     m_tcg_vec: Vec<TCGOp>,
     m_tcg_raw_vec: Vec<u8>,
     m_tcg_tb_vec: Vec<u8>,
@@ -97,6 +95,8 @@ pub struct EmuEnv {
 
     pub m_notify_exit: bool,
 
+    pub m_gpr_usage_list: [Option<X86TargetRM>; 32],
+    pub m_x86reg_usage_list: [Option<u64>; X86TargetRM::SENTINEL as usize],  // Sentinel
     loop_idx: usize,
 }
 
@@ -226,6 +226,9 @@ impl EmuEnv {
 
             loop_idx: 0,
             m_notify_exit: false,
+
+            m_gpr_usage_list: [None; 32],
+            m_x86reg_usage_list: [None; X86TargetRM::SENTINEL as usize],
         }
     }
 
@@ -399,6 +402,12 @@ impl EmuEnv {
             //         break;
             //     }
             // }
+            for reg in self.m_x86reg_usage_list.iter_mut() {
+                *reg = None;
+            }
+            for reg in self.m_gpr_usage_list.iter_mut() {
+                *reg = None;
+            }
         }
         let end = start.elapsed();
         // eprintln!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
@@ -728,7 +737,8 @@ impl EmuEnv {
         };
 
         // let mut guest_pc = self.m_pc[0];
-        self.m_tcg_vec.clear();
+        let mut tcg_vec = vec![];
+        // self.m_tcg_vec.clear();
         if self.m_arg_config.debug {
             eprint!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
         }
@@ -763,10 +773,10 @@ impl EmuEnv {
             for idx in 0..5 {
                 assert_eq!(self.m_riscv_trans.reg_bitmap.get(idx), true);
             }
-            self.m_tcg_vec.append(&mut tcg_inst);
+            tcg_vec.append(&mut tcg_inst);
             if self.m_arg_config.step {
                 let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB, None)];
-                self.m_tcg_vec.append(&mut exit_tcg);
+                tcg_vec.append(&mut exit_tcg);
             }
             if self.m_arg_config.dump_guest {
                 eprint!(" {:016x}:{:016x} Hostcode {:08x} : {}\n",  self.m_pc[0], guest_phy_addr, inst_info.inst, disassemble_riscv(guest_inst));
@@ -812,13 +822,14 @@ impl EmuEnv {
         let mut pc_address = 0;
         
         self.m_tcg_tb_vec.clear();
-        for tcg in &self.m_tcg_vec {
+
+        for tcg in tcg_vec.iter() {
             if self.m_arg_config.dump_tcg {
                 eprintln!("tcg_inst = {:?}", &tcg);
             }
         
             let mut mc_byte = vec![];
-            TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
+            TCGX86::tcg_gen(self, pc_address, tcg, &mut mc_byte);
             for be in &mc_byte {
                 let be_data = *be;
                 self.m_tcg_tb_vec.push(be_data);
@@ -834,7 +845,7 @@ impl EmuEnv {
             );
         }
         
-        for tcg in &self.m_tcg_vec {
+        for tcg in tcg_vec.iter_mut() {
             match tcg.op {
                 Some(_) => {}
                 None => {

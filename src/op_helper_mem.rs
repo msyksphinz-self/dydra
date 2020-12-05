@@ -1,3 +1,4 @@
+use crate::tcg::x86::x86::X86TargetRM;
 use crate::emu_env::{EmuEnv, MachineEnum};
 use crate::target::riscv::mmu::{MemAccType, MemResult};
 use crate::target::riscv::riscv::ExceptCode;
