@@ -881,12 +881,24 @@ impl TCG for TCGX86 {
             let x86_used_reg = emu.m_gpr_usage_list[src_reg.value as usize].unwrap();
             let gpr_reg = emu.m_x86reg_usage_list[target_x86reg as usize].unwrap();
             if !(gpr_reg == src_reg.value && x86_used_reg == target_x86reg) {
-                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
-                gen_size += Self::tcg_out(emu.calc_gpr_relat_address(src_reg.value) as u64, 4, mc);        
+                let gpr_relat_address = emu.calc_gpr_relat_address(src_reg.value) as u64;
+                if gpr_relat_address < 128 {
+                    gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_01_DISP_RBP, target_x86reg, mc);
+                    gen_size += Self::tcg_out(gpr_relat_address, 1, mc);    
+                } else {
+                    gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
+                    gen_size += Self::tcg_out(gpr_relat_address, 4, mc);
+                }
             }
         } else {
-            gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
-            gen_size += Self::tcg_out(emu.calc_gpr_relat_address(src_reg.value) as u64, 4, mc);    
+            let gpr_relat_address = emu.calc_gpr_relat_address(src_reg.value) as u64;
+            if gpr_relat_address < 128 {
+                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_01_DISP_RBP, target_x86reg, mc);
+                gen_size += Self::tcg_out(gpr_relat_address, 1, mc);
+            } else {
+                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
+                gen_size += Self::tcg_out(gpr_relat_address, 4, mc);
+            }
         }
         
         emu.m_gpr_usage_list[src_reg.value as usize] = Some(target_x86reg);
@@ -905,9 +917,14 @@ impl TCG for TCGX86 {
         let source_x86reg = Self::convert_x86_reg(src_tmp.value);
 
         let mut gen_size = pc_address as usize;
-        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, source_x86reg, mc);
-        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(dest_reg.value) as u64, 4, mc);
-
+        let gpr_relat_diff = emu.calc_gpr_relat_address(dest_reg.value) as u64;
+        if gpr_relat_diff < 128 {
+            gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_01_DISP_RBP, source_x86reg, mc);
+            gen_size += Self::tcg_out(gpr_relat_diff, 1, mc);
+        } else {
+            gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_EV_GV, X86ModRM::MOD_10_DISP_RBP, source_x86reg, mc);
+            gen_size += Self::tcg_out(gpr_relat_diff, 4, mc);
+        }
         emu.m_gpr_usage_list[dest_reg.value as usize] = Some(source_x86reg);
         emu.m_x86reg_usage_list[source_x86reg as usize] = Some(dest_reg.value);
 
@@ -1456,8 +1473,7 @@ impl TCG for TCGX86 {
 
         let dest_x86reg = Self::convert_x86_reg(dest.value);
 
-        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RAX, imm.value, mc);
-        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, dest_x86reg as u8, mc);
+        gen_size += Self::tcg_gen_imm_u64(dest_x86reg, imm.value, mc);
 
         return gen_size;
     }
