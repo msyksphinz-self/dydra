@@ -1,8 +1,7 @@
 use super::super::super::tcg::tcg::{TCGLabel, TCGOp, TCGOpcode, TCGv};
 use std::cell::RefCell;
 use std::rc::Rc;
-use bitmaps::Bitmap;
-use typenum::U10;
+use std::collections::VecDeque;
 
 use super::super::super::instr_info::InstrInfo;
 use super::riscv_inst_id::RiscvInstId;
@@ -223,24 +222,24 @@ impl PrivMode {
 
 pub type TCGRegType = u64;
 pub struct TranslateRiscv {
-    pub reg_bitmap: Bitmap<U10>,
+    pub reg_bitmap: VecDeque<u64>,
 }
 
 impl TranslateRiscv {
     pub fn new() -> TranslateRiscv {
         let mut trans = TranslateRiscv {
-            reg_bitmap: Bitmap::new()
+            reg_bitmap: VecDeque::new()
         };
         for idx in 0..5 {
-            trans.reg_bitmap.set(idx, true);
+            trans.reg_bitmap.push_back(idx);
         }
         trans
     }
 
     pub fn tcg_temp_new(&mut self) -> TCGv {
-        let new_idx = match self.reg_bitmap.first_index() {
+        let new_idx = match self.reg_bitmap.pop_front() {
             Some(idx) => {
-                self.reg_bitmap.set(idx, false);
+                println!("tcg_temp_new() => {:?}", idx);
                 idx
             }
             None => panic!("New temporaries not found."),
@@ -250,7 +249,8 @@ impl TranslateRiscv {
     }
 
     pub fn tcg_temp_free(&mut self, idx: TCGv) {
-        self.reg_bitmap.set(idx.value as usize, true);
+        println!("tcg_temp_free() => {:?}", idx.value);
+        self.reg_bitmap.push_front(idx.value);
     }
 
     pub fn translate(&mut self, id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -489,8 +489,8 @@ impl TranslateRiscv {
 
         let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);
 
-        self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
+        self.tcg_temp_free(source1);
 
         vec![rs1_op, rs2_op, tcg_inst, rd_op]
     }
@@ -516,8 +516,8 @@ impl TranslateRiscv {
         tcg_list.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1));
         tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
 
-        self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
+        self.tcg_temp_free(source1);
 
         tcg_list
     }
@@ -565,8 +565,8 @@ impl TranslateRiscv {
         }
         tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
 
-        self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
+        self.tcg_temp_free(source1);
 
         tcg_list
     }
@@ -639,8 +639,8 @@ impl TranslateRiscv {
         tcg_list.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
 
-        self.tcg_temp_free(rs1);
         self.tcg_temp_free(rs2);
+        self.tcg_temp_free(rs1);
 
         tcg_list
     }

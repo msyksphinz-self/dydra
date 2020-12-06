@@ -770,9 +770,8 @@ impl EmuEnv {
                 addr: self.m_pc[0],
             };
             let mut tcg_inst = self.m_riscv_trans.translate(id, &inst_info);
-            for idx in 0..5 {
-                assert_eq!(self.m_riscv_trans.reg_bitmap.get(idx), true);
-            }
+            assert_eq!(self.m_riscv_trans.reg_bitmap.len(), 5);
+
             tcg_vec.append(&mut tcg_inst);
             if self.m_arg_config.step {
                 let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB, None)];

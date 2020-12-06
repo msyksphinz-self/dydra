@@ -58,8 +58,8 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, imm));
         tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
 
-        self.tcg_temp_free(source1);
         self.tcg_temp_free(dest);
+        self.tcg_temp_free(source1);
 
         tcg_lists
     }

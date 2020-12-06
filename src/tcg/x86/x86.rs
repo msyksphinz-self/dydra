@@ -1334,7 +1334,6 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
         return gen_size;
-        // }
     }
 
     fn tcg_gen_jmpim(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
