@@ -861,7 +861,7 @@ impl TCG for TCGX86 {
                 };
             }
             None => match &tcg.label {
-                Some(_l) => TCGX86::tcg_gen_label(pc_address, tcg),
+                Some(_l) => TCGX86::tcg_gen_label(emu, pc_address, tcg),
                 None => panic!("Illegal Condition"),
             },
         }
@@ -1491,7 +1491,10 @@ impl TCG for TCGX86 {
         return 0;
     }
 
-    fn tcg_gen_label(pc_address: u64, tcg: &TCGOp) -> usize {
+    fn tcg_gen_label(emu: &mut EmuEnv, pc_address: u64, tcg: &TCGOp) -> usize {
+        // When we face label, clean up register dependency graph
+        emu.m_gpr_usage_list = [None; 32];
+        emu.m_x86reg_usage_list = [None; X86TargetRM::SENTINEL as usize];
         match &tcg.label {
             Some(label) => {
                 let mut l = &mut *label.borrow_mut();
@@ -1861,7 +1864,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_helper_call(
-        emu: &EmuEnv,
+        emu: &mut EmuEnv,
         arg_size: usize,
         pc_address: u64,
         tcg: &TCGOp,
@@ -1900,6 +1903,9 @@ impl TCG for TCGX86 {
         let csr_helper_idx = tcg.helper_idx;
         let helper_func_addr = emu.calc_helper_func_relat_address(csr_helper_idx as usize);
         gen_size += Self::tcg_out(helper_func_addr as u64, 4, mc);
+
+        emu.m_gpr_usage_list = [None; 32];
+        emu.m_x86reg_usage_list = [None; X86TargetRM::SENTINEL as usize];
 
         return gen_size;
     }

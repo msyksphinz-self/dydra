@@ -441,13 +441,13 @@ pub trait TCG {
     /* Label Relocation */
     fn tcg_out_reloc(host_code_ptr: usize, label: &Rc<RefCell<TCGLabel>>) -> usize;
 
-    fn tcg_gen_label(pc_address: u64, tcg: &TCGOp) -> usize;
+    fn tcg_gen_label(emu: &mut EmuEnv, pc_address: u64, tcg: &TCGOp) -> usize;
 
     fn tcg_gen_csrrw(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_csrrs(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_csrrc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
-    fn tcg_gen_helper_call(emu: &EmuEnv,arg_size: usize,pc_address: u64,tcg: &TCGOp,mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_helper_call(emu: &mut EmuEnv,arg_size: usize,pc_address: u64,tcg: &TCGOp,mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_int_reg_from_float_reg(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_float_reg_from_int_reg(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
