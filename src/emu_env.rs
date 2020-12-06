@@ -50,6 +50,7 @@ pub struct ArgConfig {
     pub dump_guest: bool,
     pub dump_host: bool,
     pub machine: MachineEnum,
+    pub opt_reg_fwd: bool,
 }
 
 

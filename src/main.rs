@@ -89,6 +89,12 @@ fn main() {
         .long("dump-host")
         .required(false)
     )
+    .arg(
+        Arg::new("opt-reg-fwd")
+        .about("Apply optimization : Register Forwarding")
+        .long("opt-reg-fwd")
+        .required(false)
+    )
     .get_matches();
 
     let arg_config_step     = matches.is_present("step");
@@ -105,6 +111,8 @@ fn main() {
         "sifive_u" => MachineEnum::RiscvSiFiveU,
         _ => panic!("-machine not specified"),
     };
+    let arg_config_opt_reg_fwd = matches.value_of("opt-reg-fwd");
+    
     let arg_config = ArgConfig {
         step    : arg_config_step,
         debug   : arg_config_debug,
@@ -115,6 +123,7 @@ fn main() {
         dump_guest: arg_config_dump_guest,
         dump_host: arg_config_dump_host,
         machine: arg_config_machine,
+        opt_reg_fwd: arg_config_opt_reg_fwd,
     };
 
     let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();

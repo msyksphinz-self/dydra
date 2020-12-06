@@ -877,32 +877,37 @@ impl TCG for TCGX86 {
         let target_x86reg = Self::convert_x86_reg(dest_tmp.value);
         let mut gen_size = pc_address as usize;
 
-        if emu.m_gpr_usage_list[src_reg.value as usize].is_some() && emu.m_x86reg_usage_list[target_x86reg as usize].is_some() {
-            let x86_used_reg = emu.m_gpr_usage_list[src_reg.value as usize].unwrap();
-            let gpr_reg = emu.m_x86reg_usage_list[target_x86reg as usize].unwrap();
-            if !(gpr_reg == src_reg.value && x86_used_reg == target_x86reg) {
+        if emu.m_arg_config.opt_reg_fwd {
+            if emu.m_gpr_usage_list[src_reg.value as usize].is_some() && emu.m_x86reg_usage_list[target_x86reg as usize].is_some() {
+                let x86_used_reg = emu.m_gpr_usage_list[src_reg.value as usize].unwrap();
+                let gpr_reg = emu.m_x86reg_usage_list[target_x86reg as usize].unwrap();
+                if !(gpr_reg == src_reg.value && x86_used_reg == target_x86reg) {
+                    let gpr_relat_address = emu.calc_gpr_relat_address(src_reg.value) as u64;
+                    if gpr_relat_address < 128 {
+                        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_01_DISP_RBP, target_x86reg, mc);
+                        gen_size += Self::tcg_out(gpr_relat_address, 1, mc);    
+                    } else {
+                        gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
+                        gen_size += Self::tcg_out(gpr_relat_address, 4, mc);
+                    }
+                }
+            } else {
                 let gpr_relat_address = emu.calc_gpr_relat_address(src_reg.value) as u64;
                 if gpr_relat_address < 128 {
                     gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_01_DISP_RBP, target_x86reg, mc);
-                    gen_size += Self::tcg_out(gpr_relat_address, 1, mc);    
+                    gen_size += Self::tcg_out(gpr_relat_address, 1, mc);
                 } else {
                     gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
                     gen_size += Self::tcg_out(gpr_relat_address, 4, mc);
                 }
-            }
+            }    
+            emu.m_gpr_usage_list[src_reg.value as usize] = Some(target_x86reg);
+            emu.m_x86reg_usage_list[target_x86reg as usize] = Some(src_reg.value);
         } else {
             let gpr_relat_address = emu.calc_gpr_relat_address(src_reg.value) as u64;
-            if gpr_relat_address < 128 {
-                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_01_DISP_RBP, target_x86reg, mc);
-                gen_size += Self::tcg_out(gpr_relat_address, 1, mc);
-            } else {
-                gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
-                gen_size += Self::tcg_out(gpr_relat_address, 4, mc);
-            }
+            gen_size += Self::tcg_modrm_64bit_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_10_DISP_RBP, target_x86reg, mc);
+            gen_size += Self::tcg_out(gpr_relat_address, 4, mc);
         }
-        
-        emu.m_gpr_usage_list[src_reg.value as usize] = Some(target_x86reg);
-        emu.m_x86reg_usage_list[target_x86reg as usize] = Some(src_reg.value);
 
         return gen_size;
     }
