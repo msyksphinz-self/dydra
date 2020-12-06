@@ -239,7 +239,6 @@ impl TranslateRiscv {
     pub fn tcg_temp_new(&mut self) -> TCGv {
         let new_idx = match self.reg_bitmap.pop_front() {
             Some(idx) => {
-                println!("tcg_temp_new() => {:?}", idx);
                 idx
             }
             None => panic!("New temporaries not found."),
@@ -249,7 +248,6 @@ impl TranslateRiscv {
     }
 
     pub fn tcg_temp_free(&mut self, idx: TCGv) {
-        println!("tcg_temp_free() => {:?}", idx.value);
         self.reg_bitmap.push_front(idx.value);
     }
 

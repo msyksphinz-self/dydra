@@ -26,6 +26,7 @@ pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
         dump_guest: false,
         dump_host: false,
         machine : MachineEnum::RiscvVirt,
+        opt_reg_fwd: false,
     };
 
     let mut emu = EmuEnv::new(arg_config);
@@ -51,6 +52,7 @@ pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
         dump_guest: false,
         dump_host: false,
         machine : MachineEnum::RiscvVirt,
+        opt_reg_fwd: false,
     };
 
     let riscv_path = match env::var("RISCV") {

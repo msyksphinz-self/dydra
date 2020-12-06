@@ -562,7 +562,7 @@ impl TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_cmp_branch(emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_cmp_branch(_emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
 
@@ -1216,7 +1216,7 @@ impl TCG for TCGX86 {
         gen_size
     }
 
-    fn tcg_gen_rem_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_rem_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let dest = tcg.arg0.unwrap();
         let src1 = tcg.arg1.unwrap();
         let src2 = tcg.arg2.unwrap();

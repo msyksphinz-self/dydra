@@ -111,8 +111,8 @@ fn main() {
         "sifive_u" => MachineEnum::RiscvSiFiveU,
         _ => panic!("-machine not specified"),
     };
-    let arg_config_opt_reg_fwd = matches.value_of("opt-reg-fwd");
-    
+    let arg_config_opt_reg_fwd = matches.is_present("opt-reg-fwd");
+
     let arg_config = ArgConfig {
         step    : arg_config_step,
         debug   : arg_config_debug,
