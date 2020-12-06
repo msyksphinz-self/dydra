@@ -86,6 +86,7 @@ enum X86Opcode {
 
     IMUL_RDX_RAX_R = 0xaf_0f,
     IDIV_RDX_RAX_R = 0x38_f7,
+    DIV_RDX_RAX_R  = 0x30_f7,
 
     // MOVSXD = 0x63,
 
@@ -778,7 +779,7 @@ impl TCG for TCGX86 {
                     TCGOpcode::MUL_32BIT => TCGX86::tcg_gen_mul_64bit(emu, pc_address, tcg, mc),
 
                     TCGOpcode::DIV_64BIT  => TCGX86::tcg_gen_div_64bit(emu, pc_address, tcg, mc),
-                    TCGOpcode::DIVU_64BIT => TCGX86::tcg_gen_div_64bit(emu, pc_address, tcg, mc),
+                    TCGOpcode::DIVU_64BIT => TCGX86::tcg_gen_divu_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::DIV_32BIT  => TCGX86::tcg_gen_div_64bit(emu, pc_address, tcg, mc),
                     TCGOpcode::DIVU_32BIT => TCGX86::tcg_gen_div_64bit(emu, pc_address, tcg, mc),
 
@@ -1209,15 +1210,54 @@ impl TCG for TCGX86 {
         let mut gen_size: usize = pc_address as usize;
 
         gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        if src2_x86reg == X86TargetRM::RDX {
+            // swap src1 into src2
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, src1_x86reg as u8, mc);
+            gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
+            // use src1_x86reg instead of src1
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::IDIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        } else {
+            gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::IDIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        }
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, dest_x86reg as u8, mc);
 
-        gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
-        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::IDIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        gen_size
+    }
+
+    fn tcg_gen_divu_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
+        let dest = tcg.arg0.unwrap();
+        let src1 = tcg.arg1.unwrap();
+        let src2 = tcg.arg2.unwrap();
+
+        assert_eq!(dest.t, TCGvType::TCGTemp);
+        assert_eq!(src1.t, TCGvType::TCGTemp);
+        assert_eq!(src2.t, TCGvType::TCGTemp);
+
+        let dest_x86reg = Self::convert_x86_reg(dest.value);
+        let src1_x86reg = Self::convert_x86_reg(src1.value);
+        let src2_x86reg = Self::convert_x86_reg(src2.value);
+
+        let mut gen_size: usize = pc_address as usize;
+
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        if src2_x86reg == X86TargetRM::RDX {
+            // swap src1 into src2
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, src1_x86reg as u8, mc);
+            gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
+            // use src1_x86reg instead of src1
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::DIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        } else {
+            gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::DIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        }
 
         gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8, dest_x86reg as u8, mc);
 
 
         gen_size
     }
+
 
     fn tcg_gen_rem_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
         let dest = tcg.arg0.unwrap();
@@ -1235,9 +1275,16 @@ impl TCG for TCGX86 {
         let mut gen_size: usize = pc_address as usize;
 
         gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
-
-        gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
-        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::IDIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        if src2_x86reg == X86TargetRM::RDX {
+            // swap src1 into src2
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, src1_x86reg as u8, mc);
+            gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
+            // use src1_x86reg instead of src1
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::DIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src1_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        } else {
+            gen_size += Self::tcg_64bit_out(X86Opcode::CQO, mc);
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::DIV_RDX_RAX_R, X86ModRM::MOD_11_DISP_RAX as u8 + src2_x86reg as u8, X86TargetRM::RAX as u8, mc);
+        }
 
         gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::MOV_GV_EV, X86ModRM::MOD_11_DISP_RDX as u8, dest_x86reg as u8, mc);
 

@@ -440,11 +440,7 @@ impl TranslateRiscv {
         self.translate_rrr(TCGOpcode::MUL_32BIT, inst)
     }
 
-    pub fn translate_div(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        let rs1_addr= get_rs1_addr!(inst.inst);
-        let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
-
+    fn translate_div_common (&mut self, op: TCGOpcode, rd_addr: u32, rs1_addr: u32, rs2_addr: u32, inst: &InstrInfo) -> Vec<TCGOp> {
         if rd_addr == 0 {
             return vec![];
         }
@@ -462,17 +458,19 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr)); 
         tcg_lists.push(TCGOp::tcg_get_gpr(source2, rs2_addr));
 
+        // when source2 == zero, doesn't execute.
         let zero = self.tcg_temp_new();
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, zero, TCGv::new_imm(0)));
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source2, zero, TCGv::new_imm(0), Rc::clone(&label_src2_zero_fail)));
         self.tcg_temp_free(zero);
 
+        // when source1 == 8000_0000_0000_0000, doesn't execute.
         let minus1 = self.tcg_temp_new();
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, minus1, TCGv::new_imm(0x8000_0000_0000_0000)));
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source1, minus1, TCGv::new_imm(0), Rc::clone(&label_cond1_fail)));
         self.tcg_temp_free(minus1);
 
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::DIV_64BIT, source1, source1, source2));
+        tcg_lists.push(TCGOp::new_3op(op, source1, source1, source2));
         tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
         // Actually this is no conditional jump
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source1, source1, TCGv::new_imm(0), Rc::clone(&label_finish)));
@@ -483,7 +481,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source2, zero, TCGv::new_imm(0), Rc::clone(&label_cond2_fail)));
         self.tcg_temp_free(zero);
 
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::DIV_64BIT, source1, source1, source2));
+        tcg_lists.push(TCGOp::new_3op(op, source1, source1, source2));
         tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
         // Actually this is no conditional jump
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source1, source1, TCGv::new_imm(0), Rc::clone(&label_finish)));
@@ -505,8 +503,20 @@ impl TranslateRiscv {
 
         tcg_lists
     }
+
+    pub fn translate_div(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+        let rs1_addr= get_rs1_addr!(inst.inst);
+        let rs2_addr= get_rs2_addr!(inst.inst);
+        let rd_addr = get_rd_addr!(inst.inst); 
+
+        self.translate_div_common (TCGOpcode::DIV_64BIT, rd_addr, rs1_addr, rs2_addr, inst)
+    }
     pub fn translate_divu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
-        self.translate_rrr(TCGOpcode::DIVU_64BIT, inst)
+        let rs1_addr= get_rs1_addr!(inst.inst);
+        let rs2_addr= get_rs2_addr!(inst.inst);
+        let rd_addr = get_rd_addr!(inst.inst); 
+
+        self.translate_div_common (TCGOpcode::DIVU_64BIT, rd_addr, rs1_addr, rs2_addr, inst)
     }
     pub fn translate_divw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
         self.translate_rrr(TCGOpcode::DIV_32BIT, inst)
