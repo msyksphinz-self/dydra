@@ -68,7 +68,6 @@ pub struct EmuEnv {
 
     pub m_riscv_trans: TranslateRiscv,
 
-    m_tcg_vec: Vec<TCGOp>,
     m_tcg_raw_vec: Vec<u8>,
     m_tcg_tb_vec: Vec<u8>,
 
@@ -174,7 +173,6 @@ impl EmuEnv {
             ],
             m_riscv_trans: TranslateRiscv::new(),
 
-            m_tcg_vec: vec![],
             m_tcg_raw_vec: vec![],
             m_tcg_tb_vec: vec![],
             m_prologue_epilogue_mem: match MemoryMap::new(1, &[]) {
@@ -353,6 +351,7 @@ impl EmuEnv {
                 eprintln!("========= BLOCK START =========");
             }
 
+            assert!(self.m_pc[0] >= 0x8000_0000);
             let tb_text_mem = if self.m_arg_config.debug {
                 self.decode_and_run()
             } else {
@@ -377,6 +376,9 @@ impl EmuEnv {
                 let tb_host_data = tb_text_mem.borrow_mut().data();
 
                 let _ans = func(emu_ptr, tb_host_data);
+                if self.m_arg_config.debug {
+                    println!("execute return value = {:08x}", _ans);
+                }
             }
 
             if self.m_arg_config.dump_gpr {
@@ -736,9 +738,7 @@ impl EmuEnv {
             Err(e) => panic!("Error: {}", e),
         };
 
-        // let mut guest_pc = self.m_pc[0];
         let mut tcg_vec = vec![];
-        // self.m_tcg_vec.clear();
         if self.m_arg_config.debug {
             eprint!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
         }
