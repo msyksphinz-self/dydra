@@ -13,12 +13,12 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let csr_const: u64 = get_imm12!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-        let csr = Box::new(TCGv::new_imm(csr_const));
+        let rs1 = TCGv::new_reg(rs1_addr as u64);
+        let rd  = TCGv::new_reg(rd_addr as u64);
+        let csr = TCGv::new_imm(csr_const);
 
         let csr_op =
-            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRW_IDX as usize, *rd, *rs1, *csr);
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRW_IDX as usize, rd, rs1, csr);
         vec![csr_op]
     }
     pub fn translate_csrrs(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -26,12 +26,12 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let csr_const: u64 = get_imm12!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-        let csr = Box::new(TCGv::new_imm(csr_const));
+        let rs1 = TCGv::new_reg(rs1_addr as u64);
+        let rd  = TCGv::new_reg(rd_addr as u64);
+        let csr = TCGv::new_imm(csr_const);
 
         let csr_op =
-            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRS_IDX as usize, *rd, *rs1, *csr);
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRS_IDX as usize, rd, rs1, csr);
 
         vec![csr_op]
     }
@@ -40,12 +40,12 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let csr_const: u64 = get_imm12!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_reg(rs1_addr as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-        let csr = Box::new(TCGv::new_imm(csr_const));
+        let rs1 = TCGv::new_reg(rs1_addr as u64);
+        let rd  = TCGv::new_reg(rd_addr as u64);
+        let csr = TCGv::new_imm(csr_const);
 
         let csr_op =
-            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRC_IDX as usize, *rd, *rs1, *csr);
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRC_IDX as usize, rd, rs1, csr);
         vec![csr_op]
     }
     pub fn translate_csrrwi(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -53,12 +53,12 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let csr_const: u64 = get_imm12!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_imm(rs1_imm as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-        let csr = Box::new(TCGv::new_imm(csr_const));
+        let rs1 = TCGv::new_imm(rs1_imm as u64);
+        let rd  = TCGv::new_reg(rd_addr as u64);
+        let csr = TCGv::new_imm(csr_const);
 
         let csr_op =
-            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRWI_IDX as usize, *rd, *rs1, *csr);
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRWI_IDX as usize, rd, rs1, csr);
 
         vec![csr_op]
     }
@@ -67,12 +67,12 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let csr_const: u64 = get_imm12!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_imm(rs1_imm as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-        let csr = Box::new(TCGv::new_imm(csr_const));
+        let rs1 = TCGv::new_imm(rs1_imm as u64);
+        let rd  = TCGv::new_reg(rd_addr as u64);
+        let csr = TCGv::new_imm(csr_const);
 
         let csr_op =
-            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRSI_IDX as usize, *rd, *rs1, *csr);
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRSI_IDX as usize, rd, rs1, csr);
         vec![csr_op]
     }
     pub fn translate_csrrci(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
@@ -80,12 +80,12 @@ impl TranslateRiscv {
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
         let csr_const: u64 = get_imm12!(inst.inst);
 
-        let rs1 = Box::new(TCGv::new_imm(rs1_imm as u64));
-        let rd = Box::new(TCGv::new_reg(rd_addr as u64));
-        let csr = Box::new(TCGv::new_imm(csr_const));
+        let rs1 = TCGv::new_imm(rs1_imm as u64);
+        let rd = TCGv::new_reg(rd_addr as u64);
+        let csr = TCGv::new_imm(csr_const);
 
         let csr_op =
-            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRCI_IDX as usize, *rd, *rs1, *csr);
+            TCGOp::new_helper_call_arg3(CALL_HELPER_IDX::CALL_CSRRCI_IDX as usize, rd, rs1, csr);
         vec![csr_op]
     }
 

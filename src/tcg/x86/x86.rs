@@ -360,9 +360,9 @@ impl TCGX86 {
 
     #[allow(dead_code)]
     fn tcg_gen_rrr_64bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -383,9 +383,9 @@ impl TCGX86 {
 
     #[allow(dead_code)]
     fn tcg_gen_rri_64bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -406,9 +406,9 @@ impl TCGX86 {
 
     #[allow(dead_code)]
     fn tcg_gen_rrr_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -429,9 +429,9 @@ impl TCGX86 {
 
     #[allow(dead_code)]
     fn tcg_gen_rri_32bit(emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -451,9 +451,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_shift_r_64bit(_emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src1_reg = tcg.arg1.unwrap();
-        let src2_reg = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let src2_reg = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src1_reg.t, TCGvType::TCGTemp);
@@ -475,9 +475,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_shift_i_64bit(_emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src1_reg = tcg.arg1.unwrap();
-        let imm      = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let imm      = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src1_reg.t, TCGvType::TCGTemp);
@@ -498,9 +498,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_shift_r_32bit(_emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src1_reg = tcg.arg1.unwrap();
-        let src2_reg = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let src2_reg = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src1_reg.t, TCGvType::TCGTemp);
@@ -522,9 +522,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_shift_i_32bit(_emu: &EmuEnv, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src1_reg = tcg.arg1.unwrap();
-        let imm = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let imm = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src1_reg.t, TCGvType::TCGTemp);
@@ -564,8 +564,8 @@ impl TCGX86 {
     }
 
     fn tcg_gen_cmp_branch(_emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         let label = match &tcg.label {
             Some(l) => l,
@@ -595,9 +595,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_setcc(_emu: &EmuEnv, pc_address: u64, x86_op: X86Opcode, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest = tcg.arg0.unwrap();
-        let src1 = tcg.arg1.unwrap();
-        let src2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let src1 = tcg.arg1.as_ref().unwrap().borrow();
+        let src2 = tcg.arg2.as_ref().unwrap().borrow();
 
         let mut gen_size: usize = pc_address as usize;
 
@@ -645,9 +645,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_op_temp(emu: &mut EmuEnv, pc_address: u64, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let source1_reg = tcg.arg1.unwrap();
-        let source2_reg = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let source1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let source2_reg = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(source1_reg.t, TCGvType::TCGTemp);
@@ -672,9 +672,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_op_temp_imm(emu: &mut EmuEnv, pc_address: u64, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let source1_reg = tcg.arg1.unwrap();
-        let source2_imm = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let source1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let source2_imm = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(source1_reg.t, TCGvType::TCGTemp);
@@ -709,9 +709,9 @@ impl TCGX86 {
 
 
     fn tcg_gen_op_32_temp(pc_address: u64, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let source1_reg = tcg.arg1.unwrap();
-        let source2_reg = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let source1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let source2_reg = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(source1_reg.t, TCGvType::TCGTemp);
@@ -728,9 +728,9 @@ impl TCGX86 {
     }
 
     fn tcg_gen_op_32_temp_imm(pc_address: u64, op: X86Opcode, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let source1_reg = tcg.arg1.unwrap();
-        let source2_imm = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let source1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let source2_imm = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(source1_reg.t, TCGvType::TCGTemp);
@@ -869,8 +869,8 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_get_gpr(emu: &mut EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_tmp = tcg.arg0.unwrap();
-        let src_reg = tcg.arg1.unwrap();
+        let dest_tmp = tcg.arg0.as_ref().unwrap().borrow();
+        let src_reg = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_tmp.t, TCGvType::TCGTemp);
         assert_eq!(src_reg.t, TCGvType::Register);
@@ -914,8 +914,8 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_set_gpr(emu: &mut EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src_tmp = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src_tmp = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::Register);
         assert_eq!(src_tmp.t, TCGvType::TCGTemp);
@@ -939,7 +939,7 @@ impl TCG for TCGX86 {
 
 
     fn tcg_gen_move_stack(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
 
@@ -955,8 +955,8 @@ impl TCG for TCGX86 {
         emu.m_x86reg_usage_list = [None; X86TargetRM::SENTINEL as usize];
         emu.m_gpr_usage_list = [None; 32];
 
-        let dest_reg = tcg.arg0.unwrap();
-        let src_reg = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src_reg = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src_reg.t, TCGvType::TCGTemp);
@@ -1013,8 +1013,8 @@ impl TCG for TCGX86 {
         emu.m_x86reg_usage_list = [None; X86TargetRM::SENTINEL as usize];
         emu.m_gpr_usage_list = [None; 32];
 
-        let dest_reg = tcg.arg0.unwrap();
-        let src_reg = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src_reg = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src_reg.t, TCGvType::TCGTemp);
@@ -1052,8 +1052,8 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_tlbidx_offset(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src_reg = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src_reg = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src_reg.t, TCGvType::TCGTemp);
@@ -1073,8 +1073,8 @@ impl TCG for TCGX86 {
 
 
     fn tcg_gen_tlbaddr_offset(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src_reg = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src_reg = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src_reg.t, TCGvType::TCGTemp);
@@ -1093,8 +1093,8 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_mem_offset(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let offset = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let offset = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(offset.t, TCGvType::TCGTemp);
@@ -1115,7 +1115,7 @@ impl TCG for TCGX86 {
 
 
     fn tcg_gen_add_64bit(emu: &mut EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             Self::tcg_gen_op_temp_imm(emu, pc_address, X86Opcode::ADD_GV_IMM, tcg, mc)
         } else {
             Self::tcg_gen_op_temp(emu, pc_address, X86Opcode::ADD_GV_EV, tcg, mc)
@@ -1123,7 +1123,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_add_32bit(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             Self::tcg_gen_op_32_temp_imm(pc_address, X86Opcode::ADD_GV_IMM, tcg, mc)
         } else {
             Self::tcg_gen_op_32_temp(pc_address, X86Opcode::ADD_GV_EV, tcg, mc)
@@ -1131,7 +1131,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sub_32bit(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             // xxxx: should be sub
             Self::tcg_gen_op_32_temp_imm(pc_address, X86Opcode::ADD_GV_IMM, tcg, mc)
         } else {
@@ -1140,7 +1140,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sub_64bit(emu: &mut EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             Self::tcg_gen_op_temp_imm(emu, pc_address, X86Opcode::SUB_GV_IMM, tcg, mc)
         } else {
             Self::tcg_gen_op_temp(emu, pc_address, X86Opcode::SUB_GV_EV, tcg, mc)
@@ -1148,7 +1148,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_and_64bit(emu: &mut EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             Self::tcg_gen_op_temp_imm(emu, pc_address, X86Opcode::AND_GV_IMM, tcg, mc)
         } else {
             Self::tcg_gen_op_temp(emu, pc_address, X86Opcode::AND_GV_EV, tcg, mc)
@@ -1156,7 +1156,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_or_64bit(emu: &mut EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             Self::tcg_gen_op_temp_imm(emu, pc_address, X86Opcode::OR_GV_IMM, tcg, mc)
         } else {
             Self::tcg_gen_op_temp(emu, pc_address, X86Opcode::OR_GV_EV, tcg, mc)
@@ -1164,7 +1164,7 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_xor_64bit(emu: &mut EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        if tcg.arg2.unwrap().t == TCGvType::Immediate {
+        if tcg.arg2.as_ref().unwrap().borrow().t == TCGvType::Immediate {
             Self::tcg_gen_op_temp_imm(emu, pc_address, X86Opcode::XOR_GV_IMM, tcg, mc)
         } else {
             Self::tcg_gen_op_temp(emu, pc_address, X86Opcode::XOR_GV_EV, tcg, mc)
@@ -1172,9 +1172,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_mul_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest = tcg.arg0.unwrap();
-        let src1 = tcg.arg1.unwrap();
-        let src2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let src1 = tcg.arg1.as_ref().unwrap().borrow();
+        let src2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(src1.t, TCGvType::TCGTemp);
@@ -1195,9 +1195,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_div_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest = tcg.arg0.unwrap();
-        let src1 = tcg.arg1.unwrap();
-        let src2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let src1 = tcg.arg1.as_ref().unwrap().borrow();
+        let src2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(src1.t, TCGvType::TCGTemp);
@@ -1226,9 +1226,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_divu_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest = tcg.arg0.unwrap();
-        let src1 = tcg.arg1.unwrap();
-        let src2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let src1 = tcg.arg1.as_ref().unwrap().borrow();
+        let src2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(src1.t, TCGvType::TCGTemp);
@@ -1260,9 +1260,9 @@ impl TCG for TCGX86 {
 
 
     fn tcg_gen_rem_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest = tcg.arg0.unwrap();
-        let src1 = tcg.arg1.unwrap();
-        let src2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let src1 = tcg.arg1.as_ref().unwrap().borrow();
+        let src2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(src1.t, TCGvType::TCGTemp);
@@ -1292,8 +1292,8 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sign_ext_32_64(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let source1_reg = tcg.arg1.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let source1_reg = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(source1_reg.t, TCGvType::TCGTemp);
@@ -1310,9 +1310,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_srl_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::TCGTemp);
         assert_eq!(arg1.t, TCGvType::TCGTemp);
@@ -1329,9 +1329,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sll_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::TCGTemp);
         assert_eq!(arg1.t, TCGvType::TCGTemp);
@@ -1348,9 +1348,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sra_64bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::TCGTemp);
         assert_eq!(arg1.t, TCGvType::TCGTemp);
@@ -1368,9 +1368,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_jmpr(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let dest = tcg.arg0.unwrap();
-        let src1 = tcg.arg1.unwrap();
-        let src2 = tcg.arg2.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let src1 = tcg.arg1.as_ref().unwrap().borrow();
+        let src2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(src1.t, TCGvType::TCGTemp);
@@ -1393,8 +1393,8 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_jmpim(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        // let dest = tcg.arg0.unwrap();
-        let imm = tcg.arg1.unwrap();
+        // let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let imm = tcg.arg1.as_ref().unwrap().borrow();
 
         // assert_eq!(dest.t, TCGvType::TCGTemp);
         assert_eq!(imm.t, TCGvType::Immediate);
@@ -1451,8 +1451,8 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_eq_eax_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
-        // let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        // let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         let label = match &tcg.label {
             Some(l) => l,
@@ -1491,8 +1491,8 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_mov_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::MOV_64BIT);
         assert_eq!(arg0.t, TCGvType::ProgramCounter);
@@ -1516,8 +1516,8 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_mov_imm_64bit(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let dest = tcg.arg0.unwrap();
-        let imm = tcg.arg1.unwrap();
+        let dest = tcg.arg0.as_ref().unwrap().borrow();
+        let imm = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::MOV_IMM_64BIT);
         assert_eq!(dest.t, TCGvType::TCGTemp);
@@ -1560,9 +1560,9 @@ impl TCG for TCGX86 {
     fn tcg_gen_load(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType, target_reg: RegisterType) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -1684,9 +1684,9 @@ impl TCG for TCGX86 {
     fn tcg_gen_store(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>, mem_size: MemOpType, target_reg: RegisterType) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let rs1 = tcg.arg0.unwrap();
-        let rs2 = tcg.arg1.unwrap();
-        let imm = tcg.arg2.unwrap();
+        let rs1 = tcg.arg0.as_ref().unwrap().borrow();
+        let rs2 = tcg.arg1.as_ref().unwrap().borrow();
+        let imm = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(rs1.t, TCGvType::Register);
         assert_eq!(rs2.t, TCGvType::Register);
@@ -1792,9 +1792,9 @@ impl TCG for TCGX86 {
     fn tcg_gen_csrrw(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let rd = tcg.arg0.unwrap();
-        let rs1 = tcg.arg1.unwrap();
-        let csr_addr = tcg.arg2.unwrap();
+        let rd = tcg.arg0.as_ref().unwrap().borrow();
+        let rs1 = tcg.arg1.as_ref().unwrap().borrow();
+        let csr_addr = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(rd.t, TCGvType::Register);
         assert!(rs1.t == TCGvType::Register || rs1.t == TCGvType::Immediate);
@@ -1833,9 +1833,9 @@ impl TCG for TCGX86 {
     fn tcg_gen_csrrs(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let rd = tcg.arg0.unwrap();
-        let rs1 = tcg.arg1.unwrap();
-        let rs2 = tcg.arg2.unwrap();
+        let rd = tcg.arg0.as_ref().unwrap().borrow();
+        let rs1 = tcg.arg1.as_ref().unwrap().borrow();
+        let rs2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(rd.t, TCGvType::Register);
         assert!(rs1.t == TCGvType::Register || rs1.t == TCGvType::Immediate);
@@ -1875,9 +1875,9 @@ impl TCG for TCGX86 {
     fn tcg_gen_csrrc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let rd = tcg.arg0.unwrap();
-        let rs1 = tcg.arg1.unwrap();
-        let csr_addr = tcg.arg2.unwrap();
+        let rd = tcg.arg0.as_ref().unwrap().borrow();
+        let rs1 = tcg.arg1.as_ref().unwrap().borrow();
+        let csr_addr = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(rd.t, TCGvType::Register);
         assert!(rs1.t == TCGvType::Register || rs1.t == TCGvType::Immediate);
@@ -1927,20 +1927,20 @@ impl TCG for TCGX86 {
         gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDI, self_diff as u64, mc);
 
         if arg_size >= 1 {
-            let arg0 = tcg.arg0.unwrap();
+            let arg0 = tcg.arg0.as_ref().unwrap().borrow();
             gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RSI, arg0.value as u64, mc);
         }
         if arg_size >= 2 {
-            let arg1 = tcg.arg1.unwrap();
+            let arg1 = tcg.arg1.as_ref().unwrap().borrow();
             gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDX, arg1.value as u64, mc);
         }
         if arg_size >= 3 {
-            let arg2 = tcg.arg2.unwrap();
+            let arg2 = tcg.arg2.as_ref().unwrap().borrow();
             gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RCX, arg2.value as u64, mc);
         }
 
         if arg_size >= 4 {
-            let arg3 = tcg.arg3.unwrap();
+            let arg3 = tcg.arg3.as_ref().unwrap().borrow();
             gen_size += Self::tcg_gen_imm_u64(X86TargetRM::R8, arg3.value as u64, mc);
         }
 
@@ -1961,9 +1961,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_srl_32bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_reg = tcg.arg0.unwrap();
-        let src1_reg = tcg.arg1.unwrap();
-        let src2_reg = tcg.arg2.unwrap();
+        let dest_reg = tcg.arg0.as_ref().unwrap().borrow();
+        let src1_reg = tcg.arg1.as_ref().unwrap().borrow();
+        let src2_reg = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_reg.t, TCGvType::TCGTemp);
         assert_eq!(src1_reg.t, TCGvType::TCGTemp);
@@ -1980,9 +1980,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sll_32bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let dest_temp = tcg.arg0.unwrap();
-        let src1_temp = tcg.arg1.unwrap();
-        let src2_temp = tcg.arg2.unwrap();
+        let dest_temp = tcg.arg0.as_ref().unwrap().borrow();
+        let src1_temp = tcg.arg1.as_ref().unwrap().borrow();
+        let src2_temp = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(dest_temp.t, TCGvType::TCGTemp);
         assert_eq!(src1_temp.t, TCGvType::TCGTemp);
@@ -1999,9 +1999,9 @@ impl TCG for TCGX86 {
     }
 
     fn tcg_gen_sra_32bit(emu: &EmuEnv, pc_address: u64, tcg: &tcg::TCGOp, mc: &mut Vec<u8>) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::TCGTemp);
         assert_eq!(arg1.t, TCGvType::TCGTemp);
@@ -2023,8 +2023,8 @@ impl TCG for TCGX86 {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -2043,8 +2043,8 @@ impl TCG for TCGX86 {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -2063,8 +2063,8 @@ impl TCG for TCGX86 {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -2083,8 +2083,8 @@ impl TCG for TCGX86 {
         tcg: &TCGOp,
         mc: &mut Vec<u8>,
     ) -> usize {
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(arg0.t, TCGvType::Register);
         assert_eq!(arg1.t, TCGvType::Register);
@@ -2100,9 +2100,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sgnj_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::SGNJ_64BIT);
         assert_eq!(arg0.t, TCGvType::Register);
@@ -2127,9 +2127,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sgnjn_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::SGNJN_64BIT);
         assert_eq!(arg0.t, TCGvType::Register);
@@ -2156,9 +2156,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sgnjx_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::SGNJX_64BIT);
         assert_eq!(arg0.t, TCGvType::Register);
@@ -2185,9 +2185,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sgnj_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::SGNJ_32BIT);
         assert_eq!(arg0.t, TCGvType::Register);
@@ -2212,9 +2212,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sgnjn_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::SGNJN_32BIT);
         assert_eq!(arg0.t, TCGvType::Register);
@@ -2241,9 +2241,9 @@ impl TCG for TCGX86 {
 
     fn tcg_gen_sgnjx_32bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
-        let arg0 = tcg.arg0.unwrap();
-        let arg1 = tcg.arg1.unwrap();
-        let arg2 = tcg.arg2.unwrap();
+        let arg0 = tcg.arg0.as_ref().unwrap().borrow();
+        let arg1 = tcg.arg1.as_ref().unwrap().borrow();
+        let arg2 = tcg.arg2.as_ref().unwrap().borrow();
 
         assert_eq!(op, TCGOpcode::SGNJX_32BIT);
         assert_eq!(arg0.t, TCGvType::Register);
@@ -2271,8 +2271,8 @@ impl TCG for TCGX86 {
     fn tcg_gen_cmp_eq(_emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let src1 = tcg.arg0.unwrap();
-        let src2 = tcg.arg1.unwrap();
+        let src1 = tcg.arg0.as_ref().unwrap().borrow();
+        let src2 = tcg.arg1.as_ref().unwrap().borrow();
         let label = match &tcg.label {
             Some(l) => l,
             None => panic!("Label is not defined."),
@@ -2298,8 +2298,8 @@ impl TCG for TCGX86 {
     fn tcg_gen_match_check(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let mut gen_size: usize = pc_address as usize;
 
-        let base_addr = tcg.arg0.unwrap();
-        let addr_imm = tcg.arg1.unwrap();
+        let base_addr = tcg.arg0.as_ref().unwrap().borrow();
+        let addr_imm = tcg.arg1.as_ref().unwrap().borrow();
 
         assert_eq!(base_addr.t, TCGvType::Register);
         assert_eq!(addr_imm.t, TCGvType::Immediate);

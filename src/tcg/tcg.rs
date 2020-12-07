@@ -104,7 +104,7 @@ pub enum TCGOpcode {
     EXIT_TB,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum MemOpType {
     LOAD_64BIT,
@@ -128,13 +128,13 @@ pub enum TCGvType {
     TCGTemp,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TCGOp {
     pub op: Option<TCGOpcode>,
-    pub arg0: Option<TCGv>,
-    pub arg1: Option<TCGv>,
-    pub arg2: Option<TCGv>,
-    pub arg3: Option<TCGv>,
+    pub arg0: Option<Rc<RefCell<TCGv>>>,
+    pub arg1: Option<Rc<RefCell<TCGv>>>,
+    pub arg2: Option<Rc<RefCell<TCGv>>>,
+    pub arg3: Option<Rc<RefCell<TCGv>>>,
     pub label: Option<Rc<RefCell<TCGLabel>>>,
     pub helper_idx: usize,
 }
@@ -146,12 +146,13 @@ pub enum RegisterType {
 }
 
 impl TCGOp {
-    pub fn tcg_get_gpr (dest: TCGv, reg_addr: u32) -> TCGOp {
-        assert_eq!(dest.t, TCGvType::TCGTemp);
+    pub fn tcg_get_gpr (dest: Rc<RefCell<TCGv>>, reg_addr: u32) -> TCGOp {
+        assert_eq!(dest.borrow().t, TCGvType::TCGTemp);
+        let reg = TCGv::new_reg(reg_addr as u64);
         TCGOp {
             op: Some(TCGOpcode::GET_GPR),
             arg0: Some(dest),
-            arg1: Some(TCGv::new_reg(reg_addr as u64)),
+            arg1: Some(reg),
             arg2: None,
             arg3: None,
             label: None,
@@ -159,11 +160,12 @@ impl TCGOp {
         }
     }
 
-    pub fn tcg_set_gpr (reg_addr: u32, source: TCGv) -> TCGOp {
-        assert_eq!(source.t, TCGvType::TCGTemp);
+    pub fn tcg_set_gpr (reg_addr: u32, source: Rc<RefCell<TCGv>>) -> TCGOp {
+        assert_eq!(source.borrow().t, TCGvType::TCGTemp);
+        let reg = TCGv::new_reg(reg_addr as u64);
         TCGOp {
             op: Some(TCGOpcode::SET_GPR),
-            arg0: Some(TCGv::new_reg(reg_addr as u64)),
+            arg0: Some(reg),
             arg1: Some(source),
             arg2: None,
             arg3: None,
@@ -184,7 +186,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_1op(opcode: TCGOpcode, a1: TCGv) -> TCGOp {
+    pub fn new_1op(opcode: TCGOpcode, a1: Rc<RefCell<TCGv>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -196,7 +198,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_2op(opcode: TCGOpcode, a1: TCGv, a2: TCGv) -> TCGOp {
+    pub fn new_2op(opcode: TCGOpcode, a1: Rc<RefCell<TCGv>>, a2: Rc<RefCell<TCGv>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -208,7 +210,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_2op_with_label(opcode: TCGOpcode, a1: TCGv, a2: TCGv, label: Rc<RefCell<TCGLabel>>) -> TCGOp {
+    pub fn new_2op_with_label(opcode: TCGOpcode, a1: Rc<RefCell<TCGv>>, a2: Rc<RefCell<TCGv>>, label: Rc<RefCell<TCGLabel>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -220,7 +222,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_3op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
+    pub fn new_3op(opcode: TCGOpcode, a1: Rc<RefCell<TCGv>>, a2: Rc<RefCell<TCGv>>, a3: Rc<RefCell<TCGv>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -232,7 +234,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_4op(opcode: TCGOpcode, a1: TCGv, a2: TCGv, a3: TCGv, label: Rc<RefCell<TCGLabel>>) -> TCGOp {
+    pub fn new_4op(opcode: TCGOpcode, a1: Rc<RefCell<TCGv>>, a2: Rc<RefCell<TCGv>>, a3: Rc<RefCell<TCGv>>, label: Rc<RefCell<TCGLabel>>) -> TCGOp {
         TCGOp {
             op: Some(opcode),
             arg0: Some(a1),
@@ -256,7 +258,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_helper_call_arg1(helper_idx: usize, a1: TCGv) -> TCGOp {
+    pub fn new_helper_call_arg1(helper_idx: usize, a1: Rc<RefCell<TCGv>>) -> TCGOp {
         TCGOp {
             op: Some(TCGOpcode::HELPER_CALL_ARG1),
             arg0: Some(a1),
@@ -268,7 +270,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_helper_call_arg2(helper_idx: usize, a1: TCGv, a2: TCGv) -> TCGOp {
+    pub fn new_helper_call_arg2(helper_idx: usize, a1: Rc<RefCell<TCGv>>, a2: Rc<RefCell<TCGv>>) -> TCGOp {
         TCGOp {
             op: Some(TCGOpcode::HELPER_CALL_ARG2),
             arg0: Some(a1),
@@ -280,7 +282,7 @@ impl TCGOp {
         }
     }
 
-    pub fn new_helper_call_arg3(helper_idx: usize, a1: TCGv, a2: TCGv, a3: TCGv) -> TCGOp {
+    pub fn new_helper_call_arg3(helper_idx: usize, a1: Rc<RefCell<TCGv>>, a2: Rc<RefCell<TCGv>>, a3: Rc<RefCell<TCGv>>) -> TCGOp {
         TCGOp {
             op: Some(TCGOpcode::HELPER_CALL_ARG3),
             arg0: Some(a1),
@@ -294,10 +296,10 @@ impl TCGOp {
 
     pub fn new_helper_call_arg4(
         helper_idx: usize,
-        a1: TCGv,
-        a2: TCGv,
-        a3: TCGv,
-        a4: TCGv,
+        a1: Rc<RefCell<TCGv>>,
+        a2: Rc<RefCell<TCGv>>,
+        a3: Rc<RefCell<TCGv>>,
+        a4: Rc<RefCell<TCGv>>,
     ) -> TCGOp {
         TCGOp {
             op: Some(TCGOpcode::HELPER_CALL_ARG4),
@@ -310,10 +312,10 @@ impl TCGOp {
         }
     }
 
-    pub fn new_goto_tb(addr: TCGv) -> TCGOp {
-        assert_eq!(addr.t, TCGvType::Immediate);
+    pub fn new_goto_tb(addr: Rc<RefCell<TCGv>>) -> TCGOp {
+        assert_eq!(addr.borrow().t, TCGvType::Immediate);
 
-        Self::new_2op(TCGOpcode::MOV_64BIT, TCGv::new_pc(), addr)
+        Self::new_2op(TCGOpcode::MOV_64BIT, Rc::new(RefCell::new(TCGv::new_pc())), addr)
     }
 
     pub fn new_label(label: Rc<RefCell<TCGLabel>>) -> TCGOp {
@@ -329,25 +331,26 @@ impl TCGOp {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct TCGv {
     pub t: TCGvType,
     pub value: u64,
 }
+impl Copy for TCGv {}
 
 impl TCGv {
-    pub fn new_reg(val: u64) -> TCGv {
-        TCGv {
+    pub fn new_reg(val: u64) -> Rc<RefCell<TCGv>> {
+        Rc::new(RefCell::new(TCGv {
             t: TCGvType::Register,
             value: val,
-        }
+        }))
     }
 
-    pub fn new_imm(val: u64) -> TCGv {
-        TCGv {
+    pub fn new_imm(val: u64) -> Rc<RefCell<TCGv>> {
+        Rc::new(RefCell::new(TCGv {
             t: TCGvType::Immediate,
             value: val,
-        }
+        }))
     }
 
     pub fn new_pc() -> TCGv {

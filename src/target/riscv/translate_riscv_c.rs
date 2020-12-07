@@ -86,11 +86,11 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, TCGv::new_imm(imm_const)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rs1_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(imm_const)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
 
-        self.tcg_temp_free(source1);
+        self.tcg_temp_free(Rc::clone(&source1));
         tcg_lists
     }
 
@@ -136,11 +136,11 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, TCGv::new_imm(imm_const as u64)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rs1_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
 
-        self.tcg_temp_free(source1);
+        self.tcg_temp_free(Rc::clone(&source1));
         tcg_lists
     }
     pub fn translate_c_jal (&mut self, _inst: &InstrInfo) -> Vec<TCGOp> { vec![] }
@@ -152,11 +152,11 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_32BIT, source1, source1, TCGv::new_imm(imm_const as u64)));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
-        self.tcg_temp_free(source1);
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_32BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, Rc::clone(&source1), Rc::clone(&source1)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
+        self.tcg_temp_free(Rc::clone(&source1));
         
         tcg_lists
     }
@@ -168,11 +168,11 @@ impl TranslateRiscv {
         let mut tcg_lists = vec![];
 
         let dest_tmp = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::tcg_get_gpr(dest_tmp, 0));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, dest_tmp, dest_tmp, TCGv::new_imm(imm_const as u64)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest_tmp));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&dest_tmp), 0));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&dest_tmp), Rc::clone(&dest_tmp), TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&dest_tmp)));
 
-        self.tcg_temp_free(dest_tmp);
+        self.tcg_temp_free(Rc::clone(&dest_tmp));
         tcg_lists
     }
 
@@ -186,11 +186,11 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, TCGv::new_imm(imm_const as u64)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rs1_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
 
-        self.tcg_temp_free(source1);
+        self.tcg_temp_free(Rc::clone(&source1));
         tcg_lists
     }
 
@@ -200,11 +200,11 @@ impl TranslateRiscv {
         let mut tcg_lists = vec![];
 
         let dest_tmp = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::tcg_get_gpr(dest_tmp, 0));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, dest_tmp, dest_tmp, TCGv::new_imm(imm_const as u64)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest_tmp));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&dest_tmp), 0));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&dest_tmp), Rc::clone(&dest_tmp), TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&dest_tmp)));
 
-        self.tcg_temp_free(dest_tmp);
+        self.tcg_temp_free(Rc::clone(&dest_tmp));
         tcg_lists
     }
 
@@ -215,10 +215,10 @@ impl TranslateRiscv {
         let mut tcg_list = vec![];
 
         let source1 = self.tcg_temp_new();
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, source1, source1, TCGv::new_imm(shamt as u64)));
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
-        self.tcg_temp_free(source1);
+        tcg_list.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(shamt as u64)));
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
+        self.tcg_temp_free(Rc::clone(&source1));
 
         tcg_list
     }
@@ -231,10 +231,10 @@ impl TranslateRiscv {
         let mut tcg_list = vec![];
 
         let source1 = self.tcg_temp_new();
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, source1, source1, TCGv::new_imm(shamt as u64)));
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
-        self.tcg_temp_free(source1);
+        tcg_list.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(shamt as u64)));
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
+        self.tcg_temp_free(Rc::clone(&source1));
 
         tcg_list
     }
@@ -246,10 +246,10 @@ impl TranslateRiscv {
         let mut tcg_list = vec![];
 
         let source1 = self.tcg_temp_new();
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRA_64BIT, source1, source1, TCGv::new_imm(shamt as u64)));
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
-        self.tcg_temp_free(source1);
+        tcg_list.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRA_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(shamt as u64)));
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
+        self.tcg_temp_free(Rc::clone(&source1));
 
         tcg_list
     }
@@ -262,10 +262,10 @@ impl TranslateRiscv {
         let mut tcg_list = vec![];
 
         let source1 = self.tcg_temp_new();
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRA_64BIT, source1, source1, TCGv::new_imm(shamt as u64)));
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
-        self.tcg_temp_free(source1);
+        tcg_list.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_list.push(TCGOp::new_3op(TCGOpcode::SRA_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(shamt as u64)));
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
+        self.tcg_temp_free(Rc::clone(&source1));
 
         tcg_list
     }
@@ -279,11 +279,11 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, source1, source1, TCGv::new_imm(imm_const as u64)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(imm_const as u64)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
 
-        self.tcg_temp_free(source1);
+        self.tcg_temp_free(Rc::clone(&source1));
         tcg_lists
     }
 
@@ -297,14 +297,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
         
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SUB_64BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SUB_64BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
 
         tcg_lists
     }
@@ -319,14 +319,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
         
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::XOR_64BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::XOR_64BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
 
         tcg_lists
 
@@ -340,14 +340,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
         
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::OR_64BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::OR_64BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
 
         tcg_lists
     }
@@ -360,14 +360,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
         
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::AND_64BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
 
         tcg_lists
     }
@@ -382,14 +382,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SUB_32BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, rd_tmp, rd_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::SUB_32BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
         
         tcg_lists
     }
@@ -404,14 +404,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_32BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, rd_tmp, rd_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_32BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
         
         tcg_lists
     }
@@ -429,9 +429,9 @@ impl TranslateRiscv {
         let mut tcg_lists = vec![];
 
         let dest_temp = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::JMPIM, dest_temp, TCGv::new_imm(inst.addr.wrapping_add(jmp_const as u64))));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::JMPIM, Rc::clone(&dest_temp), TCGv::new_imm(inst.addr.wrapping_add(jmp_const as u64))));
         tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
-        self.tcg_temp_free(dest_temp);
+        self.tcg_temp_free(Rc::clone(&dest_temp));
 
         tcg_lists
     }
@@ -452,16 +452,16 @@ impl TranslateRiscv {
         let rs1 = self.tcg_temp_new();
         let zero = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs1, rs1_addr as u32));
-        tcg_lists.push(TCGOp::tcg_get_gpr(zero, 0 as u32));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs1), rs1_addr as u32));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&zero), 0 as u32));
 
-        tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_64BIT, rs1, zero, TCGv::new_imm(target as u64), Rc::clone(&label)));
+        tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_64BIT, Rc::clone(&rs1), Rc::clone(&zero), TCGv::new_imm(target as u64), Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 2)));
         tcg_lists.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
 
-        self.tcg_temp_free(rs1);
-        self.tcg_temp_free(zero);
+        self.tcg_temp_free(Rc::clone(&rs1));
+        self.tcg_temp_free(Rc::clone(&zero));
 
         tcg_lists
     }
@@ -481,16 +481,16 @@ impl TranslateRiscv {
         let rs1 = self.tcg_temp_new();
         let zero = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs1, rs1_addr as u32));
-        tcg_lists.push(TCGOp::tcg_get_gpr(zero, 0 as u32));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs1), rs1_addr as u32));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&zero), 0 as u32));
 
-        tcg_lists.push(TCGOp::new_4op(TCGOpcode::NE_64BIT, rs1, zero, TCGv::new_imm(target as u64), Rc::clone(&label)));
+        tcg_lists.push(TCGOp::new_4op(TCGOpcode::NE_64BIT, Rc::clone(&rs1), Rc::clone(&zero), TCGv::new_imm(target as u64), Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 2)));
         tcg_lists.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
 
-        self.tcg_temp_free(rs1);
-        self.tcg_temp_free(zero);
+        self.tcg_temp_free(Rc::clone(&rs1));
+        self.tcg_temp_free(Rc::clone(&zero));
 
         tcg_lists
     }
@@ -503,10 +503,10 @@ impl TranslateRiscv {
         let mut tcg_list = vec![];
 
         let source1 = self.tcg_temp_new();
-        tcg_list.push(TCGOp::tcg_get_gpr(source1, rd_addr));
-        tcg_list.push(TCGOp::new_3op(TCGOpcode::SLL_64BIT, source1, source1, TCGv::new_imm(shamt as u64)));
-        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
-        self.tcg_temp_free(source1);
+        tcg_list.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rd_addr));
+        tcg_list.push(TCGOp::new_3op(TCGOpcode::SLL_64BIT, Rc::clone(&source1), Rc::clone(&source1), TCGv::new_imm(shamt as u64)));
+        tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&source1)));
+        self.tcg_temp_free(Rc::clone(&source1));
 
         tcg_list
     }
@@ -539,14 +539,14 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
         let dest = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(dest, 0));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rs1_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&dest), 0));
 
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, TCGv::new_imm(0)));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, Rc::clone(&dest), Rc::clone(&source1), TCGv::new_imm(0)));
         tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
 
-        self.tcg_temp_free(source1);
-        self.tcg_temp_free(dest);
+        self.tcg_temp_free(Rc::clone(&source1));
+        self.tcg_temp_free(Rc::clone(&dest));
 
         tcg_lists
     }
@@ -559,14 +559,14 @@ impl TranslateRiscv {
         let zero_tmp = self.tcg_temp_new();
         let val_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(zero_tmp, 0));
-        tcg_lists.push(TCGOp::tcg_get_gpr(val_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&zero_tmp), 0));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&val_tmp), rs2_addr));
         
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, val_tmp, val_tmp, zero_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, val_tmp));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&val_tmp), Rc::clone(&val_tmp), Rc::clone(&zero_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&val_tmp)));
 
-        self.tcg_temp_free(val_tmp);
-        self.tcg_temp_free(zero_tmp);
+        self.tcg_temp_free(Rc::clone(&val_tmp));
+        self.tcg_temp_free(Rc::clone(&zero_tmp));
 
         tcg_lists
 
@@ -579,20 +579,20 @@ impl TranslateRiscv {
 
         let source1 = self.tcg_temp_new();
         let dest = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&source1), rs1_addr));
 
         let zero = self.tcg_temp_new();
-        tcg_lists.push(TCGOp::tcg_get_gpr(zero, 0));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&zero), 0));
         let next_pc = TCGv::new_imm((inst.addr as u64).wrapping_add(2));
-        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, dest, next_pc));
-        self.tcg_temp_free(zero);
-        tcg_lists.push(TCGOp::tcg_set_gpr(1, dest));
+        tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, Rc::clone(&dest), next_pc));
+        self.tcg_temp_free(Rc::clone(&zero));
+        tcg_lists.push(TCGOp::tcg_set_gpr(1, Rc::clone(&dest)));
 
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, TCGv::new_imm(0)));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, Rc::clone(&dest), Rc::clone(&source1), TCGv::new_imm(0)));
         tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
 
-        self.tcg_temp_free(source1);
-        self.tcg_temp_free(dest);
+        self.tcg_temp_free(Rc::clone(&source1));
+        self.tcg_temp_free(Rc::clone(&dest));
 
         tcg_lists
     }
@@ -606,14 +606,14 @@ impl TranslateRiscv {
         let rd_tmp = self.tcg_temp_new();
         let rs2_tmp = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(rd_tmp, rd_addr));
-        tcg_lists.push(TCGOp::tcg_get_gpr(rs2_tmp, rs2_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rd_tmp), rd_addr));
+        tcg_lists.push(TCGOp::tcg_get_gpr(Rc::clone(&rs2_tmp), rs2_addr));
         
-        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, rd_tmp, rd_tmp, rs2_tmp));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, rd_tmp));
+        tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, Rc::clone(&rd_tmp), Rc::clone(&rd_tmp), Rc::clone(&rs2_tmp)));
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, Rc::clone(&rd_tmp)));
 
-        self.tcg_temp_free(rd_tmp);
-        self.tcg_temp_free(rs2_tmp);
+        self.tcg_temp_free(Rc::clone(&rd_tmp));
+        self.tcg_temp_free(Rc::clone(&rs2_tmp));
 
         tcg_lists
     }
