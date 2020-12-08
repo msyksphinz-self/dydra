@@ -339,6 +339,23 @@ impl EmuEnv {
             Self::reflect(v)
         };
 
+        self.run_loop();
+    }
+
+    fn execute_func(&self, tb_text: *mut u8) {
+        unsafe {
+            let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
+                mem::transmute(self.m_prologue_epilogue_mem.data());
+
+            let emu_ptr: *const [u64; 1] = &self.head;
+            let _ans = func(emu_ptr, tb_text);
+            if self.m_arg_config.debug {
+                println!("execute return value = {:08x}", _ans);
+            }
+        }
+    }
+
+    fn run_loop (&mut self) {
         let start = Instant::now();
         let loop_max = 10000000;
         self.loop_idx = 5;
@@ -398,18 +415,6 @@ impl EmuEnv {
         eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
     }
 
-    fn execute_func(&self, tb_text: *mut u8) {
-        unsafe {
-            let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
-                mem::transmute(self.m_prologue_epilogue_mem.data());
-
-            let emu_ptr: *const [u64; 1] = &self.head;
-            let _ans = func(emu_ptr, tb_text);
-            if self.m_arg_config.debug {
-                println!("execute return value = {:08x}", _ans);
-            }
-        }
-    }
 
     fn sys_write(&mut self, tohost: u64) {
         let _fd = self.read_mem_8byte(tohost + 8);
