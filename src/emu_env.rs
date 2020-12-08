@@ -27,6 +27,7 @@ use crate::instr_info::InstrInfo;
 use std::time::Instant;
 
 const TCG_HASH_SIZE:usize = 1024;
+#[inline]
 fn calc_hash_func(addr: u64) -> usize {
     ((addr >> 1) & 0x3ff) as usize
 }
@@ -75,13 +76,14 @@ pub struct EmuEnv {
     pub m_prologue_epilogue_mem: MemoryMap,
     pub m_guest_mem: MemoryMap,
 
+    pub m_curr_hash_key: usize,
     // pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     // pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_tb_text_hash_address: [u64; TCG_HASH_SIZE],
     pub m_tb_text_hash_inst_size: [usize; TCG_HASH_SIZE],
-    pub m_tb_text_hash_memmap: [Rc<RefCell<MemoryMap>>; TCG_HASH_SIZE],
+    pub m_tb_text_hash_memmap: [MemoryMap; TCG_HASH_SIZE],
 
-    pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
+    // pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
 
     pub m_host_prologue: [u8; 15],
     pub m_host_epilogue: [u8; 11],
@@ -183,12 +185,16 @@ impl EmuEnv {
             // m_tb_text_hashmap: FnvHashMap::with_capacity_and_hasher (0, Default::default()),
             m_tb_text_hash_address: [0; TCG_HASH_SIZE],
             m_tb_text_hash_inst_size: [0; TCG_HASH_SIZE],
-            m_tb_text_hash_memmap: arr![Rc::new(RefCell::new(MemoryMap::new(1, &[]).unwrap())); 1024],
+            m_tb_text_hash_memmap: arr![MemoryMap::new(0x2000, &[
+                MapOption::MapReadable,
+                MapOption::MapWritable,
+                MapOption::MapExecutable,
+            ]).unwrap(); 1024],
 
-            m_curr_tb_text_mem: match MemoryMap::new(1, &[]) {
-                Ok(m) => Rc::new(RefCell::new(m)),
-                Err(e) => panic!("Error: {}", e),
-            },
+            // m_curr_tb_text_mem: match MemoryMap::new(1, &[]) {
+            //     Ok(m) => Rc::new(RefCell::new(m)),
+            //     Err(e) => panic!("Error: {}", e),
+            // },
             m_guest_mem: match MemoryMap::new(
                 0x80000,
                 &[
@@ -218,6 +224,7 @@ impl EmuEnv {
             ],
             m_updated_pc: false,
 
+            m_curr_hash_key: 0,
             // TLB format
             m_tlb_vec: [0xdeadbeef_01234567; TLB_SIZE],
             m_tlb_addr_vec: [0x0; TLB_SIZE],
@@ -353,22 +360,21 @@ impl EmuEnv {
             }
 
             assert!(self.m_pc[0] >= 0x8000_0000);
-            let tb_text_mem = if self.m_arg_config.debug {
-                self.decode_and_run()
+            self.m_curr_hash_key = calc_hash_func(self.m_pc[0]);
+            if self.m_arg_config.debug {
+                self.decode_and_run();
             } else {
-                let hash_key = calc_hash_func(self.m_pc[0]);
-                if self.m_tb_text_hash_address[hash_key] == self.m_pc[0] {
-                    let inst_size = self.m_tb_text_hash_inst_size[hash_key];
-                    let mem_map = &self.m_tb_text_hash_memmap[hash_key];
+                if self.m_tb_text_hash_address[self.m_curr_hash_key] == self.m_pc[0] {
+                    let inst_size = self.m_tb_text_hash_inst_size[self.m_curr_hash_key];
+                    // let mem_map = &self.m_tb_text_hash_memmap[hash_key];
 
                     self.m_pc[0] = self.m_pc[0] + inst_size as u64;
-                    Rc::clone(mem_map)
                 } else {
-                    self.decode_and_run()
+                    self.decode_and_run();
                 }
             };
 
-            let emu_ptr: *const [u64; 1] = &self.head;
+            self.execute_func(self.m_tb_text_hash_memmap[self.m_curr_hash_key].data());
 
             unsafe {
                 let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
@@ -480,7 +486,7 @@ impl EmuEnv {
 
     pub fn calc_epilogue_address(&self) -> isize {
         let prologue_epilogue_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
-        let tb_ptr = self.m_curr_tb_text_mem.borrow().data() as *const u64;
+        let tb_ptr = self.m_tb_text_hash_memmap[self.m_curr_hash_key].data() as *const u64;
         let mut diff_from_epilogue = unsafe { prologue_epilogue_ptr.offset_from(tb_ptr) };
         diff_from_epilogue *= 8;
         diff_from_epilogue += self.m_host_prologue.len() as isize;
@@ -725,20 +731,7 @@ impl EmuEnv {
         self.write_mem_4byte(guest_phy_addr + 4, data1 as u32);
     }
 
-    fn decode_and_run(&mut self) -> Rc<RefCell<MemoryMap>> {
-        // Make tb instruction region (temporary 1024byte)
-        let tb_text_mem = match MemoryMap::new(
-            0x2000,
-            &[
-                MapOption::MapReadable,
-                MapOption::MapWritable,
-                MapOption::MapExecutable,
-            ],
-        ) {
-            Ok(m) => Rc::new(RefCell::new(m)),
-            Err(e) => panic!("Error: {}", e),
-        };
-
+    fn decode_and_run(&mut self) {
         let mut tcg_vec = vec![];
         if self.m_arg_config.debug {
             eprint!("{:}: Guest PC Address = {:08x}\n", self.loop_idx, self.m_pc[0]);
@@ -812,13 +805,6 @@ impl EmuEnv {
             }
         }
         
-        let hash_key = calc_hash_func(init_pc);
-        self.m_tb_text_hash_address[hash_key] = init_pc;
-        self.m_tb_text_hash_inst_size[hash_key] = total_inst_byte;
-        self.m_tb_text_hash_memmap[hash_key] = Rc::clone(&tb_text_mem);
-
-        self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
-        
         let mut pc_address = 0;
         
         self.m_tcg_tb_vec.clear();
@@ -837,14 +823,17 @@ impl EmuEnv {
             pc_address += mc_byte.len() as u64;
         }
         
+        let hash_key = calc_hash_func(init_pc);
         unsafe {
             std::ptr::copy(
                 self.m_tcg_tb_vec.as_ptr(),
-                tb_text_mem.borrow_mut().data(),
+                self.m_tb_text_hash_memmap[hash_key].data(),
                 self.m_tcg_tb_vec.len(),
             );
         }
-        
+        self.m_tb_text_hash_address[hash_key] = init_pc;
+        self.m_tb_text_hash_inst_size[hash_key] = total_inst_byte;
+
         for tcg in tcg_vec.iter_mut() {
             match tcg.op {
                 Some(_) => {}
@@ -866,7 +855,7 @@ impl EmuEnv {
                                         v_off, diff
                                     );
                                 }
-                                let s = tb_text_mem.borrow().data();
+                                let s = self.m_tb_text_hash_memmap[hash_key].data();
                                 unsafe {
                                     *s.offset(*v_off as isize) = (diff & 0xff) as u8;
                                 };
@@ -880,16 +869,14 @@ impl EmuEnv {
         if self.m_arg_config.dump_host {
             unsafe {
                 std::ptr::copy(
-                    tb_text_mem.borrow_mut().data(),
+                    self.m_tb_text_hash_memmap[hash_key].data(),
                     self.m_tcg_tb_vec.as_mut_ptr(),
                     self.m_tcg_tb_vec.len(),
                 );
             }
     
-            disassemble_x86(self.m_tcg_tb_vec.as_slice(), Rc::clone(&tb_text_mem).borrow().data());
+            disassemble_x86(self.m_tcg_tb_vec.as_slice(), self.m_tb_text_hash_memmap[hash_key].data());
         }
-        
-        Rc::clone(&tb_text_mem)
     }
 
 }
