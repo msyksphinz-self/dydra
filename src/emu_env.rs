@@ -355,6 +355,20 @@ impl EmuEnv {
         }
     }
 
+    fn execute_decode_func(&self, tb_text: *mut u8) {
+        unsafe {
+            let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
+                mem::transmute(self.m_prologue_epilogue_mem.data());
+
+            let emu_ptr: *const [u64; 1] = &self.head;
+            let _ans = func(emu_ptr, tb_text);
+            if self.m_arg_config.debug {
+                println!("execute return value = {:08x}", _ans);
+            }
+        }
+    }
+
+
     fn run_loop (&mut self) {
         let start = Instant::now();
         let loop_max = 10000000;
@@ -368,18 +382,18 @@ impl EmuEnv {
             self.m_curr_hash_key = calc_hash_func(self.m_pc[0]);
             if self.m_arg_config.debug {
                 self.decode_and_run();
+                self.execute_decode_func(self.m_tb_text_hash_memmap[self.m_curr_hash_key].data());
             } else {
                 if self.m_tb_text_hash_address[self.m_curr_hash_key] == self.m_pc[0] {
                     let inst_size = self.m_tb_text_hash_inst_size[self.m_curr_hash_key];
-                    // let mem_map = &self.m_tb_text_hash_memmap[hash_key];
-
                     self.m_pc[0] = self.m_pc[0] + inst_size as u64;
+                    self.execute_func(self.m_tb_text_hash_memmap[self.m_curr_hash_key].data());
                 } else {
                     self.decode_and_run();
+                    self.execute_decode_func(self.m_tb_text_hash_memmap[self.m_curr_hash_key].data());
                 }
             };
 
-            self.execute_func(self.m_tb_text_hash_memmap[self.m_curr_hash_key].data());
 
             // if self.m_arg_config.dump_gpr {
             //     self.dump_gpr();
