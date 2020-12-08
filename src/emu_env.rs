@@ -24,7 +24,7 @@ use crate::tcg::x86::x86::{TCGX86, X86TargetRM};
 use crate::tcg::x86::disassemble::{disassemble_x86};
 use crate::instr_info::InstrInfo;
 
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
 const TCG_HASH_SIZE:usize = 1024;
 #[inline]
@@ -335,8 +335,6 @@ impl EmuEnv {
             }
         }
 
-        let start = Instant::now();
-
         // Emit Prologue
         for b in &self.m_host_prologue {
             self.m_tcg_raw_vec.push(*b);
@@ -352,6 +350,7 @@ impl EmuEnv {
             Self::reflect(v)
         };
 
+        let start = Instant::now();
         let loop_max = 10000000;
         self.loop_idx = 5;
         while self.loop_idx < loop_max {
@@ -376,32 +375,20 @@ impl EmuEnv {
 
             self.execute_func(self.m_tb_text_hash_memmap[self.m_curr_hash_key].data());
 
-            unsafe {
-                let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
-                    mem::transmute(self.m_prologue_epilogue_mem.data());
-
-                let tb_host_data = tb_text_mem.borrow_mut().data();
-
-                let _ans = func(emu_ptr, tb_host_data);
-                if self.m_arg_config.debug {
-                    println!("execute return value = {:08x}", _ans);
-                }
-            }
-
-            if self.m_arg_config.dump_gpr {
-                self.dump_gpr();
-            }
-            if self.m_arg_config.dump_fpr {
-                self.dump_fpr();
-            }
-            if self.m_arg_config.machine == MachineEnum::RiscvVirt && self.get_mem(0x1000) != 0 {
-                if self.get_mem(0x1000) & 0x01 == 1 {
-                    break;
-                }
-                self.sys_write(self.read_mem_8byte(0x80001000));
-                self.write_mem_4byte(0x80001000, 0);
-                self.write_mem_4byte(0x80001040, 1);
-            }
+            // if self.m_arg_config.dump_gpr {
+            //     self.dump_gpr();
+            // }
+            // if self.m_arg_config.dump_fpr {
+            //     self.dump_fpr();
+            // }
+            // if self.m_arg_config.machine == MachineEnum::RiscvVirt && self.get_mem(0x1000) != 0 {
+            //     if self.get_mem(0x1000) & 0x01 == 1 {
+            //         break;
+            //     }
+            //     self.sys_write(self.read_mem_8byte(0x80001000));
+            //     self.write_mem_4byte(0x80001000, 0);
+            //     self.write_mem_4byte(0x80001040, 1);
+            // }
             if self.m_arg_config.machine == MachineEnum::RiscvSiFiveU && self.m_notify_exit {
                 break;
             }
@@ -411,16 +398,28 @@ impl EmuEnv {
             //         break;
             //     }
             // }
-            for reg in self.m_x86reg_usage_list.iter_mut() {
-                *reg = None;
-            }
-            for reg in self.m_gpr_usage_list.iter_mut() {
-                *reg = None;
-            }
+            // for reg in self.m_x86reg_usage_list.iter_mut() {
+            //     *reg = None;
+            // }
+            // for reg in self.m_gpr_usage_list.iter_mut() {
+            //     *reg = None;
+            // }
         }
         let end = start.elapsed();
-        // eprintln!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
-        eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
+        eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
+    }
+
+    fn execute_func(&self, tb_text: *mut u8) {
+        unsafe {
+            let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
+                mem::transmute(self.m_prologue_epilogue_mem.data());
+
+            let emu_ptr: *const [u64; 1] = &self.head;
+            let _ans = func(emu_ptr, tb_text);
+            if self.m_arg_config.debug {
+                println!("execute return value = {:08x}", _ans);
+            }
+        }
     }
 
     fn sys_write(&mut self, tohost: u64) {
