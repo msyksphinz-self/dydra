@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use mmap::{MapOption, MemoryMap};
 // use std::collections::HashMap;
 use arr_macro::arr;
@@ -77,13 +74,9 @@ pub struct EmuEnv {
     pub m_guest_mem: MemoryMap,
 
     pub m_curr_hash_key: usize,
-    // pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
-    // pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_tb_text_hash_address: [u64; TCG_HASH_SIZE],
     pub m_tb_text_hash_inst_size: [usize; TCG_HASH_SIZE],
     pub m_tb_text_hash_memmap: [MemoryMap; TCG_HASH_SIZE],
-
-    // pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
 
     pub m_host_prologue: [u8; 15],
     pub m_host_epilogue: [u8; 11],
@@ -191,10 +184,6 @@ impl EmuEnv {
                 MapOption::MapExecutable,
             ]).unwrap(); 1024],
 
-            // m_curr_tb_text_mem: match MemoryMap::new(1, &[]) {
-            //     Ok(m) => Rc::new(RefCell::new(m)),
-            //     Err(e) => panic!("Error: {}", e),
-            // },
             m_guest_mem: match MemoryMap::new(
                 0x80000,
                 &[
