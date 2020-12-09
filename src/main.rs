@@ -129,6 +129,9 @@ fn main() {
     let elf_file = matches.values_of("elf-file").unwrap().next().unwrap().to_string();
 
     let mut emu = EmuEnv::new(arg_config);
+    emu.clear_env();
+    emu.run(&elf_file);
+    emu.clear_env();
     emu.run(&elf_file);
 
     println!("Result: MEM[0x1000] = {:08x}", emu.get_mem(0x1000));

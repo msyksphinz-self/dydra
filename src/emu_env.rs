@@ -269,6 +269,10 @@ impl EmuEnv {
         return self.m_iregs;
     }
 
+    pub fn clear_env (&mut self) {
+        self.m_pc[0] = 0x8000_0000;
+    }
+
     pub fn run(&mut self, filename: &String) {
         let loader = match ELFLoader::new(filename) {
             Ok(loader) => loader,
@@ -794,6 +798,8 @@ impl EmuEnv {
                 || id == RiscvInstId::C_JAL
                 || id == RiscvInstId::C_JALR
                 || id == RiscvInstId::C_JR
+                || id == RiscvInstId::C_BEQZ
+                || id == RiscvInstId::C_BNEZ
             {
                 break;
             }
