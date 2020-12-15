@@ -1,3 +1,5 @@
+use std::sync::atomic::Ordering;
+
 use crate::emu_env::{EmuEnv, MachineEnum};
 use crate::target::riscv::mmu::{MemAccType, MemResult};
 use crate::target::riscv::riscv::ExceptCode;
@@ -248,7 +250,7 @@ impl EmuEnv {
                     return MemResult::NoExcept as usize;
                 }
                 if emu.m_arg_config.machine == MachineEnum::RiscvSiFiveU && (guest_phy_addr & !0xfff) == 0x10_0000 {
-                    emu.m_notify_exit = true;
+                    emu.m_notify_exit.store(true, Ordering::Relaxed);
                     return MemResult::NoExcept as usize;
                 }
                 emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);

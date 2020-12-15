@@ -25,6 +25,11 @@ use crate::instr_info::InstrInfo;
 
 use std::time::Instant;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MachineEnum {
     RiscvVirt,
@@ -72,7 +77,7 @@ pub struct EmuEnv {
     pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     // pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
-
+    
     pub m_host_prologue: [u8; 15],
     pub m_host_epilogue: [u8; 11],
 
@@ -83,7 +88,10 @@ pub struct EmuEnv {
     // Configuration
     pub m_arg_config: ArgConfig,
 
-    pub m_notify_exit: bool,
+    pub m_notify_exit: Arc<AtomicBool>,
+
+    /* Performance Counter */
+    m_time_start: Arc<Instant>,
 
     loop_idx: usize,
 }
@@ -209,8 +217,9 @@ impl EmuEnv {
             m_tlb_addr_vec: [0x0; 4096],
             m_arg_config: arg_config,
 
+            m_time_start: Arc::new(Instant::now()),
             loop_idx: 0,
-            m_notify_exit: false,
+            m_notify_exit: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -311,7 +320,7 @@ impl EmuEnv {
             }
         }
 
-        let start = Instant::now();
+        self.m_time_start = Arc::new(Instant::now());
 
         // Emit Prologue
         for b in &self.m_host_prologue {
@@ -327,6 +336,37 @@ impl EmuEnv {
             let v = self.m_tcg_raw_vec.as_slice();
             Self::reflect(v)
         };
+
+        thread::spawn({
+            let notify_stop = Arc::clone(&self.m_notify_exit);
+            let time_start = Arc::clone(&self.m_time_start);
+
+            // let machine = Arc::clone(&self.m_arg_config.machine);
+
+            move || loop {
+                thread::sleep(Duration::from_millis(10));
+                // if machine == MachineEnum::RiscvVirt && self.get_mem(0x1000) != 0 {
+                //     if self.get_mem(0x1000) & 0x01 == 1 {
+                //         std::process::exit(0);
+                //     }
+                // }
+                
+                if /* machine == MachineEnum::RiscvSiFiveU && */ notify_stop.load(Ordering::Relaxed) {
+                    let end = time_start.elapsed();
+                    eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);          
+                    std::process::exit(0);
+                }
+
+            
+                // if machine == MachineEnum::RiscvVirt && self.get_mem(0x3000) != 0 {
+                //     if self.get_mem(0x3000) & 0x01 == 1 {
+                //         eprintln!("0x3000 finished.");
+                //         break;
+                //     }
+                // }
+            }
+        });
+
 
         let loop_max = 10000000;
         self.loop_idx = 5;
@@ -370,26 +410,8 @@ impl EmuEnv {
             if self.m_arg_config.dump_fpr {
                 self.dump_fpr();
             }
-            if self.m_arg_config.machine == MachineEnum::RiscvVirt && self.get_mem(0x1000) != 0 {
-                if self.get_mem(0x1000) & 0x01 == 1 {
-                    break;
-                }
-                self.sys_write(self.read_mem_8byte(0x80001000));
-                self.write_mem_4byte(0x80001000, 0);
-                self.write_mem_4byte(0x80001040, 1);
-            }
-            if self.m_arg_config.machine == MachineEnum::RiscvSiFiveU && self.m_notify_exit {
-                break;
-            }
-            // if self.get_mem(0x3000) != 0 {
-            //     if self.get_mem(0x3000) & 0x01 == 1 {
-            //         eprintln!("0x3000 finished.");
-            //         break;
-            //     }
-            // }
         }
-        let end = start.elapsed();
-        // eprintln!("{}.{:06} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
+        let end = self.m_time_start.elapsed();
         eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
     }
 
@@ -457,7 +479,7 @@ impl EmuEnv {
     pub fn calc_epilogue_address(&self) -> isize {
         let prologue_epilogue_ptr = self.m_prologue_epilogue_mem.data() as *const u64;
         let tb_ptr = self.m_curr_tb_text_mem.borrow().data() as *const u64;
-        let mut diff_from_epilogue = unsafe { prologue_epilogue_ptr.offset_from(tb_ptr) };
+        let mut diff_from_epilogue = unsafe { prologue_epilogue_ptr.offset_from(tb_ptr as *const u64) };
         diff_from_epilogue *= 8;
         diff_from_epilogue += self.m_host_prologue.len() as isize;
         diff_from_epilogue
