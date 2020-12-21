@@ -71,7 +71,7 @@ impl EmuEnv {
             self.m_priv
         };
 
-        if self.m_arg_config.mmu_debug { 
+        if self.m_arg_config.mmu_debug {
             println!("<Convert_Virtual_Address. virtual_addr={:016x} : vm_mode = {}, priv_mode = {}>",
                  virtual_addr, self.get_vm_mode() as u32, priv_mode as u32);
         }
@@ -87,7 +87,7 @@ impl EmuEnv {
             let pagesize: u32 = 4096; // num::pow(2, 12);
             let ptesize: u32 = 8;
 
-            return self.walk_page_table(guest_pc, 
+            return self.walk_page_table(guest_pc,
                 virtual_addr, acc_type, 3, ppn_idx, pte_len, pte_idx, vpn_len, vpn_idx, pagesize, ptesize,
             );
         } else if self.get_vm_mode() == VMMode::Sv32
@@ -101,7 +101,7 @@ impl EmuEnv {
             let pagesize: u32 = 4096; // num::pow(2, 12);
             let ptesize: u32 = 4;
 
-            return self.walk_page_table(guest_pc, 
+            return self.walk_page_table(guest_pc,
                 virtual_addr, acc_type, 2, ppn_idx, pte_len, pte_idx, vpn_len, vpn_idx, pagesize, ptesize,
             );
         } else {
@@ -110,8 +110,8 @@ impl EmuEnv {
 
     }
 
-    fn walk_page_table(&mut self, guest_pc: u64, virtual_addr: u64, acc_type: MemAccType, init_level: u32, 
-        ppn_idx: Vec<u8>, pte_len: Vec<u8>, pte_idx: Vec<u8>, vpn_len: Vec<u8>, vpn_idx: Vec<u8>, 
+    fn walk_page_table(&mut self, guest_pc: u64, virtual_addr: u64, acc_type: MemAccType, init_level: u32,
+        ppn_idx: Vec<u8>, pte_len: Vec<u8>, pte_idx: Vec<u8>, vpn_len: Vec<u8>, vpn_idx: Vec<u8>,
         pagesize: u32, ptesize: u32) -> Result<u64, MemResult> {
         let is_write_access = match acc_type {
             MemAccType::Write => true,
@@ -163,11 +163,11 @@ impl EmuEnv {
             // 3. If pte:v = 0, or if pte:r = 0 and pte:w = 1, stop and raise a page-fault exception.
             if (pte_val & 0x01) == 0 || (((pte_val & 0x02) == 0) && ((pte_val & 0x04) == 0x04)) {
                 // let bit_length: u32 = m_bit_mode == RiscvBitMode_t::Bit32 ? 8 : 16;
-                if self.m_arg_config.mmu_debug { 
+                if self.m_arg_config.mmu_debug {
                     println!("<Page Table Error : 0x{:016x} = 0x{:08x} is not valid Page Table. Generate Exception>",
                          pte_addr, pte_val);
                 }
-                
+
                 match acc_type {
                     MemAccType::Fetch => {
                         self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
@@ -224,7 +224,7 @@ impl EmuEnv {
             acc_type.clone(),
             current_priv,
         ) {
-            if self.m_arg_config.mmu_debug { 
+            if self.m_arg_config.mmu_debug {
                 println!("<Page Access Failed. Allowed Access Failed PTE_VAL={:016x}>",pte_val);
             }
             return Err(MemResult::TlbError);

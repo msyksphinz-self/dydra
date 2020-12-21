@@ -38,10 +38,10 @@ pub enum MachineEnum {
 
 #[derive(Debug, Copy, Clone)]
 pub struct ArgConfig {
-    pub debug: bool, 
-    pub dump_gpr: bool, 
-    pub dump_fpr: bool, 
-    pub dump_tcg: bool, 
+    pub debug: bool,
+    pub dump_gpr: bool,
+    pub dump_fpr: bool,
+    pub dump_tcg: bool,
     pub step: bool,
     pub mmu_debug: bool,
     pub dump_guest: bool,
@@ -77,7 +77,7 @@ pub struct EmuEnv {
     pub m_tb_text_hashmap: FnvHashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     // pub m_tb_text_hashmap: HashMap<u64, (usize, Rc<RefCell<MemoryMap>>)>,
     pub m_curr_tb_text_mem: Rc<RefCell<MemoryMap>>,
-    
+
     pub m_host_prologue: [u8; 15],
     pub m_host_epilogue: [u8; 11],
 
@@ -236,8 +236,8 @@ impl EmuEnv {
 
     pub fn dump_gpr(&self) {
         let abi_reg_name = ["zero ", "ra   ", "sp   ", "gp   ", "tp   ", "t0   ", "t1   ", "t2   ",
-                            "s0/fp", "s1   ", "a0   ", "a1   ", "a2   ", "a3   ", "a4   ", "a5   ", 
-                            "a6   ", "a7   ", "s2   ", "s3   ", "s4   ", "s5   ", "s6   ", "s7   ", 
+                            "s0/fp", "s1   ", "a0   ", "a1   ", "a2   ", "a3   ", "a4   ", "a5   ",
+                            "a6   ", "a7   ", "s2   ", "s3   ", "s4   ", "s5   ", "s6   ", "s7   ",
                             "s8   ", "s9   ", "s10  ", "s11  ", "t3   ", "t4   ", "t5   ", "t6   "];
         for (i, reg) in self.m_iregs.iter().enumerate() {
             eprint!("x{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
@@ -250,8 +250,8 @@ impl EmuEnv {
 
     pub fn dump_fpr(&self) {
         let abi_reg_name = ["ft0  ", "ft1  ", "ft2  ", "ft3  ", "ft4  ", "ft5  ", "ft6  ", "ft7  ",
-                                     "fs0  ", "fs1  ", "fa0  ", "fa1  ", "fa2  ", "fa3  ", "fa4  ", "fa5  ", 
-                                     "fa6  ", "fa7  ", "fs2  ", "fs3  ", "fs4  ", "fs5  ", "fs6  ", "fs7  ", 
+                                     "fs0  ", "fs1  ", "fa0  ", "fa1  ", "fa2  ", "fa3  ", "fa4  ", "fa5  ",
+                                     "fa6  ", "fa7  ", "fs2  ", "fs3  ", "fs4  ", "fs5  ", "fs6  ", "fs7  ",
                                      "fs8  ", "fs9  ", "fs10 ", "fs11 ", "ft8  ", "ft9  ", "ft10 ", "ft11 "];
         for (i, reg) in self.m_fregs.iter().enumerate() {
             eprint!("f{:02}({:}) = {:016x}  ", i, abi_reg_name[i], reg);
@@ -350,14 +350,14 @@ impl EmuEnv {
                 //         std::process::exit(0);
                 //     }
                 // }
-                
+
                 if /* machine == MachineEnum::RiscvSiFiveU && */ notify_stop.load(Ordering::Relaxed) {
                     let end = time_start.elapsed();
-                    eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);          
+                    eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
                     std::process::exit(0);
                 }
 
-            
+
                 // if machine == MachineEnum::RiscvVirt && self.get_mem(0x3000) != 0 {
                 //     if self.get_mem(0x3000) & 0x01 == 1 {
                 //         eprintln!("0x3000 finished.");
@@ -412,7 +412,7 @@ impl EmuEnv {
             }
         }
         let end = self.m_time_start.elapsed();
-        eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);      
+        eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
     }
 
     fn sys_write(&mut self, tohost: u64) {
@@ -666,24 +666,24 @@ impl EmuEnv {
         assert!(guest_phy_addr >= 0x8000_0000);
         let guest_phy_addr = guest_phy_addr - 0x8000_0000;
         unsafe {
-            self.m_guest_mem.data().offset(guest_phy_addr as isize).read() 
+            self.m_guest_mem.data().offset(guest_phy_addr as isize).read()
         }
     }
 
     pub fn read_mem_2byte(&self, guest_phy_addr: u64) -> u16 {
-        ((self.read_mem_1byte(guest_phy_addr + 1) as u16) << 8) | 
+        ((self.read_mem_1byte(guest_phy_addr + 1) as u16) << 8) |
         ((self.read_mem_1byte(guest_phy_addr + 0) as u16) << 0)
     }
 
 
     pub fn read_mem_4byte(&self, guest_phy_addr: u64) -> u32 {
-        ((self.read_mem_2byte(guest_phy_addr + 2) as u32) << 16) | 
+        ((self.read_mem_2byte(guest_phy_addr + 2) as u32) << 16) |
         ((self.read_mem_2byte(guest_phy_addr + 0) as u32) <<  0)
     }
 
 
     pub fn read_mem_8byte(&self, guest_phy_addr: u64) -> u64 {
-        ((self.read_mem_4byte(guest_phy_addr + 4) as u64) << 32) | 
+        ((self.read_mem_4byte(guest_phy_addr + 4) as u64) << 32) |
         ((self.read_mem_4byte(guest_phy_addr + 0) as u64) <<  0)
     }
 
@@ -760,7 +760,7 @@ impl EmuEnv {
                 eprint!("  converted physical address = {:08x}\n", guest_phy_addr);
             }
             let guest_inst = self.read_mem_4byte(guest_phy_addr);
-        
+
             let (id, inst_byte) = match decode_inst(guest_inst) {
                 Some((id, inst_byte)) => (id, inst_byte),
                 _ => panic!("Decode Failed. {:08x}", guest_inst),
@@ -769,10 +769,11 @@ impl EmuEnv {
                 inst: guest_inst,
                 addr: self.m_pc[0],
             };
-            let mut tcg_inst = self.m_riscv_trans.translate(id, &inst_info);
+            let (exit_break_loop, mut tcg_inst) = self.m_riscv_trans.translate(id, &inst_info);
             for idx in 0..5 {
                 assert_eq!(self.m_riscv_trans.reg_bitmap.get(idx), true);
             }
+
             self.m_tcg_vec.append(&mut tcg_inst);
             if self.m_arg_config.step {
                 let mut exit_tcg = vec![TCGOp::new_0op(TCGOpcode::EXIT_TB, None)];
@@ -783,47 +784,33 @@ impl EmuEnv {
             }
             total_inst_byte += inst_byte;
 
-            if id == RiscvInstId::JALR
-                || id == RiscvInstId::JAL
-                || id == RiscvInstId::BEQ
-                || id == RiscvInstId::BNE
-                || id == RiscvInstId::BGE
-                || id == RiscvInstId::BGEU
-                || id == RiscvInstId::BLT
-                || id == RiscvInstId::BLTU
-                || id == RiscvInstId::ECALL
-                || id == RiscvInstId::MRET
-                || id == RiscvInstId::SRET
-                || id == RiscvInstId::C_J
-                || id == RiscvInstId::C_JAL
-                || id == RiscvInstId::C_JALR
-                || id == RiscvInstId::C_JR
-            {
+            if exit_break_loop == true {
                 break;
             }
+
             self.m_pc[0] = self.m_pc[0] + inst_byte as u64;
 
             if id == RiscvInstId::FENCE_I {
                 break;
             }
-        
+
             if self.m_arg_config.step {
                 break;      // When self.m_arg_config.debug Mode, break for each instruction
             }
         }
-        
+
         // eprintln!("total_inst_byte = {:}", total_inst_byte);
         self.m_tb_text_hashmap.insert(init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
         self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
-        
+
         let mut pc_address = 0;
-        
+
         self.m_tcg_tb_vec.clear();
         for tcg in &self.m_tcg_vec {
             if self.m_arg_config.dump_tcg {
                 eprintln!("tcg_inst = {:?}", &tcg);
             }
-        
+
             let mut mc_byte = vec![];
             TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
             for be in &mc_byte {
@@ -832,7 +819,7 @@ impl EmuEnv {
             }
             pc_address += mc_byte.len() as u64;
         }
-        
+
         unsafe {
             std::ptr::copy(
                 self.m_tcg_tb_vec.as_ptr(),
@@ -840,7 +827,7 @@ impl EmuEnv {
                 self.m_tcg_tb_vec.len(),
             );
         }
-        
+
         for tcg in &self.m_tcg_vec {
             match tcg.op {
                 Some(_) => {}
@@ -881,10 +868,10 @@ impl EmuEnv {
                     self.m_tcg_tb_vec.len(),
                 );
             }
-    
+
             disassemble_x86(self.m_tcg_tb_vec.as_slice(), Rc::clone(&tb_text_mem).borrow().data());
         }
-        
+
         Rc::clone(&tb_text_mem)
     }
 

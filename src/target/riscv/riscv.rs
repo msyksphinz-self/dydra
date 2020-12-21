@@ -253,7 +253,7 @@ impl TranslateRiscv {
         self.reg_bitmap.set(idx.value as usize, true);
     }
 
-    pub fn translate(&mut self, id: RiscvInstId, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate(&mut self, id: RiscvInstId, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         return match id {
             RiscvInstId::ADDI => self.translate_addi(inst),
             RiscvInstId::ADD => self.translate_add(inst),
@@ -466,17 +466,18 @@ impl TranslateRiscv {
             RiscvInstId::C_FSWSP    => self.translate_c_fswsp   (inst),
             RiscvInstId::C_SDSP     => self.translate_c_sdsp    (inst),
 
+            RiscvInstId::WFI        => self.translate_wfi       (inst),
             other_id => panic!("InstID={:?} : Not supported these instructions.", other_id),
         };
     }
 
-    pub fn translate_rrr(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_rrr(&mut self, op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let source1 = self.tcg_temp_new();
@@ -492,16 +493,16 @@ impl TranslateRiscv {
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
 
-        vec![rs1_op, rs2_op, tcg_inst, rd_op]
+        (false, vec![rs1_op, rs2_op, tcg_inst, rd_op])
     }
 
-    pub fn translate_rrr_32bit(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_rrr_32bit(&mut self, op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let source1 = self.tcg_temp_new();
@@ -519,11 +520,11 @@ impl TranslateRiscv {
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
 
-        tcg_list
+        (false, tcg_list)
     }
 
 
-    pub fn translate_rri(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_rri(&mut self, op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst);
 
@@ -531,7 +532,7 @@ impl TranslateRiscv {
         let tcg_imm = TCGv::new_imm(imm_const);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let source1 = self.tcg_temp_new();
@@ -539,16 +540,16 @@ impl TranslateRiscv {
         let tcg_inst = TCGOp::new_3op(op, source1, source1, tcg_imm);
         let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);
         self.tcg_temp_free(source1);
-        vec![rs1_op, tcg_inst, rd_op]
+        (false, vec![rs1_op, tcg_inst, rd_op])
     }
 
-    pub fn translate_shift_r(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_shift_r(&mut self, op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let source1 = self.tcg_temp_new();
@@ -568,17 +569,17 @@ impl TranslateRiscv {
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
 
-        tcg_list
+        (false, tcg_list)
     }
 
 
-    pub fn translate_shift_i(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_shift_i(&mut self, op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = ((inst.inst >> 20) & 0x3f) as u64;
         let rd_addr = get_rd_addr!(inst.inst);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let mut tcg_list = vec![];
@@ -592,11 +593,11 @@ impl TranslateRiscv {
         tcg_list.push(TCGOp::tcg_set_gpr(rd_addr, source1));
         self.tcg_temp_free(source1);
 
-        tcg_list
+        (false, tcg_list)
     }
 
     /*
-    pub fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_store(op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = get_s_imm_field!(inst.inst);
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
@@ -613,7 +614,7 @@ impl TranslateRiscv {
     }
     */
 
-    pub fn translate_branch(&mut self, op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_branch(&mut self, op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let rs2_addr: usize = get_rs2_addr!(inst.inst) as usize;
         let target: u64 = get_sb_field!(inst.inst);
@@ -638,14 +639,15 @@ impl TranslateRiscv {
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4)));
         tcg_list.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
+        tcg_list.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
 
         self.tcg_temp_free(rs1);
         self.tcg_temp_free(rs2);
 
-        tcg_list
+        (true, tcg_list)
     }
 
-    pub fn translate_float_rri(op: TCGOpcode, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_float_rri(op: TCGOpcode, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr: usize = get_rs1_addr!(inst.inst) as usize;
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr: usize = get_rd_addr!(inst.inst) as usize;
@@ -655,7 +657,8 @@ impl TranslateRiscv {
         let rd = Box::new(TCGv::new_reg(rd_addr as u64));
 
         let tcg_inst = TCGOp::new_3op(op, *rd, *rs1, *imm);
-        return vec![tcg_inst];
+
+        (false, vec![tcg_inst])
     }
 
 }

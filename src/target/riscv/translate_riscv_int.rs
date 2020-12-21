@@ -11,7 +11,7 @@ use super::super::super::extract_j_field;
 use super::riscv::{TranslateRiscv, CALL_HELPER_IDX};
 
 impl TranslateRiscv {
-    pub fn translate_jal(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_jal(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let imm_const = extract_j_field!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst);
 
@@ -30,11 +30,11 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
         self.tcg_temp_free(dest_temp);
 
-        tcg_lists
+        (true, tcg_lists)
     }
 
 
-    pub fn translate_jalr(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_jalr(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr  = get_rd_addr!(inst.inst);
@@ -61,18 +61,18 @@ impl TranslateRiscv {
         self.tcg_temp_free(source1);
         self.tcg_temp_free(dest);
 
-        tcg_lists
+        (true, tcg_lists)
     }
 
 
-    pub fn translate_lui(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lui(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rd_addr = get_rd_addr!(inst.inst); 
 
         let imm_const: u64 = ((inst.inst as i32 as i64) & !0xfff) as u64;
         let tcg_imm = TCGv::new_imm(imm_const);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let source1 = self.tcg_temp_new();
@@ -80,10 +80,11 @@ impl TranslateRiscv {
         let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, tcg_imm);
         let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
         self.tcg_temp_free(source1);
-        vec![rs1_op, tcg_inst, rd_op]
+        
+        (false, vec![rs1_op, tcg_inst, rd_op])
     }
 
-    pub fn translate_auipc(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_auipc(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let imm_const = (((inst.inst as i32 as i64) & !0xfff) as u64).wrapping_add(inst.addr as u64);
         let rd_addr = get_rd_addr!(inst.inst);
 
@@ -98,39 +99,39 @@ impl TranslateRiscv {
         }
         self.tcg_temp_free(dest_temp);
 
-        tcg_lists
+        (false, tcg_lists)
     }
 
-    pub fn translate_add(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_add(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::ADD_64BIT, inst)
     }
-    pub fn translate_sub(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sub(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::SUB_64BIT, inst)
     }
-    pub fn translate_and(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_and(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::AND_64BIT, inst)
     }
-    pub fn translate_or(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_or(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::OR_64BIT, inst)
     }
-    pub fn translate_xor(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_xor(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::XOR_64BIT, inst)
     }
 
-    pub fn translate_addi(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_addi(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rri(TCGOpcode::ADD_64BIT, inst)
     }
-    pub fn translate_andi(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_andi(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rri(TCGOpcode::AND_64BIT, inst)
     }
-    pub fn translate_ori(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_ori(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rri(TCGOpcode::OR_64BIT, inst)
     }
-    pub fn translate_xori(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_xori(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rri(TCGOpcode::XOR_64BIT, inst)
     }
 
-    pub fn translate_addiw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_addiw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst); 
 
@@ -138,7 +139,7 @@ impl TranslateRiscv {
         let tcg_imm = TCGv::new_imm(imm_const);
 
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let source1 = self.tcg_temp_new();
@@ -147,35 +148,36 @@ impl TranslateRiscv {
         let tcg_sign_ext = TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1);
         let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
         self.tcg_temp_free(source1);
-        vec![rs1_op, tcg_inst, tcg_sign_ext, rd_op]
+        
+        (false, vec![rs1_op, tcg_inst, tcg_sign_ext, rd_op])
     }
-    pub fn translate_addw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_addw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr_32bit(TCGOpcode::ADD_32BIT, inst)
     }
-    pub fn translate_subw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_subw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr_32bit(TCGOpcode::SUB_32BIT, inst)
     }
 
-    pub fn translate_beq(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_beq(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_branch(TCGOpcode::EQ_64BIT, inst)
     }
-    pub fn translate_bne(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_bne(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_branch(TCGOpcode::NE_64BIT, inst)
     }
-    pub fn translate_blt(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_blt(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_branch(TCGOpcode::LT_64BIT, inst)
     }
-    pub fn translate_bge(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_bge(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_branch(TCGOpcode::GE_64BIT, inst)
     }
-    pub fn translate_bltu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_bltu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_branch(TCGOpcode::LTU_64BIT, inst)
     }
-    pub fn translate_bgeu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_bgeu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_branch(TCGOpcode::GEU_64BIT, inst)
     }
 
-    pub fn translate_raw_load(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
+    pub fn translate_raw_load(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> (bool, Vec<TCGOp>) {
         let src_addr       = self.tcg_temp_new();
         let vaddr_low12bit = self.tcg_temp_new();
         let vaddr_tlb_idx  = self.tcg_temp_new();
@@ -243,9 +245,9 @@ impl TranslateRiscv {
         self.tcg_temp_free(stack_reg     );
         self.tcg_temp_free(tlb_byte_addr );
 
-        return tcg_lists;
+        return (false, tcg_lists);
     }
-    fn translate_load(&mut self, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
+    fn translate_load(&mut self, inst: &InstrInfo, load_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> (bool, Vec<TCGOp>) {
         let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let rd_addr = get_rd_addr!(inst.inst);
@@ -253,29 +255,29 @@ impl TranslateRiscv {
         self.translate_raw_load(rs1_addr, imm_const, rd_addr, inst, load_op, helper_op)
     }
 
-    pub fn translate_ld(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_ld(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOAD_64BIT, CALL_HELPER_IDX::CALL_LOAD64_IDX)
     }
-    pub fn translate_lw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOAD_32BIT, CALL_HELPER_IDX::CALL_LOAD32_IDX)
     }
-    pub fn translate_lh(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lh(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOAD_16BIT, CALL_HELPER_IDX::CALL_LOAD16_IDX)
     }
-    pub fn translate_lb(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lb(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOAD_8BIT, CALL_HELPER_IDX::CALL_LOAD8_IDX)
     }
-    pub fn translate_lwu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lwu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOADU_32BIT, CALL_HELPER_IDX::CALL_LOADU32_IDX)
     }
-    pub fn translate_lhu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lhu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOADU_16BIT, CALL_HELPER_IDX::CALL_LOADU16_IDX)
     }
-    pub fn translate_lbu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_lbu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_load(inst, TCGOpcode::LOADU_8BIT, CALL_HELPER_IDX::CALL_LOADU8_IDX)
     }
 
-    pub fn translate_raw_store(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
+    pub fn translate_raw_store(&mut self, base_reg: u32, offset: u64, dest_reg: u32, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> (bool, Vec<TCGOp>) {
         let src_addr       = self.tcg_temp_new();
         let vaddr_low12bit = self.tcg_temp_new();
         let vaddr_tlb_idx  = self.tcg_temp_new();
@@ -345,11 +347,11 @@ impl TranslateRiscv {
         self.tcg_temp_free(tlb_byte_addr );
         self.tcg_temp_free(rs2_data);
         
-        return tcg_lists;
+        return (false, tcg_lists);
     }
 
 
-    fn translate_store(&mut self, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> Vec<TCGOp> {
+    fn translate_store(&mut self, inst: &InstrInfo, store_op: TCGOpcode, helper_op: CALL_HELPER_IDX) -> (bool, Vec<TCGOp>) {
         let rs1_addr = get_rs1_addr!(inst.inst);
         let imm_const: u64 = get_s_imm_field!(inst.inst);
         let imm_const = ((imm_const as i32) << (32 - 12)) >> (32 - 12);
@@ -358,91 +360,91 @@ impl TranslateRiscv {
         self.translate_raw_store(rs1_addr, imm_const as u64, rs2_addr, inst, store_op, helper_op)
     }
 
-    pub fn translate_sd(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sd(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_store(inst, TCGOpcode::STORE_64BIT, CALL_HELPER_IDX::CALL_STORE64_IDX)
     }
-    pub fn translate_sw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_store(inst, TCGOpcode::STORE_32BIT, CALL_HELPER_IDX::CALL_STORE32_IDX)
     }
-    pub fn translate_sh(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sh(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_store(inst, TCGOpcode::STORE_16BIT, CALL_HELPER_IDX::CALL_STORE16_IDX)
     }
-    pub fn translate_sb(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sb(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_store(inst, TCGOpcode::STORE_8BIT, CALL_HELPER_IDX::CALL_STORE8_IDX)
     }
 
 
-    pub fn translate_slli(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_slli(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_i(TCGOpcode::SLL_64BIT, inst)
     }
-    pub fn translate_srli(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_srli(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_i(TCGOpcode::SRL_64BIT, inst)
     }
-    pub fn translate_srai(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_srai(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_i(TCGOpcode::SRA_64BIT, inst)
     }
-    pub fn translate_sll(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sll(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_r(TCGOpcode::SLL_64BIT, inst)
     }
-    pub fn translate_srl(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_srl(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_r(TCGOpcode::SRL_64BIT, inst)
     }
-    pub fn translate_sra(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sra(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_r(TCGOpcode::SRA_64BIT, inst)
     }
 
-    pub fn translate_slliw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_slliw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_i(TCGOpcode::SLL_32BIT, inst)
     }
-    pub fn translate_srliw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_srliw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_i(TCGOpcode::SRL_32BIT, inst)
     }
-    pub fn translate_sraiw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sraiw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_i(TCGOpcode::SRA_32BIT, inst)
     }
-    pub fn translate_sllw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sllw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_r(TCGOpcode::SLL_32BIT, inst)
     }
-    pub fn translate_srlw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_srlw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_r(TCGOpcode::SRL_32BIT, inst)
     }
-    pub fn translate_sraw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sraw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_shift_r(TCGOpcode::SRA_32BIT, inst)
     }
 
-    pub fn translate_slt(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_slt(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::SLT_64BIT, inst)
     }
-    pub fn translate_slti(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_slti(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rri(TCGOpcode::SLT_64BIT, inst)
     }
-    pub fn translate_sltu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sltu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::SLTU_64BIT, inst)
     }
-    pub fn translate_sltiu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_sltiu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rri(TCGOpcode::SLTU_64BIT, inst)
     }
 
 
-    pub fn translate_mul(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_mul(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::MUL_64BIT, inst)
     }
-    pub fn translate_mulh(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_mulh(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::MULH_64BIT, inst)
     }
-    pub fn translate_mulhu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_mulhu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::MULHU_64BIT, inst)
     }
-    pub fn translate_mulhsu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_mulhsu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::MULHSU_64BIT, inst)
     }
-    pub fn translate_mulw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_mulw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::MUL_32BIT, inst)
     }
 
-    fn translate_div_common (&mut self, op: TCGOpcode, rd_addr: u32, rs1_addr: u32, rs2_addr: u32, inst: &InstrInfo) -> Vec<TCGOp> {
+    fn translate_div_common (&mut self, op: TCGOpcode, rd_addr: u32, rs1_addr: u32, rs2_addr: u32, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         if rd_addr == 0 {
-            return vec![];
+            return (false, vec![]);
         }
 
         let label_src2_zero_fail = Rc::new(RefCell::new(TCGLabel::new()));
@@ -501,41 +503,45 @@ impl TranslateRiscv {
         self.tcg_temp_free(source1);
         self.tcg_temp_free(source2);
 
-        tcg_lists
+        (false, tcg_lists)
     }
 
-    pub fn translate_div(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_div(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst); 
 
         self.translate_div_common (TCGOpcode::DIV_64BIT, rd_addr, rs1_addr, rs2_addr, inst)
     }
-    pub fn translate_divu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_divu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
         let rd_addr = get_rd_addr!(inst.inst); 
 
         self.translate_div_common (TCGOpcode::DIVU_64BIT, rd_addr, rs1_addr, rs2_addr, inst)
     }
-    pub fn translate_divw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_divw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::DIV_32BIT, inst)
     }
-    pub fn translate_divuw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_divuw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::DIVU_32BIT, inst)
     }
 
-    pub fn translate_rem(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_rem(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::REM_64BIT, inst)
     }
-    pub fn translate_remu(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_remu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::REMU_64BIT, inst)
     }
-    pub fn translate_remw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_remw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::REM_32BIT, inst)
     }
-    pub fn translate_remuw(&mut self, inst: &InstrInfo) -> Vec<TCGOp> {
+    pub fn translate_remuw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         self.translate_rrr(TCGOpcode::REMU_32BIT, inst)
+    }
+
+    pub fn translate_wfi (&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
+        (false, vec![])
     }
 
 }
