@@ -9,7 +9,7 @@ impl EmuEnv {
         let rs1_data = emu.m_iregs[rs1 as usize];
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
@@ -34,7 +34,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("load32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -49,7 +49,7 @@ impl EmuEnv {
                         0x1001_0008 => { emu.m_iregs[rd as usize] = 0; },       // txctrl
                         0x1001_000c => { emu.m_iregs[rd as usize] = 0; },       // rxctrl
                         _ => {},
-                    }                  
+                    }
                     return MemResult::NoExcept as usize;
                 }
                 emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);
@@ -57,7 +57,7 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.m_iregs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as i32 as u64; 
+                emu.m_iregs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as i32 as u64;
                 return MemResult::NoExcept as usize;
             }
             Err(error) => {
@@ -73,7 +73,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("load16 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -82,7 +82,7 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.m_iregs[rd as usize] = emu.read_mem_2byte(guest_phy_addr) as i16 as u64; 
+                emu.m_iregs[rd as usize] = emu.read_mem_2byte(guest_phy_addr) as i16 as u64;
                 return MemResult::NoExcept as usize;
             }
             Err(error) => {
@@ -98,7 +98,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("load8 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -107,7 +107,7 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.m_iregs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as i8 as u64; 
+                emu.m_iregs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as i8 as u64;
                 return MemResult::NoExcept as usize;
             }
             Err(error) => {
@@ -123,7 +123,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("loadu32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -132,7 +132,7 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.m_iregs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as u64; 
+                emu.m_iregs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as u64;
                 return MemResult::NoExcept as usize;
             }
             Err(error) => {
@@ -148,7 +148,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("loadu16 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -173,7 +173,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("loadu8 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -182,7 +182,7 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.m_iregs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as u64; 
+                emu.m_iregs[rd as usize] = emu.read_mem_1byte(guest_phy_addr) as u64;
                 return MemResult::NoExcept as usize;
             }
             Err(error) => {
@@ -205,7 +205,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("store64 : converted address: {:016x} --> {:016x} <= {:016x}", addr, guest_phy_addr, rs2_data);
                 }
@@ -214,8 +214,8 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.write_mem_8byte(guest_phy_addr, rs2_data); 
-                return MemResult::NoExcept as usize; 
+                emu.write_mem_8byte(guest_phy_addr, rs2_data);
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
@@ -231,7 +231,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("store32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -246,13 +246,19 @@ impl EmuEnv {
                         0x1001_0008 => { },       // txctrl
                         0x1001_000c => { },       // rxctrl
                         _ => {},
-                    }                  
+                    }
                     return MemResult::NoExcept as usize;
                 }
                 if emu.m_arg_config.machine == MachineEnum::RiscvSiFiveU && (guest_phy_addr & !0xfff) == 0x10_0000 {
                     emu.m_notify_exit.store(true, Ordering::Relaxed);
                     return MemResult::NoExcept as usize;
                 }
+
+                if emu.m_arg_config.machine == MachineEnum::RiscvVirt && guest_phy_addr == 0x80001000 {
+                    emu.m_notify_exit.store(true, Ordering::Relaxed);
+                    return MemResult::NoExcept as usize;
+                }
+
                 emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);
                 emu.m_tlb_addr_vec[((addr >> 12) & 0xfff) as usize] = guest_phy_addr & !0xfff;
                 if emu.m_arg_config.mmu_debug {
@@ -281,7 +287,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("store16 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -313,7 +319,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("store8 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -338,7 +344,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("loadf64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -362,7 +368,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Read) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("loadf32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
@@ -371,7 +377,7 @@ impl EmuEnv {
                 if emu.m_arg_config.mmu_debug {
                     println!("update tlb_vec[{:}] = {:016x}", ((addr >> 12) & 0xfff) as usize, addr >> (12 + 12));
                 }
-                emu.m_fregs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as u64 | 0xffffffff00000000;  // NaN Boxing 
+                emu.m_fregs[rd as usize] = emu.read_mem_4byte(guest_phy_addr) as u64 | 0xffffffff00000000;  // NaN Boxing
                 return MemResult::NoExcept as usize;
             }
             Err(error) => {
@@ -388,14 +394,14 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("storef64 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }
                 emu.m_tlb_vec[((addr >> 12) & 0xfff) as usize] = addr >> (12 + 12);
                 emu.m_tlb_addr_vec[((addr >> 12) & 0xfff) as usize] = guest_phy_addr & !0xfff;
-                emu.write_mem_8byte(guest_phy_addr, rs2_data); 
-                return MemResult::NoExcept as usize; 
+                emu.write_mem_8byte(guest_phy_addr, rs2_data);
+                return MemResult::NoExcept as usize;
             }
             Err(error) => {
                 print!("Read Error: {:?}\n", error);
@@ -411,7 +417,7 @@ impl EmuEnv {
         let addr = rs1_data.wrapping_add(imm as i32 as u64);
 
         match emu.convert_physical_address(guest_pc, addr, MemAccType::Write) {
-            Ok(guest_phy_addr) => { 
+            Ok(guest_phy_addr) => {
                 if emu.m_arg_config.mmu_debug {
                     println!("storef32 : converted address: {:016x} --> {:016x}", addr, guest_phy_addr);
                 }

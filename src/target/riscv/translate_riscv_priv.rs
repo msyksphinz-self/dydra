@@ -109,7 +109,7 @@ impl TranslateRiscv {
     pub fn translate_ecall(&mut self, _inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let ecall_op = TCGOp::new_helper_call_arg0(CALL_HELPER_IDX::CALL_ECALL_IDX as usize);
         let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
-        (false, vec![ecall_op, exit_tb])
+        (true, vec![ecall_op, exit_tb])
     }
 
     pub fn translate_sret(&mut self, _inst: &InstrInfo) -> (bool, Vec<TCGOp>) {

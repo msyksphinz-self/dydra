@@ -345,25 +345,11 @@ impl EmuEnv {
 
             move || loop {
                 thread::sleep(Duration::from_millis(10));
-                // if machine == MachineEnum::RiscvVirt && self.get_mem(0x1000) != 0 {
-                //     if self.get_mem(0x1000) & 0x01 == 1 {
-                //         std::process::exit(0);
-                //     }
-                // }
-
                 if /* machine == MachineEnum::RiscvSiFiveU && */ notify_stop.load(Ordering::Relaxed) {
                     let end = time_start.elapsed();
                     eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
-                    std::process::exit(0);
+                    break;
                 }
-
-
-                // if machine == MachineEnum::RiscvVirt && self.get_mem(0x3000) != 0 {
-                //     if self.get_mem(0x3000) & 0x01 == 1 {
-                //         eprintln!("0x3000 finished.");
-                //         break;
-                //     }
-                // }
             }
         });
 
