@@ -22,7 +22,7 @@ pub enum TCGOpcode {
     HELPER_CALL_ARG2,
     HELPER_CALL_ARG3,
     HELPER_CALL_ARG4,
-    MOV_64BIT,
+    SET_PC,
     MOV_IMM_64BIT,
     ADD_64BIT,
     SUB_64BIT,
@@ -78,10 +78,10 @@ pub enum TCGOpcode {
     SGNJ_64BIT,
     SGNJN_64BIT,
     SGNJX_64BIT,
-    
+
     SGNJ_32BIT,
     SGNJN_32BIT,
-    SGNJX_32BIT,   
+    SGNJX_32BIT,
 
     MUL_64BIT,
     MULH_64BIT,
@@ -155,7 +155,7 @@ impl TCGOp {
             arg2: None,
             arg3: None,
             label: None,
-            helper_idx: 0   
+            helper_idx: 0
         }
     }
 
@@ -168,7 +168,7 @@ impl TCGOp {
             arg2: None,
             arg3: None,
             label: None,
-            helper_idx: 0   
+            helper_idx: 0
         }
     }
 
@@ -312,8 +312,7 @@ impl TCGOp {
 
     pub fn new_goto_tb(addr: TCGv) -> TCGOp {
         assert_eq!(addr.t, TCGvType::Immediate);
-
-        Self::new_2op(TCGOpcode::MOV_64BIT, TCGv::new_pc(), addr)
+        Self::new_2op(TCGOpcode::SET_PC, TCGv::new_pc(), addr)
     }
 
     pub fn new_label(label: Rc<RefCell<TCGLabel>>) -> TCGOp {
@@ -359,7 +358,7 @@ impl TCGv {
 
     pub fn new_temp(val: u64) -> TCGv {
         TCGv {
-            t: TCGvType::TCGTemp, 
+            t: TCGvType::TCGTemp,
             value: val,
         }
     }
@@ -413,7 +412,7 @@ pub trait TCG {
     fn tcg_gen_ge_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_ltu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_geu_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
-    fn tcg_gen_mov_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_set_pc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_mov_imm_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_sign_ext_32_64(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;

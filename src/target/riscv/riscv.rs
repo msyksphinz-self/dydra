@@ -621,8 +621,6 @@ impl TranslateRiscv {
         let target = ((target as i64) << (64 - 13)) >> (64 - 13);
         let target = inst.addr.wrapping_add(target as u64);
 
-        // let rs1 = TCGv::new_reg(rs1_addr as u64);
-        // let rs2 = TCGv::new_reg(rs2_addr as u64);
         let addr = TCGv::new_imm(target as u64);
 
         let label = Rc::new(RefCell::new(TCGLabel::new()));
@@ -637,6 +635,7 @@ impl TranslateRiscv {
 
         tcg_list.push(TCGOp::new_4op(op, rs1, rs2, addr, Rc::clone(&label)));
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4)));
+        tcg_list.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
         tcg_list.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
         tcg_list.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));

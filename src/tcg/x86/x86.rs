@@ -833,7 +833,7 @@ impl TCG for TCGX86 {
                     TCGOpcode::MOVE_TO_FLOAT_FROM_INT_32BIT => { TCGX86::tcg_gen_float_reg_from_int_reg_32bit(emu, pc_address, tcg, mc) }
 
                     TCGOpcode::MOV_IMM_64BIT => TCGX86::tcg_gen_mov_imm_64bit(emu, pc_address, tcg, mc),
-                    TCGOpcode::MOV_64BIT => TCGX86::tcg_gen_mov_64bit(emu, pc_address, tcg, mc),
+                    TCGOpcode::SET_PC => TCGX86::tcg_gen_set_pc(emu, pc_address, tcg, mc),
 
                     TCGOpcode::SIGN_EXT_32_64 => TCGX86::tcg_gen_sign_ext_32_64(emu, pc_address, tcg, mc),
 
@@ -1466,12 +1466,12 @@ impl TCG for TCGX86 {
         return gen_size;
     }
 
-    fn tcg_gen_mov_64bit(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+    fn tcg_gen_set_pc(emu: &EmuEnv, pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();
         let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
 
-        assert_eq!(op, TCGOpcode::MOV_64BIT);
+        assert_eq!(op, TCGOpcode::SET_PC);
         assert_eq!(arg0.t, TCGvType::ProgramCounter);
 
         let mut gen_size: usize = pc_address as usize;
@@ -1486,8 +1486,6 @@ impl TCG for TCGX86 {
         );
         gen_size += Self::tcg_out(emu.calc_pc_address() as u64, 4, mc); // Set Program Counter
 
-        // jmp    epilogue
-        gen_size += Self::tcg_exit_tb(emu, gen_size as u64, tcg, mc);
         return gen_size;
     }
 

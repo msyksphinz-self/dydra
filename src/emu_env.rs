@@ -30,6 +30,8 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+use std::process;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MachineEnum {
     RiscvVirt,
@@ -348,7 +350,7 @@ impl EmuEnv {
                 if /* machine == MachineEnum::RiscvSiFiveU && */ notify_stop.load(Ordering::Relaxed) {
                     let end = time_start.elapsed();
                     eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
-                    break;
+                    std::process::exit(0);
                 }
             }
         });
