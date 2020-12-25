@@ -36,18 +36,18 @@ pub fn disassemble_x86(bytes: &[u8], host_code_addr: *const u8) {
         formatter.format(&instruction, &mut output);
 
         // Eg. "00007FFAC46ACDB2 488DAC2400FFFFFF     lea       rbp,[rsp-100h]"
-        print!("{:016X} ", instruction.ip());
+        eprint!("{:016X} ", instruction.ip());
         let start_index = (instruction.ip() - unsafe { host_code_addr.offset(0) as u64 }) as usize;
         let instr_bytes = &bytes[start_index..start_index + instruction.len()];
         for b in instr_bytes.iter() {
-            print!("{:02X}", b);
+            eprint!("{:02X}", b);
         }
         if instr_bytes.len() < HEXBYTES_COLUMN_BYTE_LENGTH {
             for _ in 0..HEXBYTES_COLUMN_BYTE_LENGTH - instr_bytes.len() {
-                print!("  ");
+                eprint!("  ");
             }
         }
-        println!(" {}", output);
+        eprintln!(" {}", output);
     }
 }
 

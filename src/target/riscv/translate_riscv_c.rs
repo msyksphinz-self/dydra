@@ -434,7 +434,7 @@ impl TranslateRiscv {
 
         let dest_temp = self.tcg_temp_new();
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::JMPIM, dest_temp, TCGv::new_imm(inst.addr.wrapping_add(jmp_const as u64))));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
         self.tcg_temp_free(dest_temp);
 
         (true, tcg_lists)
@@ -461,11 +461,11 @@ impl TranslateRiscv {
 
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_64BIT, rs1, zero, TCGv::new_imm(target as u64), Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 2)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
 
         tcg_lists.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
 
         self.tcg_temp_free(rs1);
         self.tcg_temp_free(zero);
@@ -493,11 +493,11 @@ impl TranslateRiscv {
 
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::NE_64BIT, rs1, zero, TCGv::new_imm(target as u64), Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 2)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
 
         tcg_lists.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_lists.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
 
         self.tcg_temp_free(rs1);
         self.tcg_temp_free(zero);
@@ -553,7 +553,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::tcg_get_gpr(dest, 0));
 
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, TCGv::new_imm(0)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 
         self.tcg_temp_free(source1);
         self.tcg_temp_free(dest);
@@ -600,7 +600,7 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::tcg_set_gpr(1, dest));
 
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, TCGv::new_imm(0)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 
         self.tcg_temp_free(source1);
         self.tcg_temp_free(dest);

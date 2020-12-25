@@ -635,10 +635,10 @@ impl TranslateRiscv {
 
         tcg_list.push(TCGOp::new_4op(op, rs1, rs2, addr, Rc::clone(&label)));
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(inst.addr + 4)));
-        tcg_list.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_list.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
         tcg_list.push(TCGOp::new_label(Rc::clone(&label)));
         tcg_list.push(TCGOp::new_goto_tb(TCGv::new_imm(target  as u64)));
-        tcg_list.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_list.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
 
         self.tcg_temp_free(rs1);
         self.tcg_temp_free(rs2);

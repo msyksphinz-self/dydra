@@ -30,8 +30,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use std::process;
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MachineEnum {
     RiscvVirt,
@@ -60,6 +58,7 @@ pub struct EmuEnv {
     pub m_iregs: [u64; 32],  // Integer Registers
     pub m_fregs: [u64; 32], // Floating Point Registers
     pub m_pc: [u64; 1],
+    pub m_last_block_pc_address: [u64; 1],
 
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
@@ -96,6 +95,9 @@ pub struct EmuEnv {
     m_time_start: Arc<Instant>,
 
     loop_idx: usize,
+
+    last_host_update_address: usize,
+    last_text_mem: Option<*mut u8>,
 }
 
 impl EmuEnv {
@@ -107,6 +109,8 @@ impl EmuEnv {
             m_iregs: [0; 32],
             m_fregs: [0; 32],
             m_pc: [0x8000_0000; 1],
+            m_last_block_pc_address: [0; 1],
+
             m_csr: RiscvCsr::new(),
 
             helper_func: [
@@ -222,6 +226,8 @@ impl EmuEnv {
             m_time_start: Arc::new(Instant::now()),
             loop_idx: 0,
             m_notify_exit: Arc::new(AtomicBool::new(false)),
+            last_host_update_address: 0,
+            last_text_mem: None,
         }
     }
 
@@ -381,15 +387,57 @@ impl EmuEnv {
                 }
             };
 
+            match self.last_text_mem {
+                Some(mem) => {
+                    // eprint!("next pc = {:012x}\n", self.m_pc[0]);
+                    // eprint!("tb_text_mem address = {:p}, mem = {:p}\n", tb_text_mem.borrow().data(), mem);
+                    let text_diff = (tb_text_mem.borrow().data() as u64).wrapping_sub(mem as u64).wrapping_sub(self.last_host_update_address as u64).wrapping_sub(4);
+                    // eprint!("text_diff = {:012x}\n", text_diff);
+                    // eprint!("last_host_update_address = {:08x}\n", self.last_host_update_address);
+
+                    unsafe {
+                        *mem.offset(self.last_host_update_address as isize + 0) = ((text_diff >>  0) & 0x0ff) as u8;
+                        *mem.offset(self.last_host_update_address as isize + 1) = ((text_diff >>  8) & 0x0ff) as u8;
+                        *mem.offset(self.last_host_update_address as isize + 2) = ((text_diff >> 16) & 0x0ff) as u8;
+                        *mem.offset(self.last_host_update_address as isize + 3) = ((text_diff >> 24) & 0x0ff) as u8;
+                    }
+
+                    // let mut copy_vec = vec![0;256];
+                    // unsafe {
+                    //     std::ptr::copy(
+                    //         mem,
+                    //         copy_vec.as_mut_ptr(),
+                    //         copy_vec.len(),
+                    //     );
+                    // }
+                    // disassemble_x86(&copy_vec, mem);
+                },
+                None => {},
+            }
+
             let emu_ptr: *const [u64; 1] = &self.head;
 
-            unsafe {
-                let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> u32 =
+            let ans = unsafe {
+                let func: unsafe extern "C" fn(emu_head: *const [u64; 1], tb_map: *mut u8) -> usize =
                     mem::transmute(self.m_prologue_epilogue_mem.data());
 
                 let tb_host_data = tb_text_mem.borrow_mut().data();
 
-                let _ans = func(emu_ptr, tb_host_data);
+                func(emu_ptr, tb_host_data)
+            };
+
+            // eprintln!("ans = {:012x}", ans);
+            self.last_host_update_address = ans >> 2;
+            if (ans & 1) == 1 {
+                match self.m_tb_text_hashmap.get(&self.m_last_block_pc_address[0]) {
+                    Some((_, mem_map)) => {
+                        // eprint!("Last executed Block Address = {:08x}\n", self.m_last_block_pc_address[0]);
+                        self.last_text_mem = Some(mem_map.borrow().data());
+                    },
+                    None => { panic!("Not found appropriate address {:08x}", self.m_last_block_pc_address[0]); },
+                };
+            } else {
+                self.last_text_mem = None;
             }
 
             if self.m_arg_config.dump_gpr {
@@ -491,6 +539,13 @@ impl EmuEnv {
 
     pub fn calc_pc_address(&self) -> isize {
         let guestcode_ptr = self.m_pc.as_ptr() as *const u8;
+        let self_ptr = self.head.as_ptr() as *const u8;
+        let diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
+        diff
+    }
+
+    pub fn calc_last_block_pc_address(&self) -> isize {
+        let guestcode_ptr = self.m_last_block_pc_address.as_ptr() as *const u8;
         let self_ptr = self.head.as_ptr() as *const u8;
         let diff = unsafe { guestcode_ptr.offset_from(self_ptr) };
         diff
@@ -732,7 +787,7 @@ impl EmuEnv {
         }
 
         let mut total_inst_byte = 0;
-        let init_pc = self.m_pc[0];
+        let guest_init_pc = self.m_pc[0];
         #[allow(while_true)]
         while true {
             self.loop_idx += 1;
@@ -788,10 +843,10 @@ impl EmuEnv {
         }
 
         // eprintln!("total_inst_byte = {:}", total_inst_byte);
-        self.m_tb_text_hashmap.insert(init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
+        self.m_tb_text_hashmap.insert(guest_init_pc, (total_inst_byte, Rc::clone(&tb_text_mem)));
         self.m_curr_tb_text_mem = Rc::clone(&tb_text_mem);
 
-        let mut pc_address = 0;
+        let mut host_pc_address = 0;
 
         self.m_tcg_tb_vec.clear();
         for tcg in &self.m_tcg_vec {
@@ -800,12 +855,12 @@ impl EmuEnv {
             }
 
             let mut mc_byte = vec![];
-            TCGX86::tcg_gen(&self, pc_address, tcg, &mut mc_byte);
+            TCGX86::tcg_gen(&self, guest_init_pc, host_pc_address, tcg, &mut mc_byte);
             for be in &mc_byte {
                 let be_data = *be;
                 self.m_tcg_tb_vec.push(be_data);
             }
-            pc_address += mc_byte.len() as u64;
+            host_pc_address += mc_byte.len() as u64;
         }
 
         unsafe {

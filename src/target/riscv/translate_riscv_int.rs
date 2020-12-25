@@ -27,7 +27,7 @@ impl TranslateRiscv {
             tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest_temp));
         }
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::JMPIM, dest_temp, imm));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(1)));
         self.tcg_temp_free(dest_temp);
 
         (true, tcg_lists)
@@ -56,7 +56,7 @@ impl TranslateRiscv {
             tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest));
         }
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, imm));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 
         self.tcg_temp_free(source1);
         self.tcg_temp_free(dest);
@@ -66,7 +66,7 @@ impl TranslateRiscv {
 
 
     pub fn translate_lui(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         let imm_const: u64 = ((inst.inst as i32 as i64) & !0xfff) as u64;
         let tcg_imm = TCGv::new_imm(imm_const);
@@ -80,7 +80,7 @@ impl TranslateRiscv {
         let tcg_inst = TCGOp::new_3op(TCGOpcode::ADD_64BIT, source1, source1, tcg_imm);
         let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
         self.tcg_temp_free(source1);
-        
+
         (false, vec![rs1_op, tcg_inst, rd_op])
     }
 
@@ -133,7 +133,7 @@ impl TranslateRiscv {
 
     pub fn translate_addiw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         let imm_const: u64 = ((inst.inst as i32) >> 20) as u64;
         let tcg_imm = TCGv::new_imm(imm_const);
@@ -148,7 +148,7 @@ impl TranslateRiscv {
         let tcg_sign_ext = TCGOp::new_2op(TCGOpcode::SIGN_EXT_32_64, source1, source1);
         let rd_op = TCGOp::tcg_set_gpr(rd_addr, source1);  // Box::new(TCGv::new_reg(rs1_addr as u64));
         self.tcg_temp_free(source1);
-        
+
         (false, vec![rs1_op, tcg_inst, tcg_sign_ext, rd_op])
     }
     pub fn translate_addw(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
@@ -211,20 +211,20 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
         tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
         // if TLB not hit, jump helper function
-        tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize, 
-                                                   TCGv::new_reg(dest_reg as u64), 
-                                                   TCGv::new_reg(base_reg as u64), 
-                                                   TCGv::new_imm(offset as u64), 
+        tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize,
+                                                   TCGv::new_reg(dest_reg as u64),
+                                                   TCGv::new_reg(base_reg as u64),
+                                                   TCGv::new_imm(offset as u64),
                                                    TCGv::new_imm(inst.addr)));
 
         let zero = Box::new(TCGv::new_reg(0 as u64));
         let dummy_addr = Box::new(TCGv::new_imm(0));
-        
+
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
 
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, src_addr, *zero, *dummy_addr, Rc::clone(&label_load_excp)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 
         // Extract lower 12bit address and add with TLB address
         tcg_lists.push(tcg_label_tlb_match);
@@ -305,26 +305,26 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::new_1op(TCGOpcode::MOVE_STACK, stack_reg));
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::ADD_TLBIDX_OFFSET, tlb_byte_addr, stack_reg));  // Relative Addr of TLB
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::ADD_64BIT, tlb_byte_addr, tlb_byte_addr, vaddr_tlb_idx));
-// 
+//
         // Make VAddr upper bit for compare TLB value
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::SRL_64BIT, src_addr, src_addr, TCGv::new_imm(24)));
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::MEM_LOAD, tlb_byte_addr, tlb_byte_addr));
         tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::CMP_EQ, src_addr, tlb_byte_addr, Rc::clone(&label_tlb_match)));
         // if TLB not hit, jump helper function
-        tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize, 
-                                                            TCGv::new_reg(dest_reg as u64), 
-                                                            TCGv::new_reg(base_reg as u64), 
-                                                            TCGv::new_imm(offset as u64), 
+        tcg_lists.push(TCGOp::new_helper_call_arg4(helper_op as usize,
+                                                            TCGv::new_reg(dest_reg as u64),
+                                                            TCGv::new_reg(base_reg as u64),
+                                                            TCGv::new_imm(offset as u64),
                                                             TCGv::new_imm(inst.addr)));
 
         let zero = Box::new(TCGv::new_reg(0 as u64));
         let dummy_addr = Box::new(TCGv::new_imm(0));
-        
+
         let label_load_excp = Rc::new(RefCell::new(TCGLabel::new()));
         let tcg_label_load_excp = TCGOp::new_label(Rc::clone(&label_load_excp));
 
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::EQ_EAX_64BIT, src_addr, *zero, *dummy_addr, Rc::clone(&label_load_excp)));
-        tcg_lists.push(TCGOp::new_0op(TCGOpcode::EXIT_TB, None));
+        tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
         self.tcg_temp_free(src_addr      );
 
         // Extract lower 12bit address and add with TLB address
@@ -346,7 +346,7 @@ impl TranslateRiscv {
         self.tcg_temp_free(vaddr_tlb_idx );
         self.tcg_temp_free(tlb_byte_addr );
         self.tcg_temp_free(rs2_data);
-        
+
         return (false, tcg_lists);
     }
 
@@ -457,7 +457,7 @@ impl TranslateRiscv {
         let source1 = self.tcg_temp_new();
         let source2 = self.tcg_temp_new();
 
-        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr)); 
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_lists.push(TCGOp::tcg_get_gpr(source2, rs2_addr));
 
         // when source2 == zero, doesn't execute.
@@ -473,7 +473,7 @@ impl TranslateRiscv {
         self.tcg_temp_free(minus1);
 
         tcg_lists.push(TCGOp::new_3op(op, source1, source1, source2));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
         // Actually this is no conditional jump
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source1, source1, TCGv::new_imm(0), Rc::clone(&label_finish)));
 
@@ -484,7 +484,7 @@ impl TranslateRiscv {
         self.tcg_temp_free(zero);
 
         tcg_lists.push(TCGOp::new_3op(op, source1, source1, source2));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1)); 
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, source1));
         // Actually this is no conditional jump
         tcg_lists.push(TCGOp::new_4op(TCGOpcode::CMP_EQ, source1, source1, TCGv::new_imm(0), Rc::clone(&label_finish)));
 
@@ -495,7 +495,7 @@ impl TranslateRiscv {
         let minus1 = self.tcg_temp_new();
         tcg_lists.push(TCGOp::new_label(Rc::clone(&label_src2_zero_fail)));
         tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, minus1, TCGv::new_imm((0 - 1) as u64)));
-        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, minus1)); 
+        tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, minus1));
         self.tcg_temp_free(minus1);
 
         tcg_lists.push(TCGOp::new_label(Rc::clone(&label_finish)));
@@ -509,14 +509,14 @@ impl TranslateRiscv {
     pub fn translate_div(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         self.translate_div_common (TCGOpcode::DIV_64BIT, rd_addr, rs1_addr, rs2_addr, inst)
     }
     pub fn translate_divu(&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         let rs1_addr= get_rs1_addr!(inst.inst);
         let rs2_addr= get_rs2_addr!(inst.inst);
-        let rd_addr = get_rd_addr!(inst.inst); 
+        let rd_addr = get_rd_addr!(inst.inst);
 
         self.translate_div_common (TCGOpcode::DIVU_64BIT, rd_addr, rs1_addr, rs2_addr, inst)
     }

@@ -121,7 +121,7 @@ impl EmuEnv {
         emu.m_pc[0] = emu.m_csr.csrrc(CsrAddr::Mepc, 0 as i64) as u64;
         return 0;
     }
-    
+
     pub fn helper_func_sret(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, _dummy: u64) -> usize {
         let mstatus: i64 = emu.m_csr.csrrs(CsrAddr::Mstatus, PrivMode::Machine as i64);
         let next_priv_uint: i64 = Self::extract_bit_field( mstatus, riscv_csr_def::SYSREG_MSTATUS_SPP_MSB, riscv_csr_def::SYSREG_MSTATUS_SPP_LSB,
@@ -156,7 +156,7 @@ impl EmuEnv {
         emu.m_priv = next_priv;
 
         emu.m_pc[0] = ret_pc as u64;
-        
+
         return 0;
     }
 
