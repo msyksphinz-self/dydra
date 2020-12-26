@@ -47,17 +47,23 @@ impl TranslateRiscv {
 
         let imm = TCGv::new_imm(imm_const);
 
+        let zero = self.tcg_temp_new();
+        tcg_lists.push(TCGOp::tcg_get_gpr(zero, 0));
         if rd_addr != 0 {
-            let zero = self.tcg_temp_new();
-            tcg_lists.push(TCGOp::tcg_get_gpr(zero, 0));
             let next_pc = TCGv::new_imm((inst.addr as u64).wrapping_add(4));
             tcg_lists.push(TCGOp::new_2op(TCGOpcode::MOV_IMM_64BIT, dest, next_pc));
-            self.tcg_temp_free(zero);
             tcg_lists.push(TCGOp::tcg_set_gpr(rd_addr, dest));
         }
+
+        let lookup_fail_label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::LOOKUP_PC_AND_JMP, TCGv::new_reg(rs1_addr as u64), imm, Rc::clone(&lookup_fail_label)));
+        tcg_lists.push(TCGOp::new_label(Rc::clone(&lookup_fail_label)));
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, imm));
         tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 
+        self.tcg_temp_free(zero);
         self.tcg_temp_free(source1);
         self.tcg_temp_free(dest);
 

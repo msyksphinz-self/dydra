@@ -552,6 +552,14 @@ impl TranslateRiscv {
         tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_lists.push(TCGOp::tcg_get_gpr(dest, 0));
 
+        let lookup_fail_label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::LOOKUP_PC_AND_JMP,
+            TCGv::new_reg(rs1_addr as u64),
+            TCGv::new_imm(0),
+            Rc::clone(&lookup_fail_label)));
+        tcg_lists.push(TCGOp::new_label(Rc::clone(&lookup_fail_label)));
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, TCGv::new_imm(0)));
         tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 
@@ -599,6 +607,14 @@ impl TranslateRiscv {
         self.tcg_temp_free(zero);
         tcg_lists.push(TCGOp::tcg_set_gpr(1, dest));
 
+        let lookup_fail_label = Rc::new(RefCell::new(TCGLabel::new()));
+
+        tcg_lists.push(TCGOp::new_2op_with_label(TCGOpcode::LOOKUP_PC_AND_JMP,
+            TCGv::new_reg(rs1_addr as u64),
+            TCGv::new_imm(0),
+            Rc::clone(&lookup_fail_label)));
+        tcg_lists.push(TCGOp::new_label(Rc::clone(&lookup_fail_label)));
+        tcg_lists.push(TCGOp::tcg_get_gpr(source1, rs1_addr));
         tcg_lists.push(TCGOp::new_3op(TCGOpcode::JMPR, dest, source1, TCGv::new_imm(0)));
         tcg_lists.push(TCGOp::new_1op(TCGOpcode::EXIT_TB, TCGv::new_imm(0)));
 

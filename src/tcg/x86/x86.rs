@@ -854,6 +854,7 @@ impl TCG for TCGX86 {
                     TCGOpcode::TLB_MATCH_CHECK => { TCGX86::tcg_gen_match_check(emu, host_pc_address, tcg, mc) }
 
                     TCGOpcode::EXIT_TB => TCGX86::tcg_exit_tb(emu, guest_init_pc, host_pc_address, tcg, mc),
+                    TCGOpcode::LOOKUP_PC_AND_JMP => TCGX86::tcg_gen_lookup_pc_and_jump(emu, host_pc_address, tcg, mc),
                 };
             }
             None => match &tcg.label {
@@ -1420,6 +1421,7 @@ impl TCG for TCGX86 {
     fn tcg_gen_eq_eax_64bit(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         // let arg0 = tcg.arg0.unwrap();
         let arg1 = tcg.arg1.unwrap();
+        assert_eq!(arg1.t, TCGvType::Register);
 
         let label = match &tcg.label {
             Some(l) => l,
@@ -1470,6 +1472,54 @@ impl TCG for TCGX86 {
 
         return gen_size;
     }
+
+    fn tcg_gen_lookup_pc_and_jump(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
+        let source_reg = tcg.arg0.unwrap();
+        let source_offset = tcg.arg1.unwrap();
+        assert_eq!(source_reg.t, TCGvType::Register);
+        assert_eq!(source_offset.t, TCGvType::Immediate);
+
+        let lookup_fail_label = match &tcg.label {
+            Some(l) => l,
+            None => panic!("Label is not defined."),
+        };
+
+        let mut gen_size: usize = host_pc_address as usize;
+
+        // Argument 0 : Env
+        let self_ptr = emu.head.as_ptr() as *const u8;
+        let self_diff = unsafe { self_ptr.offset(0) };
+        gen_size += Self::tcg_gen_imm_u64(X86TargetRM::RDI, self_diff as u64, mc);
+
+        // Argument 1 : rd u32
+        gen_size += Self::tcg_gen_load_gpr_64bit(emu, X86TargetRM::RSI, source_reg.value, mc);
+        if source_offset.value != 0 {
+            gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::ADD_GV_IMM, X86ModRM::MOD_11_DISP_RSI as u8, 0, mc);
+            gen_size += Self::tcg_out(source_offset.value, 4, mc);
+        }
+
+        gen_size += Self::tcg_modrm_32bit_out(
+            X86Opcode::CALL,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RDX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_lookup_func_address() as u64, 4, mc);
+
+        // Compare result RAX with zero
+        gen_size += Self::tcg_modrm_64bit_out(
+            X86Opcode::CMP_GV_EV,
+            X86ModRM::MOD_10_DISP_RBP,
+            X86TargetRM::RAX,
+            mc,
+        );
+        gen_size += Self::tcg_out(emu.calc_gpr_relat_address(0) as u64, 4, mc);
+        gen_size = Self::tcg_gen_jcc(gen_size, X86Opcode::JE_rel16_32, mc, &lookup_fail_label);
+        gen_size += Self::tcg_modrm_64bit_raw_out(X86Opcode::JMP_R64_M64, X86ModRM::MOD_11_DISP_RAX as u8, X86TargetRM::RAX as u8, mc);
+
+        gen_size
+    }
+
 
     fn tcg_gen_set_pc(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize {
         let op = tcg.op.unwrap();

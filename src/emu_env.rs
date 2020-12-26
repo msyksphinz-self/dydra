@@ -63,6 +63,7 @@ pub struct EmuEnv {
     pub m_csr: RiscvCsr<i64>, // CSR implementation
 
     helper_func: [fn(emu: &mut EmuEnv, arg0: u64, arg1: u64, arg2: u64, arg3: u64) -> usize; 59],
+    lookup_func: [fn(emu: &EmuEnv, guest_pc: u64) -> u64; 1],
 
     pub m_riscv_trans: TranslateRiscv,
 
@@ -174,6 +175,8 @@ impl EmuEnv {
                 Self::helper_func_sfence_vma,
                 Self::helper_func_fcvt,
             ],
+            lookup_func: [Self::lookup_guest_pc_to_host],
+
             m_riscv_trans: TranslateRiscv::new(),
 
             m_tcg_vec: vec![],
@@ -426,7 +429,7 @@ impl EmuEnv {
                 func(emu_ptr, tb_host_data)
             };
 
-            // eprintln!("ans = {:012x}", ans);
+            // println!("return = {:012x}", self.m_pc[0]);
             self.last_host_update_address = ans >> 2;
             if (ans & 1) == 1 {
                 match self.m_tb_text_hashmap.get(&self.m_last_block_pc_address[0]) {
@@ -918,4 +921,23 @@ impl EmuEnv {
         Rc::clone(&tb_text_mem)
     }
 
+    pub fn calc_lookup_func_address(&self) -> isize {
+        let lookup_func_ptr =
+            unsafe { self.lookup_func.as_ptr().offset(0) as *const u8 };
+        let diff = unsafe { lookup_func_ptr.offset_from(self.head.as_ptr() as *const u8) };
+        diff
+    }
+
+    pub fn lookup_guest_pc_to_host (&self, guest_pc: u64) -> u64 {
+        match self.m_tb_text_hashmap.get(&guest_pc) {
+            Some((_, mem_map)) => {
+                // println!("lookup_guest success! {:016x} => {:016x}", guest_pc, mem_map.borrow().data() as u64);
+                mem_map.borrow().data() as u64
+            },
+            None => {
+                // println!("lookup_guest fail! {:016x}", guest_pc);
+                0
+            }
+        }
+    }
 }

@@ -101,7 +101,9 @@ pub enum TCGOpcode {
 
     TLB_MATCH_CHECK,
     CMP_EQ,
+
     EXIT_TB,
+    LOOKUP_PC_AND_JMP,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -463,6 +465,7 @@ pub trait TCG {
     fn tcg_gen_sgnjx_64bit(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_exit_tb(emu: &EmuEnv, guest_init_pc: u64, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
+    fn tcg_gen_lookup_pc_and_jump(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
 
     fn tcg_gen_cmp_eq(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
     fn tcg_gen_match_check(emu: &EmuEnv, host_pc_address: u64, tcg: &TCGOp, mc: &mut Vec<u8>) -> usize;
