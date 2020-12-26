@@ -448,7 +448,7 @@ impl TranslateRiscv {
         self.translate_rrr(TCGOpcode::MUL_32BIT, inst)
     }
 
-    fn translate_div_common (&mut self, op: TCGOpcode, rd_addr: u32, rs1_addr: u32, rs2_addr: u32, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
+    fn translate_div_common (&mut self, op: TCGOpcode, rd_addr: u32, rs1_addr: u32, rs2_addr: u32, _inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         if rd_addr == 0 {
             return (false, vec![]);
         }
@@ -546,7 +546,7 @@ impl TranslateRiscv {
         self.translate_rrr(TCGOpcode::REMU_32BIT, inst)
     }
 
-    pub fn translate_wfi (&mut self, inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
+    pub fn translate_wfi (&mut self, _inst: &InstrInfo) -> (bool, Vec<TCGOp>) {
         (false, vec![])
     }
 

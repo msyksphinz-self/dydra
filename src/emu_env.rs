@@ -454,16 +454,16 @@ impl EmuEnv {
         eprintln!("{}.{:03} finished", end.as_secs(), end.subsec_nanos() / 1_000_000);
     }
 
-    fn sys_write(&mut self, tohost: u64) {
-        let _fd = self.read_mem_8byte(tohost + 8);
-        let pbuf = self.read_mem_8byte(tohost + 16);
-        let len = self.read_mem_8byte(tohost + 24);
-
-        eprintln!("sys_write() = {:x} ,tohost = {:x}", pbuf, tohost);
-        for idx in 0..len {
-            eprint!("{}", self.read_mem_1byte(pbuf.wrapping_add(idx)) as char);
-        }
-    }
+    // fn sys_write(&mut self, tohost: u64) {
+    //     let _fd = self.read_mem_8byte(tohost + 8);
+    //     let pbuf = self.read_mem_8byte(tohost + 16);
+    //     let len = self.read_mem_8byte(tohost + 24);
+//
+    //     eprintln!("sys_write() = {:x} ,tohost = {:x}", pbuf, tohost);
+    //     for idx in 0..len {
+    //         eprint!("{}", self.read_mem_1byte(pbuf.wrapping_add(idx)) as char);
+    //     }
+    // }
 
     fn reflect(prologue_epilogue: &[u8]) -> mmap::MemoryMap {
         let pe_map = match MemoryMap::new(
