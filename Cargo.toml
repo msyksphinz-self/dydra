@@ -2,7 +2,7 @@
 name = "dydra"
 version = "0.1.0"
 authors = ["msyksphinz <msyksphinz.dev@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 mmap = "*"
@@ -11,7 +11,7 @@ num = "*"
 memmap = "*"
 softfloat-wrapper = { version="*", default-features = false, features = ["riscv"]}
 spike-dasm-wrapper = "*"
-clap = "3.0.0-beta.1"
+clap = { version = "4", features = ["derive"] }
 iced-x86 = "1.8.0"
 bitmaps = "*"
 typenum = "*"
