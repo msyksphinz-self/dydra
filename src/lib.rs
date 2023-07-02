@@ -27,10 +27,11 @@ pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
         dump_host: false,
         machine : MachineEnum::RiscvVirt,
         opt_reg_fwd: false,
+        elf_file: filename.clone(),
     };
 
     let mut emu = EmuEnv::new(arg_config);
-    emu.run(&filename);
+    emu.run();
     let gpr_vec = emu.get_gpr();
     for (gpr_val, exp_val) in gpr_vec.iter().zip(exp_gpr.iter()) {
         if gpr_val != exp_val {
@@ -42,6 +43,14 @@ pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
 }
 
 pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
+    let riscv_path = match env::var("RISCV") {
+            Ok(val) => val,
+            Err(err) => {
+                println!("{}: RISCV", err);
+                process::exit(1);
+            },
+        };
+
     let arg_config = ArgConfig {
         step    : opt_step,
         debug   : false,
@@ -53,17 +62,10 @@ pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
         dump_host: false,
         machine : MachineEnum::RiscvVirt,
         opt_reg_fwd: false,
+        elf_file: riscv_path + &filename,
     };
 
-    let riscv_path = match env::var("RISCV") {
-            Ok(val) => val,
-            Err(err) => {
-                println!("{}: RISCV", err);
-                process::exit(1);
-            },
-        };
-
     let mut emu = EmuEnv::new(arg_config);
-    emu.run(&(riscv_path + &filename));
+    emu.run();
     return emu.get_mem(0x1000) as u64;
 }

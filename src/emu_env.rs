@@ -3,6 +3,7 @@ use mmap::{MapOption, MemoryMap};
 use arr_macro::arr;
 // use fnv::FnvHashMap;
 use std::mem;
+use clap::{Parser, ValueEnum};
 
 use crate::elf_loader::{ELFLoader};
 use crate::elf_loader::ProgramHeader;
@@ -31,26 +32,55 @@ fn calc_hash_func(addr: u64) -> usize {
 
 const TLB_SIZE: usize = 4096;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum MachineEnum {
+    #[clap(name = "virt")]
     RiscvVirt,
+    #[clap(name = "sifive_u")]
     RiscvSiFiveU,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Parser, Debug, Clone)]
+#[clap(
+    name = "Hydra",
+    author = "msyksphinz",
+    version = "0.0.1",
+    about = "Binary Translated Instruction Set Emulator"
+)]
 pub struct ArgConfig {
+    #[arg(short = 'd', help = "Debug mode")]
     pub debug: bool, 
-    pub dump_gpr: bool, 
-    pub dump_fpr: bool, 
-    pub dump_tcg: bool, 
-    pub step: bool,
-    pub mmu_debug: bool,
-    pub dump_guest: bool,
-    pub dump_host: bool,
-    pub machine: MachineEnum,
-    pub opt_reg_fwd: bool,
-}
 
+    #[arg(long = "dump-gpr", help = "Dump Integer Register by Each Block")]
+    pub dump_gpr: bool, 
+
+    #[arg(long = "dump-fpr", help = "Dump Floating Point Register by Each Block")]
+    pub dump_fpr: bool, 
+
+    #[arg(long = "dump-tcg", help = "TCG Translation, step execution")]
+    pub dump_tcg: bool, 
+
+    #[arg(short = 's', long = "step", help = "TCG Translation, step execution")]
+    pub step: bool,
+
+    #[arg(short = 'm', long = "mmu", help = "MMU debug log output")]
+    pub mmu_debug: bool,
+
+    #[arg(long = "dump-guest", help = "Dump Guest Instruction")]
+    pub dump_guest: bool,
+
+    #[arg(long = "dump-host", help = "Dump Host Instruction")]
+    pub dump_host: bool,
+
+    #[arg(value_enum, value_name = "Machine Name", long = "machine", help = "specify machine", required = true)]
+    pub machine: MachineEnum,
+
+    #[arg(long = "opt-reg-fwd", help = "Apply optimization : Register Forwarding")]
+    pub opt_reg_fwd: bool,
+
+    #[arg(long = "elf-file", required = true)]
+    pub elf_file: String,
+}
 
 pub struct EmuEnv {
     pub head: [u64; 1], // pointer of this struct. Do not move.
@@ -269,10 +299,10 @@ impl EmuEnv {
         return self.m_iregs;
     }
 
-    pub fn run(&mut self, filename: &String) {
-        let loader = match ELFLoader::new(filename) {
+    pub fn run(&mut self) {
+        let loader = match ELFLoader::new(&self.m_arg_config.elf_file) {
             Ok(loader) => loader,
-            Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, filename),
+            Err(error) => panic!("There was a problem opening the file: {:?}, {:}", error, &self.m_arg_config.elf_file),
         };
 
         let elf_header = loader.get_elf_header();
