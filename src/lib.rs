@@ -3,29 +3,29 @@ use std::{env, process};
 pub mod elf_loader;
 pub mod emu_env;
 pub mod instr_info;
-pub mod target;
-pub mod tcg;
 pub mod op_helper;
+pub mod op_helper_fcvt;
 pub mod op_helper_fp_d;
 pub mod op_helper_fp_s;
 pub mod op_helper_mem;
-pub mod op_helper_fcvt;
+pub mod target;
+pub mod tcg;
 
 use emu_env::MachineEnum;
 
-use crate::emu_env::{EmuEnv, ArgConfig};
+use crate::emu_env::{ArgConfig, EmuEnv};
 
 pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
     let arg_config = ArgConfig {
-        step    : step,
-        debug   : false,
+        step: step,
+        debug: false,
         dump_gpr: false,
         dump_fpr: false,
         dump_tcg: false,
         mmu_debug: false,
         dump_guest: false,
         dump_host: false,
-        machine : MachineEnum::RiscvVirt,
+        machine: MachineEnum::RiscvVirt,
         opt_reg_fwd: false,
         elf_file: filename.clone(),
     };
@@ -44,23 +44,23 @@ pub fn run(filename: String, step: bool, exp_gpr: &[u64; 32]) -> usize {
 
 pub fn run_riscv_test(filename: String, opt_step: bool) -> u64 {
     let riscv_path = match env::var("RISCV") {
-            Ok(val) => val,
-            Err(err) => {
-                println!("{}: RISCV", err);
-                process::exit(1);
-            },
-        };
+        Ok(val) => val,
+        Err(err) => {
+            println!("{}: RISCV", err);
+            process::exit(1);
+        }
+    };
 
     let arg_config = ArgConfig {
-        step    : opt_step,
-        debug   : false,
+        step: opt_step,
+        debug: false,
         dump_gpr: false,
         dump_fpr: false,
         dump_tcg: false,
-        mmu_debug : false,
+        mmu_debug: false,
         dump_guest: false,
         dump_host: false,
-        machine : MachineEnum::RiscvVirt,
+        machine: MachineEnum::RiscvVirt,
         opt_reg_fwd: false,
         elf_file: riscv_path + &filename,
     };

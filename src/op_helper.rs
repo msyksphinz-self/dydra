@@ -1,7 +1,7 @@
-use crate::target::riscv::riscv_csr::{CsrAddr};
-use crate::target::riscv::riscv_csr_def;
 use crate::emu_env::EmuEnv;
 use crate::target::riscv::riscv::{ExceptCode, PrivMode};
+use crate::target::riscv::riscv_csr::CsrAddr;
+use crate::target::riscv::riscv_csr_def;
 
 impl EmuEnv {
     pub fn helper_func_csrrw(
@@ -103,28 +103,49 @@ impl EmuEnv {
         return 0;
     }
 
-    pub fn helper_func_ecall(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, guest_pc: u64) -> usize {
+    pub fn helper_func_ecall(
+        emu: &mut EmuEnv,
+        _dest: u64,
+        _imm: u64,
+        _csr_addr: u64,
+        guest_pc: u64,
+    ) -> usize {
         emu.m_csr.csrrw(CsrAddr::Mepc, emu.m_pc[0] as i64); // MEPC
 
         let current_priv: PrivMode = emu.m_priv;
         match current_priv {
-            PrivMode::User       => emu.generate_exception(guest_pc, ExceptCode::EcallFromUMode, 0),
+            PrivMode::User => emu.generate_exception(guest_pc, ExceptCode::EcallFromUMode, 0),
             PrivMode::Supervisor => emu.generate_exception(guest_pc, ExceptCode::EcallFromSMode, 0),
             PrivMode::Hypervisor => emu.generate_exception(guest_pc, ExceptCode::EcallFromHMode, 0),
-            PrivMode::Machine    => emu.generate_exception(guest_pc, ExceptCode::EcallFromMMode, 0),
+            PrivMode::Machine => emu.generate_exception(guest_pc, ExceptCode::EcallFromMMode, 0),
         }
 
         return 0;
     }
 
-    pub fn helper_func_mret(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, _dummy: u64) -> usize {
+    pub fn helper_func_mret(
+        emu: &mut EmuEnv,
+        _dest: u64,
+        _imm: u64,
+        _csr_addr: u64,
+        _dummy: u64,
+    ) -> usize {
         emu.m_pc[0] = emu.m_csr.csrrc(CsrAddr::Mepc, 0 as i64) as u64;
         return 0;
     }
-    
-    pub fn helper_func_sret(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, _dummy: u64) -> usize {
+
+    pub fn helper_func_sret(
+        emu: &mut EmuEnv,
+        _dest: u64,
+        _imm: u64,
+        _csr_addr: u64,
+        _dummy: u64,
+    ) -> usize {
         let mstatus: i64 = emu.m_csr.csrrs(CsrAddr::Mstatus, PrivMode::Machine as i64);
-        let next_priv_uint: i64 = Self::extract_bit_field( mstatus, riscv_csr_def::SYSREG_MSTATUS_SPP_MSB, riscv_csr_def::SYSREG_MSTATUS_SPP_LSB,
+        let next_priv_uint: i64 = Self::extract_bit_field(
+            mstatus,
+            riscv_csr_def::SYSREG_MSTATUS_SPP_MSB,
+            riscv_csr_def::SYSREG_MSTATUS_SPP_LSB,
         );
         let next_priv: PrivMode = PrivMode::from_u8(next_priv_uint as u8);
         let mut next_mstatus: i64 = mstatus;
@@ -156,11 +177,17 @@ impl EmuEnv {
         emu.m_priv = next_priv;
 
         emu.m_pc[0] = ret_pc as u64;
-        
+
         return 0;
     }
 
-    pub fn helper_func_sfence_vma(emu: &mut EmuEnv, _dest: u64, _imm: u64, _csr_addr: u64, _dummy: u64) -> usize {
+    pub fn helper_func_sfence_vma(
+        emu: &mut EmuEnv,
+        _dest: u64,
+        _imm: u64,
+        _csr_addr: u64,
+        _dummy: u64,
+    ) -> usize {
         // Clear TLB
         for idx in 0..4096 {
             emu.m_tlb_vec[idx] = 0xdeadbeef_01234567;
@@ -171,5 +198,4 @@ impl EmuEnv {
         }
         return 0;
     }
-
 }

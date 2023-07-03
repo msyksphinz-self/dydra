@@ -1,4 +1,4 @@
-use iced_x86::{Decoder, DecoderOptions, Formatter, Instruction, GasFormatter};
+use iced_x86::{Decoder, DecoderOptions, Formatter, GasFormatter, Instruction};
 
 const EXAMPLE_CODE_BITNESS: u32 = 64;
 const HEXBYTES_COLUMN_BYTE_LENGTH: usize = 10;
@@ -50,5 +50,3 @@ pub fn disassemble_x86(bytes: &[u8], host_code_addr: *const u8) {
         println!(" {}", output);
     }
 }
-
-
