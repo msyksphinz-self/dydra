@@ -1,0 +1,56 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: rust-src
+          override: false
+
+      - name: Install packages
+        run: |
+          sudo dnf -y update
+          sudo dnf -y install dtc libcxx-devel gcc cmake clang
+
+          #- name: Check formatting
+          #  run: |
+          #    cargo +nightly fmt --all -- --check
+
+          #- name: Run clippy
+          #  run: |
+          #    cargo +nightly clippy --all -- --deny warnings
+
+      - name: Build dydra
+        run: |
+          cargo build --verbose
+
+          #- name: Run test
+          #  env:
+          #    RUST_BACKTRACE: full
+          #  run: |
+          #    cargo test --verbose
