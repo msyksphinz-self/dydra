@@ -1,9 +1,9 @@
 use num::iter::range;
 
 use crate::emu_env::EmuEnv;
-use crate::target::riscv::riscv_csr::{CsrAddr};
-use crate::target::riscv::riscv_csr_def;
 use crate::target::riscv::riscv::{ExceptCode, PrivMode};
+use crate::target::riscv::riscv_csr::CsrAddr;
+use crate::target::riscv::riscv_csr_def;
 
 #[derive(Copy, Clone)]
 pub enum MemAccType {
@@ -12,8 +12,7 @@ pub enum MemAccType {
     Read,
 }
 
-#[derive(PartialEq, Eq)]
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 #[allow(dead_code)]
 pub enum MemResult {
     NoExcept = 0,
@@ -47,22 +46,29 @@ impl VMMode {
     }
 }
 
-
-
 impl EmuEnv {
-
-    pub fn convert_physical_address(&mut self, guest_pc: u64, virtual_addr: u64, acc_type: MemAccType) -> Result<u64, MemResult> {
+    pub fn convert_physical_address(
+        &mut self,
+        guest_pc: u64,
+        virtual_addr: u64,
+        acc_type: MemAccType,
+    ) -> Result<u64, MemResult> {
         let is_fetch_access = match acc_type {
             MemAccType::Fetch => true,
             _ => false,
         };
 
         let mstatus: i64 = self.m_csr.csrrs(CsrAddr::Mstatus, PrivMode::Machine as i64);
-        let mprv: u8 =
-            Self::extract_bit_field(mstatus, riscv_csr_def::SYSREG_MSTATUS_MPRV_MSB, riscv_csr_def::SYSREG_MSTATUS_MPRV_LSB)
-                as u8;
-        let mpp_u8: u8 =
-            Self::extract_bit_field(mstatus, riscv_csr_def::SYSREG_MSTATUS_MPP_MSB, riscv_csr_def::SYSREG_MSTATUS_MPP_LSB) as u8;
+        let mprv: u8 = Self::extract_bit_field(
+            mstatus,
+            riscv_csr_def::SYSREG_MSTATUS_MPRV_MSB,
+            riscv_csr_def::SYSREG_MSTATUS_MPRV_LSB,
+        ) as u8;
+        let mpp_u8: u8 = Self::extract_bit_field(
+            mstatus,
+            riscv_csr_def::SYSREG_MSTATUS_MPP_MSB,
+            riscv_csr_def::SYSREG_MSTATUS_MPP_LSB,
+        ) as u8;
         let mpp: PrivMode = PrivMode::from_u8(mpp_u8);
 
         let priv_mode: PrivMode = if !is_fetch_access && (mprv != 0) {
@@ -71,9 +77,13 @@ impl EmuEnv {
             self.m_priv
         };
 
-        if self.m_arg_config.mmu_debug { 
-            println!("<Convert_Virtual_Address. virtual_addr={:016x} : vm_mode = {}, priv_mode = {}>",
-                 virtual_addr, self.get_vm_mode() as u32, priv_mode as u32);
+        if self.m_arg_config.mmu_debug {
+            println!(
+                "<Convert_Virtual_Address. virtual_addr={:016x} : vm_mode = {}, priv_mode = {}>",
+                virtual_addr,
+                self.get_vm_mode() as u32,
+                priv_mode as u32
+            );
         }
 
         if self.get_vm_mode() == VMMode::Sv39
@@ -87,8 +97,18 @@ impl EmuEnv {
             let pagesize: u32 = 4096; // num::pow(2, 12);
             let ptesize: u32 = 8;
 
-            return self.walk_page_table(guest_pc, 
-                virtual_addr, acc_type, 3, ppn_idx, pte_len, pte_idx, vpn_len, vpn_idx, pagesize, ptesize,
+            return self.walk_page_table(
+                guest_pc,
+                virtual_addr,
+                acc_type,
+                3,
+                ppn_idx,
+                pte_len,
+                pte_idx,
+                vpn_len,
+                vpn_idx,
+                pagesize,
+                ptesize,
             );
         } else if self.get_vm_mode() == VMMode::Sv32
             && (priv_mode == PrivMode::Supervisor || priv_mode == PrivMode::User)
@@ -101,18 +121,38 @@ impl EmuEnv {
             let pagesize: u32 = 4096; // num::pow(2, 12);
             let ptesize: u32 = 4;
 
-            return self.walk_page_table(guest_pc, 
-                virtual_addr, acc_type, 2, ppn_idx, pte_len, pte_idx, vpn_len, vpn_idx, pagesize, ptesize,
+            return self.walk_page_table(
+                guest_pc,
+                virtual_addr,
+                acc_type,
+                2,
+                ppn_idx,
+                pte_len,
+                pte_idx,
+                vpn_len,
+                vpn_idx,
+                pagesize,
+                ptesize,
             );
         } else {
             return Ok(virtual_addr);
         }
-
     }
 
-    fn walk_page_table(&mut self, guest_pc: u64, virtual_addr: u64, acc_type: MemAccType, init_level: u32, 
-        ppn_idx: Vec<u8>, pte_len: Vec<u8>, pte_idx: Vec<u8>, vpn_len: Vec<u8>, vpn_idx: Vec<u8>, 
-        pagesize: u32, ptesize: u32) -> Result<u64, MemResult> {
+    fn walk_page_table(
+        &mut self,
+        guest_pc: u64,
+        virtual_addr: u64,
+        acc_type: MemAccType,
+        init_level: u32,
+        ppn_idx: Vec<u8>,
+        pte_len: Vec<u8>,
+        pte_idx: Vec<u8>,
+        vpn_len: Vec<u8>,
+        vpn_idx: Vec<u8>,
+        pagesize: u32,
+        ptesize: u32,
+    ) -> Result<u64, MemResult> {
         let is_write_access = match acc_type {
             MemAccType::Write => true,
             _ => false,
@@ -157,28 +197,34 @@ impl EmuEnv {
             pte_val = self.read_mem_4byte(pte_addr) as i64;
 
             if self.m_arg_config.mmu_debug {
-                println!("<Info: VAddr = 0x{:016x} PTEAddr = 0x{:016x} : PPTE = 0x{:08x}>",virtual_addr, pte_addr, pte_val);
+                println!(
+                    "<Info: VAddr = 0x{:016x} PTEAddr = 0x{:016x} : PPTE = 0x{:08x}>",
+                    virtual_addr, pte_addr, pte_val
+                );
             }
 
             // 3. If pte:v = 0, or if pte:r = 0 and pte:w = 1, stop and raise a page-fault exception.
             if (pte_val & 0x01) == 0 || (((pte_val & 0x02) == 0) && ((pte_val & 0x04) == 0x04)) {
                 // let bit_length: u32 = m_bit_mode == RiscvBitMode_t::Bit32 ? 8 : 16;
-                if self.m_arg_config.mmu_debug { 
+                if self.m_arg_config.mmu_debug {
                     println!("<Page Table Error : 0x{:016x} = 0x{:08x} is not valid Page Table. Generate Exception>",
                          pte_addr, pte_val);
                 }
-                
+
                 match acc_type {
                     MemAccType::Fetch => {
-                        self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
+                        self.generate_exception(
+                            guest_pc,
+                            ExceptCode::InstPageFault,
+                            virtual_addr as i64,
+                        );
                     }
-                    _ => {}
-                    // MemAccType::Read => {
-                    //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
-                    // }
-                    // MemAccType::Write => {
-                    //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
-                    // }
+                    _ => {} // MemAccType::Read => {
+                            //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
+                            // }
+                            // MemAccType::Write => {
+                            //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
+                            // }
                 };
                 return Err(MemResult::TlbError);
             }
@@ -190,22 +236,26 @@ impl EmuEnv {
                 break;
             } else {
                 if level == 0 {
-                    if self.m_arg_config.mmu_debug { println!(
-                        "<Access Fault : Tried to Access to Page {:01x}>",
-                        ((pte_val >> 1) & 0x0f)
-                    );
-                }
+                    if self.m_arg_config.mmu_debug {
+                        println!(
+                            "<Access Fault : Tried to Access to Page {:01x}>",
+                            ((pte_val >> 1) & 0x0f)
+                        );
+                    }
                     match acc_type {
                         MemAccType::Fetch => {
-                            self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
+                            self.generate_exception(
+                                guest_pc,
+                                ExceptCode::InstPageFault,
+                                virtual_addr as i64,
+                            );
                         }
-                        _ => {}
-                        // MemAccType::Read => {
-                        //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
-                        // }
-                        // MemAccType::Write => {
-                        //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
-                        // }
+                        _ => {} // MemAccType::Read => {
+                                //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
+                                // }
+                                // MemAccType::Write => {
+                                //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
+                                // }
                     };
                     return Err(MemResult::TlbError);
                 }
@@ -224,8 +274,11 @@ impl EmuEnv {
             acc_type.clone(),
             current_priv,
         ) {
-            if self.m_arg_config.mmu_debug { 
-                println!("<Page Access Failed. Allowed Access Failed PTE_VAL={:016x}>",pte_val);
+            if self.m_arg_config.mmu_debug {
+                println!(
+                    "<Page Access Failed. Allowed Access Failed PTE_VAL={:016x}>",
+                    pte_val
+                );
             }
             return Err(MemResult::TlbError);
         }
@@ -247,22 +300,26 @@ impl EmuEnv {
             (is_write_access && (pte_val & 0x80) == 0)
         {
             // PTE.D
-            if self.m_arg_config.mmu_debug { println!(
-                "<Access Fault : Page Permission Fault {:01x}",
-                ((pte_val >> 1) & 0x0f)
-               );
+            if self.m_arg_config.mmu_debug {
+                println!(
+                    "<Access Fault : Page Permission Fault {:01x}",
+                    ((pte_val >> 1) & 0x0f)
+                );
             }
             match acc_type {
                 MemAccType::Fetch => {
-                    self.generate_exception(guest_pc, ExceptCode::InstPageFault, virtual_addr as i64);
+                    self.generate_exception(
+                        guest_pc,
+                        ExceptCode::InstPageFault,
+                        virtual_addr as i64,
+                    );
                 }
-                _ => {}
-                // MemAccType::Read => {
-                //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
-                // }
-                // MemAccType::Write => {
-                //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
-                // }
+                _ => {} // MemAccType::Read => {
+                        //     self.generate_exception(ExceptCode::LoadPageFault, virtual_addr as i64);
+                        // }
+                        // MemAccType::Write => {
+                        //     self.generate_exception(ExceptCode::StorePageFault, virtual_addr as i64);
+                        // }
             };
             return Err(MemResult::TlbError);
         }
@@ -335,9 +392,14 @@ impl EmuEnv {
             VMMode::Mbare
         } else {
             let v_mode = VMMode::from(mode);
-            if v_mode == VMMode::Mbare || v_mode == VMMode::Sv32 ||
-                v_mode == VMMode::Sv39 || v_mode == VMMode::Sv48 || v_mode == VMMode::Sv57 || v_mode == VMMode::Sv64 {
-                return v_mode
+            if v_mode == VMMode::Mbare
+                || v_mode == VMMode::Sv32
+                || v_mode == VMMode::Sv39
+                || v_mode == VMMode::Sv48
+                || v_mode == VMMode::Sv57
+                || v_mode == VMMode::Sv64
+            {
+                return v_mode;
             } else {
                 panic!("Error: illegal VM Mode in SATP {:}", mode)
             }

@@ -1,10 +1,10 @@
-use softfloat_wrapper::{ExceptionFlags, Float, RoundingMode, F32};
-use crate::target::riscv::riscv_csr::{CsrAddr};
 use crate::emu_env::EmuEnv;
+use crate::target::riscv::riscv_csr::CsrAddr;
+use softfloat_wrapper::{ExceptionFlags, Float, RoundingMode, F32};
 
 impl EmuEnv {
     #[inline]
-    fn convert_nan_boxing (i: u64) -> u32 {
+    fn convert_nan_boxing(i: u64) -> u32 {
         if i & 0xffffffff_00000000 == 0xffffffff_00000000 {
             (i & 0xffffffff) as u32
         } else {
@@ -195,7 +195,10 @@ impl EmuEnv {
         emu.m_iregs[rd as usize] = fs1_data.eq(fs2_data) as u64;
         flag.get();
         let ret_flag = flag.bits();
-        println!("feq(emu, {:}, {:}, {:}) => {:} is called!", rd, fs1, fs2, ret_flag);
+        println!(
+            "feq(emu, {:}, {:}, {:}) => {:} is called!",
+            rd, fs1, fs2, ret_flag
+        );
         emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
         return 0;
     }
@@ -208,7 +211,10 @@ impl EmuEnv {
         emu.m_iregs[rd as usize] = fs1_data.lt(fs2_data) as u64;
         flag.get();
         let ret_flag = flag.bits();
-        println!("flt(emu, {:}, {:}, {:}) is called! => {:}", rd, fs1, fs2, ret_flag);
+        println!(
+            "flt(emu, {:}, {:}, {:}) is called! => {:}",
+            rd, fs1, fs2, ret_flag
+        );
         emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
         return 0;
     }
@@ -232,20 +238,21 @@ impl EmuEnv {
         #[allow(unused_assignments)]
         let mut result = 0;
         if fs1_data.is_negative_infinity() {
-            result= 1 << 0;
+            result = 1 << 0;
         } else if fs1_data.is_positive_infinity() {
-            result= 1 << 7;
+            result = 1 << 7;
         } else if fs1_data.is_negative_zero() {
-            result= 1 << 3;
+            result = 1 << 3;
         } else if fs1_data.is_positive_zero() {
-            result= 1 << 4;
-        } else if fs1_data.is_negative_zero() || fs1_data.is_negative_subnormal(){
+            result = 1 << 4;
+        } else if fs1_data.is_negative_zero() || fs1_data.is_negative_subnormal() {
             result = 1 << 2;
-        } else if fs1_data.is_positive_zero () || fs1_data.is_positive_subnormal() {
+        } else if fs1_data.is_positive_zero() || fs1_data.is_positive_subnormal() {
             result = 1 << 5;
         } else if fs1_data.is_nan() {
-            if (fs1_data.exponent() == F32::EXPONENT_BIT) &&
-                (fs1_data.fraction() & (1 << (F32::EXPONENT_POS - 1))) != 0 {
+            if (fs1_data.exponent() == F32::EXPONENT_BIT)
+                && (fs1_data.fraction() & (1 << (F32::EXPONENT_POS - 1))) != 0
+            {
                 result = 1 << 9;
             } else {
                 result = 1 << 8;
@@ -264,17 +271,22 @@ impl EmuEnv {
         let fs2_data = F32::from_bits(emu.m_fregs[fs2 as usize] as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_fregs[rd as usize] = 
-        if fs1_data.is_nan() && fs2_data.is_nan() { 
+        emu.m_fregs[rd as usize] = if fs1_data.is_nan() && fs2_data.is_nan() {
             F32::quiet_nan().bits() as u64
-        } else if fs2_data.lt_quiet(fs1_data) || fs2_data.is_nan() || fs1_data.eq(fs2_data) && fs2_data.is_negative() {
+        } else if fs2_data.lt_quiet(fs1_data)
+            || fs2_data.is_nan()
+            || fs1_data.eq(fs2_data) && fs2_data.is_negative()
+        {
             fs1_data.bits() as u64
         } else {
             fs2_data.bits() as u64
         };
         flag.get();
         let ret_flag = flag.bits();
-        println!("fmax_d(emu, {:}, {:}, {:}) is called! => {:}", rd, fs1, fs2, ret_flag);
+        println!(
+            "fmax_d(emu, {:}, {:}, {:}) is called! => {:}",
+            rd, fs1, fs2, ret_flag
+        );
         emu.m_csr.csrrw(CsrAddr::FFlags, ret_flag as i64);
         return 0;
     }
@@ -284,10 +296,12 @@ impl EmuEnv {
         let fs2_data = F32::from_bits(emu.m_fregs[fs2 as usize] as u32);
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_fregs[rd as usize] = 
-        if fs1_data.is_nan() && fs2_data.is_nan() { 
+        emu.m_fregs[rd as usize] = if fs1_data.is_nan() && fs2_data.is_nan() {
             F32::quiet_nan().bits() as u64
-        } else if fs1_data.lt_quiet(fs2_data) || fs2_data.is_nan() || fs1_data.eq(fs2_data) && fs1_data.is_negative() {
+        } else if fs1_data.lt_quiet(fs2_data)
+            || fs2_data.is_nan()
+            || fs1_data.eq(fs2_data) && fs1_data.is_negative()
+        {
             fs1_data.bits() as u64
         } else {
             fs2_data.bits() as u64
@@ -304,7 +318,8 @@ impl EmuEnv {
         let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
+        emu.m_fregs[rd as usize] =
+            (fs1_data & 0x7fffffff | fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
         flag.get();
         let ret_flag = flag.bits();
         println!("fsgnj_s(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
@@ -317,7 +332,8 @@ impl EmuEnv {
         let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | !fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
+        emu.m_fregs[rd as usize] =
+            (fs1_data & 0x7fffffff | !fs2_data & 0x80000000) as u64 | 0xffffffff_00000000;
         flag.get();
         let ret_flag = flag.bits();
         println!("fsgnjn_s(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);
@@ -325,13 +341,14 @@ impl EmuEnv {
         return 0;
     }
 
-
     pub fn helper_func_fsgnjx_s(emu: &mut EmuEnv, rd: u64, fs1: u64, fs2: u64, _: u64) -> usize {
         let fs1_data = Self::convert_nan_boxing(emu.m_fregs[fs1 as usize]) as u32;
         let fs2_data = Self::convert_nan_boxing(emu.m_fregs[fs2 as usize]) as u32;
         let mut flag = ExceptionFlags::default();
         flag.set();
-        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | (fs1_data ^ fs2_data) & 0x80000000) as u64 | 0xffffffff_00000000;
+        emu.m_fregs[rd as usize] = (fs1_data & 0x7fffffff | (fs1_data ^ fs2_data) & 0x80000000)
+            as u64
+            | 0xffffffff_00000000;
         flag.get();
         let ret_flag = flag.bits();
         println!("fsgnjx_s(emu, {:}, {:}, {:}) is called!", rd, fs1, fs2);

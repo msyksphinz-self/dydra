@@ -1,2 +1,2 @@
-pub mod x86;
 pub mod tcg;
+pub mod x86;

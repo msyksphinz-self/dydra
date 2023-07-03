@@ -37,9 +37,9 @@ jobs:
           sudo dnf -y update
           sudo dnf -y install dtc libcxx-devel gcc cmake clang
 
-          #- name: Check formatting
-          #  run: |
-          #    cargo +nightly fmt --all -- --check
+      - name: Check formatting
+        run: |
+          cargo +nightly fmt --all -- --check
 
           #- name: Run clippy
           #  run: |

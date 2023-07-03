@@ -19,7 +19,6 @@ use crate::emu_env::ArgConfig;
 use crate::emu_env::EmuEnv;
 
 fn main() {
-
     let mut cfg = ArgConfig::parse();
     if cfg.dump_gpr || cfg.dump_fpr || cfg.dump_tcg {
         cfg.debug = true;

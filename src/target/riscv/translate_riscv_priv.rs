@@ -1,9 +1,9 @@
-use super::super::super::tcg::tcg::{TCGOp, TCGOpcode, TCGv};
 use super::super::super::instr_info::InstrInfo;
+use super::super::super::tcg::tcg::{TCGOp, TCGOpcode, TCGv};
 use super::riscv::CALL_HELPER_IDX;
 
-use super::super::super::get_rs1_addr;
 use super::super::super::get_rd_addr;
+use super::super::super::get_rs1_addr;
 
 use super::riscv::TranslateRiscv;
 
@@ -117,5 +117,4 @@ impl TranslateRiscv {
         let exit_tb = TCGOp::new_0op(TCGOpcode::EXIT_TB, None);
         vec![mret_op, exit_tb]
     }
-
 }
